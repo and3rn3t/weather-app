@@ -158,3 +158,34 @@ enum WeatherCondition {
         }
     }
 }
+
+// MARK: - Air Quality Models
+
+struct AirQualityData: Codable {
+    let latitude: Double
+    let longitude: Double
+    let timezone: String
+    let current: CurrentAirQuality
+}
+
+struct CurrentAirQuality: Codable {
+    let time: String
+    let usAqi: Int
+    let pm10: Double
+    let pm25: Double
+    let ozone: Double?
+    let nitrogenDioxide: Double?
+    let sulphurDioxide: Double?
+    let carbonMonoxide: Double?
+    
+    enum CodingKeys: String, CodingKey {
+        case time
+        case usAqi = "us_aqi"
+        case pm10
+        case pm25 = "pm2_5"
+        case ozone
+        case nitrogenDioxide = "nitrogen_dioxide"
+        case sulphurDioxide = "sulphur_dioxide"
+        case carbonMonoxide = "carbon_monoxide"
+    }
+}

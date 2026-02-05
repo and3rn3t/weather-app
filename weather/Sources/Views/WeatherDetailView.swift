@@ -14,6 +14,7 @@ struct WeatherDetailView: View {
     let locationName: String?
     let onRefresh: () async -> Void
     let onSearchTapped: () -> Void
+    let airQualityData: AirQualityData?
     
     @Namespace private var glassNamespace
     var settings: SettingsManager
@@ -60,7 +61,7 @@ struct WeatherDetailView: View {
                                 .environment(settings)
                             
                             // Air Quality Index
-                            AirQualityCard(current: weatherData.current)
+                            AirQualityCard(airQualityData: airQualityData)
                             
                             // Additional Details
                             WeatherDetailsCard(current: weatherData.current)
@@ -1119,15 +1120,13 @@ struct RecommendationRow: View {
     }
 }
 
-/// Air Quality Index card (placeholder for future API integration)
+/// Air Quality Index card with real API data
 struct AirQualityCard: View {
-    let current: CurrentWeather
+    let airQualityData: AirQualityData?
     
-    // Mock AQI - in production, this would come from an API
-    private var mockAQI: Int {
-        // Generate a "realistic" AQI based on visibility and other factors
-        let visibilityFactor = max(0, 100 - Int(current.visibility / 100))
-        return min(visibilityFactor + Int.random(in: 20...40), 200)
+    // Computed AQI value - uses real data or shows unavailable state
+    private var aqi: Int? {
+        airQualityData?.current.usAqi
     }
     
     var body: some View {
@@ -1138,58 +1137,85 @@ struct AirQualityCard: View {
                 
                 Spacer()
                 
-                Text(aqiCategory.name)
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(aqiCategory.color)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 5)
-                    .background(aqiCategory.color.opacity(0.2), in: Capsule())
+                if let aqi = aqi {
+                    Text(aqiCategory(for: aqi).name)
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(aqiCategory(for: aqi).color)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(aqiCategory(for: aqi).color.opacity(0.2), in: Capsule())
+                } else {
+                    Text("Unavailable")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 5)
+                        .background(Color.secondary.opacity(0.2), in: Capsule())
+                }
             }
             
-            HStack(spacing: 20) {
-                // AQI gauge
-                ZStack {
-                    Circle()
-                        .stroke(Color.secondary.opacity(0.2), lineWidth: 12)
-                        .frame(width: 100, height: 100)
+            if let aqi = aqi, let data = airQualityData?.current {
+                HStack(spacing: 20) {
+                    // AQI gauge
+                    ZStack {
+                        Circle()
+                            .stroke(Color.secondary.opacity(0.2), lineWidth: 12)
+                            .frame(width: 100, height: 100)
+                        
+                        Circle()
+                            .trim(from: 0, to: min(CGFloat(aqi) / 200.0, 1.0))
+                            .stroke(
+                                aqiCategory(for: aqi).color.gradient,
+                                style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                            )
+                            .frame(width: 100, height: 100)
+                            .rotationEffect(.degrees(-90))
+                        
+                        VStack(spacing: 4) {
+                            Text("\(aqi)")
+                                .font(.title.weight(.bold))
+                                .foregroundStyle(aqiCategory(for: aqi).color)
+                            Text("AQI")
+                                .font(.caption2.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                     
-                    Circle()
-                        .trim(from: 0, to: CGFloat(mockAQI) / 200.0)
-                        .stroke(
-                            aqiCategory.color.gradient,
-                            style: StrokeStyle(lineWidth: 12, lineCap: .round)
-                        )
-                        .frame(width: 100, height: 100)
-                        .rotationEffect(.degrees(-90))
-                    
-                    VStack(spacing: 4) {
-                        Text("\(mockAQI)")
-                            .font(.title.weight(.bold))
-                            .foregroundStyle(aqiCategory.color)
-                        Text("AQI")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 8) {
+                        InfoRow(label: "PM2.5", value: String(format: "%.1f μg/m³", data.pm25))
+                        InfoRow(label: "PM10", value: String(format: "%.1f μg/m³", data.pm10))
+                        if let ozone = data.ozone {
+                            InfoRow(label: "O₃", value: String(format: "%.0f μg/m³", ozone))
+                        }
                     }
                 }
                 
-                VStack(alignment: .leading, spacing: 8) {
-                    InfoRow(label: "PM2.5", value: "\(mockAQI / 2) μg/m³")
-                    InfoRow(label: "PM10", value: "\(mockAQI / 3) μg/m³")
-                    InfoRow(label: "O₃", value: "\(Int.random(in: 20...60)) ppb")
+                Text(aqiCategory(for: aqi).description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .padding(.top, 4)
+            } else {
+                HStack {
+                    Spacer()
+                    VStack(spacing: 8) {
+                        Image(systemName: "aqi.low")
+                            .font(.largeTitle)
+                            .foregroundStyle(.secondary)
+                        Text("Air quality data is currently unavailable")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.vertical, 20)
+                    Spacer()
                 }
             }
-            
-            Text(aqiCategory.description)
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .padding(.top, 4)
         }
         .padding(20)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
     
-    private var aqiCategory: (name: String, color: Color, description: String) {
-        switch mockAQI {
+    private func aqiCategory(for aqi: Int) -> (name: String, color: Color, description: String) {
+        switch aqi {
         case 0..<51:
             return ("Good", .green, "Air quality is satisfactory. Outdoor activities are encouraged.")
         case 51..<101:

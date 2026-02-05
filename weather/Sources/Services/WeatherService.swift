@@ -40,10 +40,12 @@ struct WeatherAlert: Codable, Sendable, Identifiable {
 @Observable
 class WeatherService {
     var weatherData: WeatherData?
+    var airQualityData: AirQualityData?
     var isLoading = false
     var errorMessage: String?
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
+    private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
     
     func fetchWeather(latitude: Double, longitude: Double) async {
         await MainActor.run {
@@ -94,11 +96,45 @@ class WeatherService {
                 self.weatherData = weather
                 self.isLoading = false
             }
+            
+            // Fetch air quality data in parallel
+            await fetchAirQuality(latitude: latitude, longitude: longitude)
         } catch {
             await MainActor.run {
                 self.errorMessage = "Failed to fetch weather: \(error.localizedDescription)"
                 self.isLoading = false
             }
+        }
+    }
+    
+    func fetchAirQuality(latitude: Double, longitude: Double) async {
+        var components = URLComponents(string: airQualityURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "current", value: "us_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide"),
+            URLQueryItem(name: "timezone", value: "auto")
+        ]
+        
+        guard let url = components?.url else { return }
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(from: url)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                return
+            }
+            
+            let decoder = JSONDecoder()
+            let airQuality = try decoder.decode(AirQualityData.self, from: data)
+            
+            await MainActor.run {
+                self.airQualityData = airQuality
+            }
+        } catch {
+            // Silently fail - air quality is optional
+            print("Failed to fetch air quality: \(error.localizedDescription)")
         }
     }
     

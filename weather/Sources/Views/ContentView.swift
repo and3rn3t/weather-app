@@ -34,6 +34,7 @@ struct ContentView: View {
                         locationName: displayLocationName,
                         onRefresh: refreshWeather,
                         onSearchTapped: { showingSearch = true },
+                        airQualityData: weatherService.airQualityData,
                         settings: settings
                     )
                     .id(settings.temperatureUnit) // Force refresh when settings change
