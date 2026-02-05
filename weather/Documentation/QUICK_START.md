@@ -4,11 +4,14 @@
 
 This guide will help you integrate all the new enhancements into your weather app project.
 
+> 💡 **Tip**: This project includes AI assistant instructions for [GitHub Copilot](../../.github/copilot-instructions.md) and [Claude](../../.claude/CLAUDE.md). Enable these for better code suggestions that follow project conventions.
+
 ---
 
 ## Step 1: Add New Files to Xcode Project
 
 ### Core Services (Add to your project)
+
 1. `WeatherService.swift` - ✅ Created (replaces existing if any)
 2. `LocationManager.swift` - ✅ Created (replaces existing if any)
 3. `SettingsManager.swift` - ✅ Created
@@ -16,20 +19,23 @@ This guide will help you integrate all the new enhancements into your weather ap
 5. `FavoritesManager.swift` - ✅ Created
 
 ### Views & UI
+
 6. `WeatherCards.swift` - ✅ Created (replaces existing cards)
-7. `SettingsView.swift` - ✅ Created
-8. `FavoritesView.swift` - ✅ Created
-9. `GlassEffects.swift` - ✅ Created
-10. `WeatherParticleEffects.swift` - ✅ Created
+2. `SettingsView.swift` - ✅ Created
+3. `FavoritesView.swift` - ✅ Created
+4. `GlassEffects.swift` - ✅ Created
+5. `WeatherParticleEffects.swift` - ✅ Created
 
 ### Widgets (Create new Widget Extension target)
+
 11. `WeatherWidget.swift` - ✅ Created
 
 ### Updated Files
+
 12. `weatherApp.swift` - ✅ Updated with dependency injection
-13. `ContentView.swift` - ✅ Updated with new features
-14. `WeatherDetailView.swift` - ✅ Updated with particles & favorites
-15. `LocationSearchView.swift` - ✅ Already exists (keep as is)
+2. `ContentView.swift` - ✅ Updated with new features
+3. `WeatherDetailView.swift` - ✅ Updated with particles & favorites
+4. `LocationSearchView.swift` - ✅ Already exists (keep as is)
 
 ---
 
@@ -69,10 +75,11 @@ Add these keys to your Info.plist:
 2. Also add to widget target:
    - `WeatherService.swift`
    - `GlassEffects.swift`
-   
+
 ### Share Framework Code
 
 In Xcode, for these files, check both targets in File Inspector:
+
 - `WeatherService.swift` (App + Widget)
 - `SettingsManager.swift` (App + Widget)
 
@@ -83,6 +90,7 @@ In Xcode, for these files, check both targets in File Inspector:
 Your project should already link these, but verify:
 
 ### App Target
+
 - SwiftUI
 - SwiftData
 - Charts
@@ -92,6 +100,7 @@ Your project should already link these, but verify:
 - WidgetKit
 
 ### Widget Target
+
 - SwiftUI
 - WidgetKit
 - AppIntents
@@ -123,6 +132,7 @@ Your project should already link these, but verify:
 ### ✅ Checklist
 
 #### Basic Functionality
+
 - [ ] App launches successfully
 - [ ] Location permission request appears
 - [ ] Weather loads for current location
@@ -131,6 +141,7 @@ Your project should already link these, but verify:
 - [ ] Settings opens and works
 
 #### Favorites
+
 - [ ] Can open favorites list
 - [ ] Can add new favorite location
 - [ ] Star button appears on weather view
@@ -138,17 +149,20 @@ Your project should already link these, but verify:
 - [ ] Favorites persist after app restart
 
 #### Notifications
+
 - [ ] Notification permission request appears
 - [ ] Can toggle notification types in settings
 - [ ] Settings persist
 
 #### Charts
+
 - [ ] Temperature chart displays
 - [ ] Precipitation chart displays
 - [ ] Can interact with hourly chart
 - [ ] Chart updates with new data
 
 #### Visual Effects
+
 - [ ] Glass effects render properly
 - [ ] Mesh gradients display (iOS 18+)
 - [ ] Weather particles animate
@@ -156,6 +170,7 @@ Your project should already link these, but verify:
 - [ ] Can toggle particles in settings
 
 #### Widgets
+
 - [ ] Can add small widget
 - [ ] Can add medium widget
 - [ ] Can add large widget
@@ -169,7 +184,8 @@ Your project should already link these, but verify:
 ### Issue: Build Errors
 
 **Problem**: Missing imports or undefined symbols
-**Solution**: 
+**Solution**:
+
 1. Ensure all files are added to correct targets
 2. Clean build folder (Cmd+Shift+K)
 3. Rebuild (Cmd+B)
@@ -178,6 +194,7 @@ Your project should already link these, but verify:
 
 **Problem**: ModelContainer errors
 **Solution**:
+
 1. Ensure SwiftData framework is linked
 2. Verify `@Model` macro on SavedLocation
 3. Check iOS deployment target (iOS 17+)
@@ -186,6 +203,7 @@ Your project should already link these, but verify:
 
 **Problem**: Widget doesn't appear in widget picker
 **Solution**:
+
 1. Verify widget extension is added to project
 2. Check widget target is set to correct team
 3. Run widget target specifically
@@ -195,6 +213,7 @@ Your project should already link these, but verify:
 
 **Problem**: Charts don't render
 **Solution**:
+
 1. Verify Charts framework is linked
 2. Check iOS deployment target (iOS 16+ for Charts)
 3. Ensure data is not empty
@@ -203,6 +222,7 @@ Your project should already link these, but verify:
 
 **Problem**: Weather particles don't show
 **Solution**:
+
 1. Check "Weather Particles" toggle in settings
 2. Verify particle effects are enabled
 3. Check that weather code is being read correctly
@@ -212,16 +232,19 @@ Your project should already link these, but verify:
 ## Minimum Requirements
 
 ### iOS Version Requirements
+
 - **App**: iOS 17.0+ (for SwiftData & @Observable)
 - **Widgets**: iOS 16.0+ (for lock screen widgets)
 - **Charts**: iOS 16.0+ (for Swift Charts)
 - **Mesh Gradients**: iOS 18.0+ (gracefully degrades)
 
 ### Xcode Version
+
 - **Xcode 15.0+** recommended
 - **Swift 5.9+** required
 
 ### Device Requirements
+
 - **iPhone**: All models supporting iOS 17+
 - **iPad**: All models supporting iOS 17+
 - **Apple Watch**: Architecture ready, needs watchOS app
@@ -245,6 +268,7 @@ generator.impactOccurred()
 ### Add App Icon
 
 Create app icon with weather theme:
+
 - Cloud + sun design
 - Blue gradient background
 - 1024x1024 master image
@@ -253,6 +277,7 @@ Create app icon with weather theme:
 ### Add Launch Screen
 
 Update Launch Screen storyboard:
+
 - Weather app logo
 - Gradient background matching app
 - Loading indicator
@@ -293,6 +318,7 @@ weatherApp (Root)
 ### Unit Testing
 
 Create tests for:
+
 - `WeatherService.fetchWeather()`
 - `LocationManager.requestLocation()`
 - `FavoritesManager.addLocation()`
@@ -301,6 +327,7 @@ Create tests for:
 ### UI Testing
 
 Test flows:
+
 - Launch → Location permission → Weather display
 - Search → Select → Weather update
 - Add favorite → View favorites → Select favorite
@@ -309,6 +336,7 @@ Test flows:
 ### Widget Testing
 
 Test scenarios:
+
 - Add widget → Verify data loads
 - Wait 30 minutes → Verify refresh
 - Change location in widget config → Verify update
@@ -318,6 +346,7 @@ Test scenarios:
 ## Performance Optimization
 
 ### Already Implemented
+
 ✅ Async/await for network calls
 ✅ Main actor isolation for UI updates
 ✅ Lazy loading of favorites
@@ -327,6 +356,7 @@ Test scenarios:
 ### Additional Optimizations
 
 #### Cache Weather Data
+
 ```swift
 // In WeatherService
 private var cachedData: [String: WeatherData] = [:]
@@ -350,6 +380,7 @@ func fetchWeather(latitude: Double, longitude: Double, useCache: Bool = true) as
 ```
 
 #### Image Caching for Conditions
+
 Use SF Symbols (already implemented) - no network images needed!
 
 ---
@@ -357,6 +388,7 @@ Use SF Symbols (already implemented) - no network images needed!
 ## Analytics & Monitoring (Optional)
 
 Consider adding:
+
 - **App Center** - Crash reporting
 - **Firebase Analytics** - Usage tracking
 - **TestFlight** - Beta testing
@@ -367,6 +399,7 @@ Consider adding:
 ## App Store Preparation
 
 ### Required Screenshots
+
 1. iPhone 6.7" - Weather detail view
 2. iPhone 6.7" - Favorites list
 3. iPhone 6.7" - Hourly chart
@@ -374,6 +407,7 @@ Consider adding:
 5. iPad 12.9" - Weather view
 
 ### App Description Template
+
 ```
 Weather - Beautiful & Detailed Forecasts
 
@@ -392,6 +426,7 @@ Stay prepared with accurate weather information at your fingertips!
 ```
 
 ### Keywords
+
 weather, forecast, temperature, rain, snow, alerts, widgets, charts
 
 ---
@@ -399,6 +434,7 @@ weather, forecast, temperature, rain, snow, alerts, widgets, charts
 ## Next Steps
 
 ### Immediate
+
 1. ✅ Add all files to Xcode project
 2. ✅ Update Info.plist
 3. ✅ Create widget extension
@@ -406,6 +442,7 @@ weather, forecast, temperature, rain, snow, alerts, widgets, charts
 5. ✅ Verify all features work
 
 ### Short Term
+
 - [ ] Add app icon
 - [ ] Update launch screen
 - [ ] Add screenshots
@@ -413,6 +450,7 @@ weather, forecast, temperature, rain, snow, alerts, widgets, charts
 - [ ] Optimize performance
 
 ### Long Term
+
 - [ ] Add weather maps
 - [ ] Create Apple Watch app
 - [ ] Add complications
@@ -425,6 +463,7 @@ weather, forecast, temperature, rain, snow, alerts, widgets, charts
 ## Support & Resources
 
 ### Apple Documentation
+
 - [SwiftUI](https://developer.apple.com/documentation/swiftui)
 - [SwiftData](https://developer.apple.com/documentation/swiftdata)
 - [Swift Charts](https://developer.apple.com/documentation/charts)
@@ -432,18 +471,21 @@ weather, forecast, temperature, rain, snow, alerts, widgets, charts
 - [UserNotifications](https://developer.apple.com/documentation/usernotifications)
 
 ### API Documentation
+
 - [Open-Meteo API](https://open-meteo.com/en/docs)
 
 ### Community
+
 - [Swift Forums](https://forums.swift.org)
 - [Apple Developer Forums](https://developer.apple.com/forums)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/swiftui)
 
 ---
 
-## 🎉 You're All Set!
+## 🎉 You're All Set
 
 Your weather app now includes:
+
 - ✅ All 10 requested enhancements
 - ✅ Professional-grade architecture  
 - ✅ Beautiful, modern UI

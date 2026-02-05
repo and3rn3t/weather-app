@@ -12,6 +12,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 ## ✨ Features
 
 ### 🌍 Core Weather Features
+
 - **Real-time Weather Data** - Current conditions, hourly & 14-day forecasts
 - **Location-Based** - Automatic GPS location detection
 - **Global Search** - Search any location worldwide
@@ -19,6 +20,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **Sunrise/Sunset Times** - Daily sun & moon information
 
 ### ⭐ Favorites & Locations
+
 - **Save Unlimited Locations** - Keep track of multiple places
 - **Quick Switching** - Instantly switch between saved locations
 - **Drag to Reorder** - Organize your favorites
@@ -26,6 +28,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **One-Tap Favoriting** - Star button on weather view
 
 ### 📊 Interactive Charts
+
 - **Temperature Chart** - 24-hour temperature forecast with smooth gradients
 - **Precipitation Graph** - Hourly precipitation probability
 - **Touch Interaction** - Tap and drag for detailed hourly info
@@ -33,18 +36,21 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **Daily Range Bars** - High/low temperature visualizations
 
 ### 🔔 Smart Notifications
+
 - **Severe Weather Alerts** - Critical warnings for dangerous conditions
 - **Daily Forecast** - Morning weather summary at your chosen time
 - **Rain Alerts** - Notifications when rain expected within 2 hours
 - **Weather Changes** - Alerts for significant condition changes
 
 ### 📱 Widgets
+
 - **Home Screen Widgets** - Small, Medium, and Large sizes
 - **Lock Screen Widgets** - Circular, Rectangular, and Inline styles
 - **Auto-Refresh** - Updates every 30 minutes
 - **Location Configuration** - Choose location per widget
 
 ### 🎨 Beautiful UI & Animations
+
 - **Liquid Glass Design** - Modern glass morphism effects
 - **Weather Particles** - Rain, snow, clouds, lightning, and fog animations
 - **Mesh Gradients** - Smooth, dynamic background colors
@@ -52,6 +58,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **Dark Mode** - Full dark mode support
 
 ### ⚙️ Customization & Settings
+
 - **Units** - Fahrenheit/Celsius, mph/km/h, inches/mm
 - **Appearance** - Light/Dark/Auto, animated backgrounds, particle effects
 - **Display Options** - 12/24 hour format, show/hide feels-like temp
@@ -75,6 +82,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 ## 🚀 Getting Started
 
 ### Requirements
+
 - **Xcode**: 15.0 or later
 - **iOS**: 17.0 or later
 - **Swift**: 5.9 or later
@@ -82,12 +90,14 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 ### Installation
 
 1. **Clone the repository**
+
    ```bash
    git clone https://github.com/yourusername/weather-app.git
    cd weather-app
    ```
 
 2. **Open in Xcode**
+
    ```bash
    open weather.xcodeproj
    ```
@@ -102,6 +112,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
    - Add WeatherWidget.swift to the widget target
 
 ### First Run
+
 1. Grant location permission when prompted
 2. Grant notification permission (optional)
 3. Weather loads automatically for your location
@@ -110,9 +121,32 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 
 ## 📚 Documentation
 
-- **[ENHANCEMENTS_COMPLETE.md](ENHANCEMENTS_COMPLETE.md)** - Comprehensive guide to all features
-- **[QUICK_START.md](QUICK_START.md)** - Implementation and integration guide
-- **[SEARCH_AND_REFRESH_FEATURES.md](SEARCH_AND_REFRESH_FEATURES.md)** - Location search documentation
+### Getting Started
+
+- **[QUICK_START.md](QUICK_START.md)** - Setup and integration guide
+- **[BUILD_FIXES.md](BUILD_FIXES.md)** - Troubleshooting common issues
+
+### Feature Guides
+
+- **[FEATURES.md](FEATURES.md)** - Complete feature documentation
+- **[VISUAL_FEATURE_MAP.md](VISUAL_FEATURE_MAP.md)** - UI component reference
+
+### Reference
+
+- **[CHANGELOG.md](CHANGELOG.md)** - Version history
+- **[AI_DEVELOPMENT_GUIDE.md](AI_DEVELOPMENT_GUIDE.md)** - AI assistant instructions
+
+### Project Files (Root)
+
+- **[CONTRIBUTING.md](../../CONTRIBUTING.md)** - Contribution guidelines
+- **[.github/copilot-instructions.md](../../.github/copilot-instructions.md)** - GitHub Copilot config
+- **[.claude/CLAUDE.md](../../.claude/CLAUDE.md)** - Claude AI config
+
+### AI Development
+
+- **[AI_DEVELOPMENT_GUIDE.md](AI_DEVELOPMENT_GUIDE.md)** - Comprehensive AI agent instructions
+- **[../.github/copilot-instructions.md](../../.github/copilot-instructions.md)** - GitHub Copilot configuration
+- **[../.claude/CLAUDE.md](../../.claude/CLAUDE.md)** - Claude AI configuration
 - **[LOCATION_FEATURE.md](LOCATION_FEATURE.md)** - Location services guide
 
 ---
@@ -120,6 +154,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 ## 🏗️ Architecture
 
 ### Tech Stack
+
 - **SwiftUI** - Modern declarative UI
 - **SwiftData** - Persistent storage for favorites
 - **Swift Charts** - Interactive data visualization
@@ -130,6 +165,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **MapKit** - Location search
 
 ### Design Patterns
+
 - **MVVM** - Model-View-ViewModel architecture
 - **Observable** - Reactive state management with @Observable
 - **Dependency Injection** - Environment-based dependencies
@@ -137,6 +173,7 @@ A beautiful, feature-rich weather application built with SwiftUI, featuring inte
 - **Modular Components** - Reusable UI components
 
 ### Project Structure
+
 ```
 weather/
 ├── App/
@@ -183,6 +220,7 @@ weather/
 ### API Configuration
 
 The app uses [Open-Meteo API](https://open-meteo.com) which:
+
 - ✅ Free to use
 - ✅ No API key required
 - ✅ No registration needed
@@ -198,6 +236,7 @@ The app uses [Open-Meteo API](https://open-meteo.com) which:
 ### Weather Particle Effects
 
 Realistic weather animations:
+
 - **Rain** - Falling raindrops with varying speeds
 - **Snow** - Floating snowflakes with wobble
 - **Lightning** - Random lightning flashes
@@ -209,6 +248,7 @@ Toggle in: Settings → Appearance → Weather Particles
 ### Interactive Charts
 
 Built with Swift Charts:
+
 - **Temperature Line Chart** - 24-hour forecast with gradient fill
 - **Precipitation Bar Chart** - Hourly precipitation probability
 - **Touch Interaction** - Drag to see detailed hour info
@@ -218,6 +258,7 @@ Built with Swift Charts:
 ### Favorites System
 
 Powered by SwiftData:
+
 - **Automatic Persistence** - Survives app restarts
 - **iCloud Sync Ready** - Architecture supports CloudKit
 - **Order Management** - Drag to reorder favorites
@@ -227,6 +268,7 @@ Powered by SwiftData:
 ### Notification System
 
 Smart local notifications:
+
 - **Daily Forecast** - Scheduled at your preferred time
 - **Severe Weather** - Critical alerts with `.defaultCritical` sound
 - **Rain Alerts** - Checks next 2 hours for precipitation
@@ -240,6 +282,7 @@ Smart local notifications:
 ### Liquid Glass Effect
 
 Modern glass morphism with:
+
 - Ultra-thin material backgrounds
 - Border gradients (white to transparent)
 - Soft shadows
@@ -249,6 +292,7 @@ Modern glass morphism with:
 ### Color Palette
 
 Dynamic colors based on weather:
+
 - **Clear Sky** - Blue → Cyan gradient
 - **Partly Cloudy** - Blue → Gray
 - **Cloudy** - Gray tones
@@ -259,6 +303,7 @@ Dynamic colors based on weather:
 ### Typography
 
 System fonts with:
+
 - **Large Titles** - Weather location names
 - **Display** - Current temperature (72pt)
 - **Headlines** - Card titles
@@ -268,6 +313,7 @@ System fonts with:
 ### SF Symbols
 
 Native icons with:
+
 - **Multicolor** - Weather conditions
 - **Hierarchical** - UI elements
 - **Symbol Effects** - Pulse, breathe, bounce
@@ -280,6 +326,7 @@ Native icons with:
 ### Unit Tests
 
 Test coverage for:
+
 - Weather service API calls
 - Location manager functionality
 - Settings persistence
@@ -289,6 +336,7 @@ Test coverage for:
 ### UI Tests
 
 Automated flows:
+
 - Launch and location permission
 - Weather data display
 - Location search and selection
@@ -298,6 +346,7 @@ Automated flows:
 ### Manual Testing
 
 Checklist:
+
 - [ ] All widget sizes display correctly
 - [ ] Notifications fire at correct times
 - [ ] Charts are interactive
@@ -311,12 +360,14 @@ Checklist:
 ## 🐛 Known Issues & Limitations
 
 ### Current Limitations
+
 - Weather maps not yet implemented (architecture ready)
 - Apple Watch app not included (architecture ready)
 - Open-Meteo API rate limits apply (60 requests/minute)
 - Mesh gradients require iOS 18+ (graceful degradation)
 
 ### Planned Fixes
+
 - Add weather radar visualization
 - Implement Apple Watch complications
 - Add weather map overlays
@@ -355,6 +406,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 👤 Author
 
 **Your Name**
+
 - GitHub: [@yourusername](https://github.com/yourusername)
 - Twitter: [@yourusername](https://twitter.com/yourusername)
 
@@ -363,11 +415,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🙏 Acknowledgments
 
 ### Frameworks & Tools
+
 - **Apple** - SwiftUI, SwiftData, Charts, WidgetKit, CoreLocation
 - **Open-Meteo** - Free weather API
 - **SF Symbols** - Icon system
 
 ### Inspiration
+
 - Apple Weather app
 - Modern weather apps
 - iOS design guidelines
@@ -390,18 +444,21 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 🗺️ Roadmap
 
 ### v1.1 (Future)
+
 - [ ] Weather radar maps
 - [ ] Historical data charts
 - [ ] Weather comparison view
 - [ ] Photo weather sharing
 
 ### v1.2 (Future)
+
 - [ ] Apple Watch app
 - [ ] Watch complications
 - [ ] Handoff support
 - [ ] macOS app
 
 ### v2.0 (Future)
+
 - [ ] Social features
 - [ ] Weather photography
 - [ ] Activity suggestions
@@ -434,13 +491,15 @@ A: Open-Meteo, a free and open-source weather API.
 ## 📱 Contact & Support
 
 ### Bug Reports
+
 Open an issue on [GitHub Issues](https://github.com/yourusername/weather-app/issues)
 
 ### Feature Requests
+
 Use [GitHub Discussions](https://github.com/yourusername/weather-app/discussions)
 
 ### Email
-support@weatherapp.com
+<support@weatherapp.com>
 
 ---
 
@@ -453,6 +512,7 @@ If you like this project, please give it a ⭐ on GitHub!
 ## 📅 Changelog
 
 ### v1.0.0 (February 2026)
+
 - ✅ Initial release
 - ✅ Real-time weather data
 - ✅ 14-day forecasts
