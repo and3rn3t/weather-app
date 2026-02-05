@@ -114,9 +114,10 @@ struct WeatherDetailView: View {
 
 struct CurrentWeatherCard: View {
     let current: CurrentWeather
+    @State private var isTapped = false
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             let condition = WeatherCondition(code: current.weatherCode)
             
             // Large weather icon with scaling effect
@@ -124,11 +125,28 @@ struct CurrentWeatherCard: View {
                 .font(.system(size: 100))
                 .symbolRenderingMode(.multicolor)
                 .symbolEffect(.bounce, value: current.temperature2m)
+                .padding(.top, 8)
             
-            // Temperature display
-            Text("\(Int(current.temperature2m))°")
-                .font(.system(size: 80, weight: .thin, design: .rounded))
-                .contentTransition(.numericText())
+            // Temperature display - tap it for interaction!
+            Button(action: {
+                // Haptic feedback
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                
+                // Bounce animation
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                    isTapped.toggle()
+                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                    isTapped = false
+                }
+            }) {
+                Text("\(Int(current.temperature2m))°")
+                    .font(.system(size: 80, weight: .thin, design: .rounded))
+                    .contentTransition(.numericText())
+                    .scaleEffect(isTapped ? 1.1 : 1.0)
+            }
+            .buttonStyle(.plain)
             
             // Condition description
             Text(condition.description)
@@ -138,10 +156,11 @@ struct CurrentWeatherCard: View {
             Text("Feels like \(Int(current.apparentTemperature))°")
                 .font(.callout)
                 .foregroundStyle(.secondary)
+                .padding(.bottom, 8)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 32)
-        .padding(.horizontal, 24)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 20)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
     }
 }
@@ -152,7 +171,7 @@ struct SunMoonCard: View {
     let timezone: String
     
     var body: some View {
-        VStack(spacing: 20) {
+        VStack(spacing: 16) {
             HStack {
                 Text(isDay ? "Daylight" : "Tonight")
                     .font(.headline.weight(.semibold))
@@ -167,15 +186,15 @@ struct SunMoonCard: View {
                     .padding(.vertical, 4)
                     .background(.secondary.opacity(0.15), in: Capsule())
             }
-            .frame(maxWidth: .infinity)
             
-            HStack(spacing: 32) {
+            HStack(spacing: 40) {
                 // Sunrise
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     Image(systemName: "sunrise.fill")
-                        .font(.system(size: 44))
+                        .font(.system(size: 40))
                         .symbolRenderingMode(.multicolor)
                         .foregroundStyle(.orange.gradient)
+                        .frame(height: 40)
                     
                     Text("Sunrise")
                         .font(.caption.weight(.medium))
@@ -194,14 +213,15 @@ struct SunMoonCard: View {
                 .frame(maxWidth: .infinity)
                 
                 Divider()
-                    .frame(height: 70)
+                    .frame(height: 80)
                 
                 // Sunset
-                VStack(spacing: 10) {
+                VStack(spacing: 8) {
                     Image(systemName: "sunset.fill")
-                        .font(.system(size: 44))
+                        .font(.system(size: 40))
                         .symbolRenderingMode(.multicolor)
                         .foregroundStyle(.orange.gradient)
+                        .frame(height: 40)
                     
                     Text("Sunset")
                         .font(.caption.weight(.medium))
@@ -319,7 +339,7 @@ struct HourlyWeatherItem: View {
     let timezone: String
     
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 8) {
             Text(formattedTime)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(.secondary)
@@ -327,13 +347,14 @@ struct HourlyWeatherItem: View {
             Image(systemName: WeatherCondition(code: weatherCode).symbolName)
                 .font(.title2)
                 .symbolRenderingMode(.multicolor)
-                .frame(height: 32)
+                .frame(height: 28)
             
             Text("\(Int(temperature))°")
                 .font(.body.weight(.semibold))
                 .monospacedDigit()
         }
         .frame(width: 60)
+        .padding(.vertical, 4)
     }
     
     private var formattedTime: String {
@@ -396,70 +417,75 @@ struct DailyWeatherRow: View {
     let windSpeed: Double
     
     var body: some View {
-        VStack(spacing: 10) {
-            HStack(alignment: .center) {
+        VStack(spacing: 8) {
+            HStack(alignment: .center, spacing: 12) {
+                // Day name
                 Text(formattedDate)
-                    .frame(width: 60, alignment: .leading)
+                    .frame(width: 50, alignment: .leading)
                     .font(.body.weight(.medium))
                 
+                // Weather icon
                 Image(systemName: WeatherCondition(code: weatherCode).symbolName)
                     .symbolRenderingMode(.multicolor)
                     .font(.title3)
-                    .frame(width: 36)
+                    .frame(width: 32)
                 
+                // Precipitation
                 if precipProbability > 0 {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 2) {
                         Image(systemName: "drop.fill")
-                            .font(.caption)
+                            .font(.caption2)
                         Text("\(precipProbability)%")
                             .font(.caption.weight(.medium))
                     }
                     .foregroundStyle(.blue)
-                    .frame(width: 50)
+                    .frame(width: 48, alignment: .leading)
                 } else {
                     Spacer()
-                        .frame(width: 50)
+                        .frame(width: 48)
                 }
                 
                 Spacer()
                 
-                HStack(spacing: 16) {
+                // Temperatures
+                HStack(spacing: 12) {
                     Text("\(Int(low))°")
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
+                        .frame(width: 36, alignment: .trailing)
                     
                     Text("\(Int(high))°")
-                        .frame(width: 42, alignment: .trailing)
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
+                        .frame(width: 36, alignment: .trailing)
                 }
             }
             .padding(.horizontal, 20)
             
             // Additional info row with modern capsule design
-            HStack(spacing: 12) {
+            HStack(spacing: 10) {
                 Spacer()
-                    .frame(width: 60)
+                    .frame(width: 50)
                 
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     Image(systemName: "wind")
                         .font(.caption2)
                     Text("\(Int(windSpeed)) mph")
                         .font(.caption.weight(.medium))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
                 .background(.secondary.opacity(0.15), in: Capsule())
                 .foregroundStyle(.secondary)
                 
-                HStack(spacing: 5) {
+                HStack(spacing: 4) {
                     Image(systemName: "sun.max.fill")
                         .font(.caption2)
                     Text("UV \(Int(uvIndex))")
                         .font(.caption.weight(.medium))
                 }
-                .padding(.horizontal, 10)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 3)
                 .background(uvColor.opacity(0.2), in: Capsule())
                 .foregroundStyle(uvColor)
                 
@@ -467,7 +493,7 @@ struct DailyWeatherRow: View {
             }
             .padding(.horizontal, 20)
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 4)
     }
     
     private var formattedDate: String {
@@ -495,14 +521,13 @@ struct WeatherDetailsCard: View {
     let current: CurrentWeather
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 20) {
             Text("Current Conditions")
                 .font(.headline.weight(.semibold))
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
             
             // First Row: Wind & Humidity
-            HStack(spacing: 16) {
+            HStack(spacing: 0) {
                 WeatherDetailItem(
                     title: "Wind Speed",
                     value: "\(Int(current.windSpeed10m))",
@@ -513,7 +538,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Humidity",
@@ -524,7 +550,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Gusts",
@@ -534,13 +561,11 @@ struct WeatherDetailsCard: View {
                     color: .cyan
                 )
             }
-            .padding(.horizontal, 12)
             
             Divider()
-                .padding(.horizontal, 20)
             
             // Second Row: UV Index, Visibility, Pressure
-            HStack(spacing: 16) {
+            HStack(spacing: 0) {
                 WeatherDetailItem(
                     title: "UV Index",
                     value: String(format: "%.1f", current.uvIndex),
@@ -550,7 +575,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Visibility",
@@ -561,7 +587,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Pressure",
@@ -571,13 +598,11 @@ struct WeatherDetailsCard: View {
                     color: .orange
                 )
             }
-            .padding(.horizontal, 12)
             
             Divider()
-                .padding(.horizontal, 20)
             
             // Third Row: Cloud Cover, Dew Point, Precipitation
-            HStack(spacing: 16) {
+            HStack(spacing: 0) {
                 WeatherDetailItem(
                     title: "Cloud Cover",
                     value: "\(current.cloudCover)",
@@ -587,7 +612,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Dew Point",
@@ -598,7 +624,8 @@ struct WeatherDetailsCard: View {
                 )
                 
                 Divider()
-                    .frame(height: 60)
+                    .frame(height: 70)
+                    .padding(.horizontal, 8)
                 
                 WeatherDetailItem(
                     title: "Precip",
@@ -608,9 +635,8 @@ struct WeatherDetailsCard: View {
                     color: .blue
                 )
             }
-            .padding(.horizontal, 12)
         }
-        .padding(.vertical, 20)
+        .padding(20)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
     
@@ -722,7 +748,13 @@ struct LocationHeader: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             
             // Search button
-            Button(action: onSearchTapped) {
+            Button(action: {
+                // Haptic feedback
+                let generator = UIImpactFeedbackGenerator(style: .light)
+                generator.impactOccurred()
+                
+                onSearchTapped()
+            }) {
                 Image(systemName: "magnifyingglass")
                     .font(.title3)
                     .symbolRenderingMode(.hierarchical)

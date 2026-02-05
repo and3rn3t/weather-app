@@ -12,49 +12,65 @@ struct ContentView: View {
     @State private var locationManager = LocationManager()
     @State private var weatherService = WeatherService()
     @State private var showingSearch = false
+    @State private var showingEffectsShowcase = false
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
     
     var body: some View {
-        Group {
-            if let weatherData = weatherService.weatherData {
-                WeatherDetailView(
-                    weatherData: weatherData,
-                    locationName: displayLocationName,
-                    onRefresh: refreshWeather,
-                    onSearchTapped: { showingSearch = true }
-                )
-            } else if weatherService.isLoading {
-                LoadingView()
-            } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
-                ErrorView(message: errorMessage, retryAction: fetchWeather)
-            } else {
-                WelcomeView(requestLocationAction: requestLocation)
-            }
-        }
-        .task {
-            await checkAndFetchWeather()
-        }
-        .onChange(of: locationManager.location) { _, newLocation in
-            // Only use location manager if no manual location selected
-            if selectedCoordinate == nil, let location = newLocation {
-                Task {
-                    await weatherService.fetchWeather(
-                        latitude: location.coordinate.latitude,
-                        longitude: location.coordinate.longitude
+        NavigationStack {
+            Group {
+                if let weatherData = weatherService.weatherData {
+                    WeatherDetailView(
+                        weatherData: weatherData,
+                        locationName: displayLocationName,
+                        onRefresh: refreshWeather,
+                        onSearchTapped: { showingSearch = true }
                     )
+                } else if weatherService.isLoading {
+                    LoadingView()
+                } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
+                    ErrorView(message: errorMessage, retryAction: fetchWeather)
+                } else {
+                    WelcomeView(requestLocationAction: requestLocation)
                 }
             }
-        }
-        .sheet(isPresented: $showingSearch) {
-            LocationSearchView { coordinate, locationName in
-                selectedCoordinate = coordinate
-                selectedLocationName = locationName
-                Task {
-                    await weatherService.fetchWeather(
-                        latitude: coordinate.latitude,
-                        longitude: coordinate.longitude
-                    )
+            .task {
+                await checkAndFetchWeather()
+            }
+            .onChange(of: locationManager.location) { _, newLocation in
+                // Only use location manager if no manual location selected
+                if selectedCoordinate == nil, let location = newLocation {
+                    Task {
+                        await weatherService.fetchWeather(
+                            latitude: location.coordinate.latitude,
+                            longitude: location.coordinate.longitude
+                        )
+                    }
+                }
+            }
+            .sheet(isPresented: $showingSearch) {
+                LocationSearchView { coordinate, locationName in
+                    selectedCoordinate = coordinate
+                    selectedLocationName = locationName
+                    Task {
+                        await weatherService.fetchWeather(
+                            latitude: coordinate.latitude,
+                            longitude: coordinate.longitude
+                        )
+                    }
+                }
+            }
+            .sheet(isPresented: $showingEffectsShowcase) {
+                VisualEffectsShowcase()
+            }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        showingEffectsShowcase = true
+                    } label: {
+                        Image(systemName: "sparkles")
+                            .symbolEffect(.pulse)
+                    }
                 }
             }
         }
@@ -113,18 +129,118 @@ struct ContentView: View {
 }
 
 struct LoadingView: View {
+    @State private var isAnimating = false
+    
     var body: some View {
-        VStack(spacing: 24) {
-            ProgressView()
-                .scaleEffect(1.8)
-                .tint(.blue)
+        ZStack {
+            // Animated mesh gradient background
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                    [0.0, 0.5], [isAnimating ? 0.7 : 0.3, 0.5], [1.0, 0.5],
+                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                ],
+                colors: [
+                    .blue, .cyan, .blue,
+                    .indigo, .blue, .cyan,
+                    .blue, .cyan, .blue
+                ]
+            )
+            .ignoresSafeArea()
+            .opacity(0.3)
             
-            Text("Loading weather data...")
-                .font(.headline)
-                .foregroundStyle(.secondary)
+            // Floating particles
+            FloatingSparkles(count: 15)
+            
+            // Main content
+            VStack(spacing: 24) {
+                ZStack {
+                    // Pulsing circles
+                    ForEach(0..<3) { i in
+                        Circle()
+                            .stroke(Color.blue.opacity(0.3), lineWidth: 2)
+                            .frame(width: 100, height: 100)
+                            .scaleEffect(isAnimating ? 1.5 : 0.8)
+                            .opacity(isAnimating ? 0 : 1)
+                            .animation(
+                                .easeOut(duration: 1.5)
+                                .repeatForever(autoreverses: false)
+                                .delay(Double(i) * 0.3),
+                                value: isAnimating
+                            )
+                    }
+                    
+                    Image(systemName: "cloud.sun.fill")
+                        .font(.system(size: 50))
+                        .symbolRenderingMode(.multicolor)
+                        .symbolEffect(.pulse.byLayer)
+                }
+                .frame(height: 150)
+                
+                VStack(spacing: 8) {
+                    Text("Loading weather data...")
+                        .font(.headline)
+                    
+                    Text("Fetching forecast...")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .glassEffect(.regular.tint(.blue.opacity(0.2)))
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.ultraThinMaterial)
+        .onAppear {
+            isAnimating = true
+        }
+    }
+}
+
+// Simple sparkle effect for loading view
+struct FloatingSparkles: View {
+    let count: Int
+    @State private var particles: [(id: UUID, x: CGFloat, y: CGFloat, delay: Double)] = []
+    
+    var body: some View {
+        GeometryReader { geometry in
+            ZStack {
+                ForEach(particles, id: \.id) { particle in
+                    Image(systemName: "sparkles")
+                        .foregroundStyle(.yellow.opacity(0.6))
+                        .font(.system(size: CGFloat.random(in: 12...20)))
+                        .position(x: particle.x, y: particle.y)
+                        .opacity(0.8)
+                }
+            }
+            .onAppear {
+                particles = (0..<count).map { _ in
+                    (
+                        id: UUID(),
+                        x: CGFloat.random(in: 0...geometry.size.width),
+                        y: CGFloat.random(in: 0...geometry.size.height),
+                        delay: Double.random(in: 0...2)
+                    )
+                }
+                animateParticles(in: geometry.size)
+            }
+        }
+        .allowsHitTesting(false)
+    }
+    
+    private func animateParticles(in size: CGSize) {
+        for index in particles.indices {
+            withAnimation(
+                .easeInOut(duration: 3)
+                .delay(particles[index].delay)
+                .repeatForever(autoreverses: true)
+            ) {
+                particles[index].y += CGFloat.random(in: -50...50)
+                particles[index].x += CGFloat.random(in: -30...30)
+            }
+        }
     }
 }
 
@@ -172,56 +288,337 @@ struct ErrorView: View {
 
 struct WelcomeView: View {
     let requestLocationAction: () -> Void
+    @State private var isAnimating = false
     
     var body: some View {
-        VStack(spacing: 40) {
-            Spacer()
+        ZStack {
+            // Animated mesh gradient background
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                    [0.0, 0.5], [isAnimating ? 0.8 : 0.2, isAnimating ? 0.2 : 0.8], [1.0, 0.5],
+                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                ],
+                colors: [
+                    .blue, .cyan, .purple,
+                    .indigo, .pink, .orange,
+                    .purple, .blue, .cyan
+                ]
+            )
+            .ignoresSafeArea()
+            .opacity(0.5)
             
-            VStack(spacing: 24) {
-                Image(systemName: "cloud.sun.rain.fill")
-                    .font(.system(size: 120))
-                    .symbolRenderingMode(.multicolor)
-                    .symbolEffect(.pulse)
+            // Floating weather particles
+            FloatingSparkles(count: 20)
+            
+            VStack(spacing: 40) {
+                Spacer()
                 
-                VStack(spacing: 12) {
-                    Text("Welcome to Weather")
-                        .font(.largeTitle.bold())
+                VStack(spacing: 24) {
+                    Image(systemName: "cloud.sun.rain.fill")
+                        .font(.system(size: 120))
+                        .symbolRenderingMode(.multicolor)
+                        .symbolEffect(.pulse)
+                        .symbolEffect(.variableColor.iterative)
                     
-                    Text("Get accurate weather forecasts\nfor your location")
-                        .font(.body)
+                    VStack(spacing: 12) {
+                        Text("Welcome to Weather")
+                            .font(.largeTitle.bold())
+                        
+                        Text("Get accurate weather forecasts\nfor your location")
+                            .font(.body)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding()
+                    .glassEffect(.regular.tint(.white.opacity(0.1)))
+                }
+                
+                Spacer()
+                
+                VStack(spacing: 16) {
+                    Button(action: requestLocationAction) {
+                        Label("Enable Location", systemImage: "location.fill")
+                            .font(.headline)
+                            .frame(maxWidth: 300)
+                            .padding(.vertical, 4)
+                    }
+                    .buttonStyle(.glassProminent)
+                    .controlSize(.large)
+                    
+                    Text("Location access is required to show\nweather for your area")
+                        .font(.caption)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                }
+                .padding(.bottom, 40)
+            }
+            .padding()
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
+    }
+}
+
+// MARK: - Visual Effects Showcase
+
+struct VisualEffectsShowcase: View {
+    @State private var isAnimating = false
+    @State private var showExtraGlass = false
+    @Namespace private var glassNamespace
+    
+    var body: some View {
+        ScrollView {
+            VStack(spacing: 40) {
+                // Header
+                VStack(spacing: 8) {
+                    Text("Visual Effects")
+                        .font(.largeTitle.bold())
+                    
+                    Text("Explore the latest iOS design effects")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.top, 20)
+                
+                // Liquid Glass Section
+                liquidGlassSection
+                
+                // Interactive Glass Buttons
+                glassButtonsSection
+                
+                // Morphing Glass Animation
+                morphingGlassSection
+                
+                // Material Effects
+                materialEffectsSection
+                
+                // Symbol Effects
+                symbolEffectsSection
+                
+                // Mesh Gradients
+                meshGradientSection
+            }
+            .padding()
+        }
+        .background(
+            MeshGradient(
+                width: 3,
+                height: 3,
+                points: [
+                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                    [0.0, 0.5], [isAnimating ? 0.8 : 0.2, 0.5], [1.0, 0.5],
+                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                ],
+                colors: [
+                    .blue, .cyan, .purple,
+                    .indigo, .pink, .orange,
+                    .purple, .blue, .cyan
+                ]
+            )
+            .ignoresSafeArea()
+            .opacity(0.4)
+        )
+        .onAppear {
+            withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
+                isAnimating = true
+            }
+        }
+    }
+    
+    private var liquidGlassSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Liquid Glass", icon: "drop.fill")
+            
+            GlassEffectContainer(spacing: 30) {
+                HStack(spacing: 30) {
+                    glassCard(icon: "sun.max.fill", title: "Sunny", color: .orange)
+                    glassCard(icon: "cloud.rain.fill", title: "Rainy", color: .blue)
                 }
             }
-            
-            Spacer()
+        }
+    }
+    
+    private func glassCard(icon: String, title: String, color: Color) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 40))
+                .symbolRenderingMode(.multicolor)
+            Text(title)
+                .font(.headline)
+        }
+        .frame(width: 140, height: 140)
+        .glassEffect(.regular.tint(color.opacity(0.3)).interactive())
+    }
+    
+    private var glassButtonsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Interactive Glass Buttons", icon: "hand.tap.fill")
             
             VStack(spacing: 16) {
-                Button(action: requestLocationAction) {
-                    Label("Enable Location", systemImage: "location.fill")
-                        .font(.headline)
-                        .frame(maxWidth: 300)
-                        .padding(.vertical, 4)
+                Button("Standard Glass") {
+                    withAnimation(.spring(response: 0.3)) {
+                        showExtraGlass.toggle()
+                    }
+                }
+                .buttonStyle(.glass)
+                .controlSize(.large)
+                
+                Button("Prominent Glass") {
+                    withAnimation(.spring(response: 0.3)) {
+                        showExtraGlass.toggle()
+                    }
                 }
                 .buttonStyle(.glassProminent)
                 .controlSize(.large)
-                
-                Text("Location access is required to show\nweather for your area")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
             }
-            .padding(.bottom, 40)
         }
-        .padding()
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            LinearGradient(
-                colors: [.blue.opacity(0.3), .cyan.opacity(0.2)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+    }
+    
+    private var morphingGlassSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Morphing Transitions", icon: "wand.and.stars")
+            
+            GlassEffectContainer(spacing: 40) {
+                HStack(spacing: 40) {
+                    Image(systemName: "star.fill")
+                        .font(.system(size: 36))
+                        .frame(width: 80, height: 80)
+                        .glassEffect(.regular.tint(.yellow.opacity(0.3)))
+                        .glassEffectID("star", in: glassNamespace)
+                    
+                    if showExtraGlass {
+                        Image(systemName: "moon.stars.fill")
+                            .font(.system(size: 36))
+                            .frame(width: 80, height: 80)
+                            .glassEffect(.regular.tint(.indigo.opacity(0.3)))
+                            .glassEffectID("moon", in: glassNamespace)
+                            .transition(.scale.combined(with: .opacity))
+                    }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 120)
+            
+            Text("Tap the buttons above to morph")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity)
+        }
+    }
+    
+    private var materialEffectsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Material Effects", icon: "circle.hexagongrid.fill")
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 16) {
+                    materialCard("Ultra Thin", material: .ultraThinMaterial)
+                    materialCard("Thin", material: .thinMaterial)
+                    materialCard("Regular", material: .regularMaterial)
+                    materialCard("Thick", material: .thickMaterial)
+                    materialCard("Ultra Thick", material: .ultraThickMaterial)
+                }
+                .padding(.horizontal, 4)
+            }
+        }
+    }
+    
+    private func materialCard(_ title: String, material: Material) -> some View {
+        VStack(spacing: 8) {
+            RoundedRectangle(cornerRadius: 12)
+                .fill(.blue.gradient)
+                .frame(width: 100, height: 60)
+                .overlay {
+                    Text("BG")
+                        .font(.caption.bold())
+                        .foregroundStyle(.white)
+                }
+            
+            Text(title)
+                .font(.caption)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(material, in: Capsule())
+        }
+    }
+    
+    private var symbolEffectsSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("SF Symbol Effects", icon: "rays")
+            
+            GlassEffectContainer(spacing: 20) {
+                HStack(spacing: 20) {
+                    symbolWithEffect("cloud.bolt.fill", effect: .variableColor.iterative, color: .yellow)
+                    symbolWithEffect("heart.fill", effect: .pulse, color: .red)
+                    symbolWithEffect("star.fill", effect: .breathe, color: .pink)
+                    symbolWithEffect("waveform", effect: .variableColor.iterative.reversing, color: .green)
+                }
+            }
+        }
+    }
+    
+    private func symbolWithEffect(_ name: String, effect: some SymbolEffect & IndefiniteSymbolEffect, color: Color) -> some View {
+        Image(systemName: name)
+            .font(.system(size: 44))
+            .symbolRenderingMode(.hierarchical)
+            .foregroundStyle(color.gradient)
+            .symbolEffect(effect)
+            .frame(width: 70, height: 70)
+            .glassEffect(.regular.tint(color.opacity(0.2)))
+    }
+    
+    private var meshGradientSection: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            sectionTitle("Mesh Gradients", icon: "grid")
+            
+            ZStack {
+                MeshGradient(
+                    width: 3,
+                    height: 3,
+                    points: [
+                        [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                        [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
+                        [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                    ],
+                    colors: [
+                        .purple, .blue, .cyan,
+                        .pink, .white, .orange,
+                        .red, .yellow, .green
+                    ]
+                )
+                .frame(height: 200)
+                .clipShape(RoundedRectangle(cornerRadius: 20))
+                
+                VStack {
+                    Text("Smooth Color Transitions")
+                        .font(.title3.bold())
+                        .foregroundStyle(.white)
+                    
+                    Text("Mesh gradients create fluid color flows")
+                        .font(.caption)
+                        .foregroundStyle(.white.opacity(0.8))
+                }
+                .padding()
+                .glassEffect(.regular.tint(.white.opacity(0.1)))
+            }
+        }
+        .padding(.bottom, 40)
+    }
+    
+    private func sectionTitle(_ text: String, icon: String) -> some View {
+        Label(text, systemImage: icon)
+            .font(.title2.bold())
+            .foregroundStyle(.primary)
     }
 }
 
