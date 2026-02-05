@@ -6,56 +6,147 @@
 //
 
 import SwiftUI
-import SwiftData
+import CoreLocation
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
-
+    @State private var locationManager = LocationManager()
+    @State private var weatherService = WeatherService()
+    
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
-                    }
-                }
-                .onDelete(perform: deleteItems)
+        Group {
+            if let weatherData = weatherService.weatherData {
+                WeatherDetailView(weatherData: weatherData)
+            } else if weatherService.isLoading {
+                LoadingView()
+            } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
+                ErrorView(message: errorMessage, retryAction: fetchWeather)
+            } else {
+                WelcomeView(requestLocationAction: requestLocation)
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
+        }
+        .task {
+            await checkAndFetchWeather()
+        }
+        .onChange(of: locationManager.location) { _, newLocation in
+            if let location = newLocation {
+                Task {
+                    await weatherService.fetchWeather(
+                        latitude: location.coordinate.latitude,
+                        longitude: location.coordinate.longitude
+                    )
                 }
             }
-        } detail: {
-            Text("Select an item")
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    private func checkAndFetchWeather() async {
+        if locationManager.authorizationStatus == .authorizedWhenInUse ||
+           locationManager.authorizationStatus == .authorizedAlways {
+            locationManager.requestLocation()
         }
     }
+    
+    private func requestLocation() {
+        locationManager.requestLocation()
+    }
+    
+    private func fetchWeather() {
+        if let location = locationManager.location {
+            Task {
+                await weatherService.fetchWeather(
+                    latitude: location.coordinate.latitude,
+                    longitude: location.coordinate.longitude
+                )
+            }
+        } else {
+            locationManager.requestLocation()
+        }
+    }
+}
 
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
+struct LoadingView: View {
+    var body: some View {
+        VStack(spacing: 20) {
+            ProgressView()
+                .scaleEffect(1.5)
+            
+            Text("Loading weather data...")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+        }
+    }
+}
+
+struct ErrorView: View {
+    let message: String
+    let retryAction: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 60))
+                .foregroundStyle(.orange)
+            
+            Text("Oops!")
+                .font(.title.bold())
+            
+            Text(message)
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+            
+            Button(action: retryAction) {
+                Label("Retry", systemImage: "arrow.clockwise")
+                    .font(.headline)
+                    .padding()
+                    .background(.blue, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(.white)
             }
         }
+        .padding()
+    }
+}
+
+struct WelcomeView: View {
+    let requestLocationAction: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 30) {
+            Image(systemName: "cloud.sun.rain.fill")
+                .font(.system(size: 100))
+                .symbolRenderingMode(.multicolor)
+            
+            VStack(spacing: 12) {
+                Text("Welcome to Weather")
+                    .font(.largeTitle.bold())
+                
+                Text("Get accurate weather forecasts for your location")
+                    .font(.body)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+            }
+            
+            Button(action: requestLocationAction) {
+                Label("Enable Location", systemImage: "location.fill")
+                    .font(.headline)
+                    .padding()
+                    .frame(maxWidth: 300)
+                    .background(.blue, in: RoundedRectangle(cornerRadius: 12))
+                    .foregroundStyle(.white)
+            }
+            
+            Text("Location access is required to show weather for your area")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal)
+        }
+        .padding()
     }
 }
 
 #Preview {
     ContentView()
-        .modelContainer(for: Item.self, inMemory: true)
 }

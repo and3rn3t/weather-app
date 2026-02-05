@@ -23,7 +23,16 @@ struct CurrentWeather: Codable {
     let apparentTemperature: Double
     let weatherCode: Int
     let windSpeed10m: Double
+    let windDirection10m: Double
+    let windGusts10m: Double
     let relativeHumidity2m: Int
+    let dewPoint2m: Double
+    let pressure: Double
+    let cloudCover: Int
+    let visibility: Double
+    let uvIndex: Double
+    let isDay: Int
+    let precipitation: Double
     
     enum CodingKeys: String, CodingKey {
         case time
@@ -31,7 +40,16 @@ struct CurrentWeather: Codable {
         case apparentTemperature = "apparent_temperature"
         case weatherCode = "weather_code"
         case windSpeed10m = "wind_speed_10m"
+        case windDirection10m = "wind_direction_10m"
+        case windGusts10m = "wind_gusts_10m"
         case relativeHumidity2m = "relative_humidity_2m"
+        case dewPoint2m = "dew_point_2m"
+        case pressure = "surface_pressure"
+        case cloudCover = "cloud_cover"
+        case visibility
+        case uvIndex = "uv_index"
+        case isDay = "is_day"
+        case precipitation
     }
 }
 
@@ -53,6 +71,11 @@ struct DailyWeather: Codable {
     let temperature2mMax: [Double]
     let temperature2mMin: [Double]
     let precipitationProbabilityMax: [Int]
+    let sunrise: [String]
+    let sunset: [String]
+    let uvIndexMax: [Double]
+    let windSpeed10mMax: [Double]
+    let windGusts10mMax: [Double]
     
     enum CodingKeys: String, CodingKey {
         case time
@@ -60,6 +83,11 @@ struct DailyWeather: Codable {
         case temperature2mMax = "temperature_2m_max"
         case temperature2mMin = "temperature_2m_min"
         case precipitationProbabilityMax = "precipitation_probability_max"
+        case sunrise
+        case sunset
+        case uvIndexMax = "uv_index_max"
+        case windSpeed10mMax = "wind_speed_10m_max"
+        case windGusts10mMax = "wind_gusts_10m_max"
     }
 }
 

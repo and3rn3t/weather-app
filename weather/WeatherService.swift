@@ -24,9 +24,9 @@ final class WeatherService {
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,relative_humidity_2m"),
+            URLQueryItem(name: "current", value: "temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,dew_point_2m,surface_pressure,cloud_cover,visibility,uv_index,is_day,precipitation"),
             URLQueryItem(name: "hourly", value: "temperature_2m,weather_code"),
-            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max"),
+            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,sunrise,sunset,uv_index_max,wind_speed_10m_max,wind_gusts_10m_max"),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "wind_speed_unit", value: "mph"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
