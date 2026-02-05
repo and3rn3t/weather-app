@@ -6,6 +6,12 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3D9FF7EE2F3564E400697F77 /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D9FF7ED2F3564E400697F77 /* WidgetKit.framework */; };
+		3D9FF7F02F3564E400697F77 /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 3D9FF7EF2F3564E400697F77 /* SwiftUI.framework */; };
+		3D9FF8012F3564E400697F77 /* Andernet Weather WidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 3D9FF7EB2F3564E400697F77 /* Andernet Weather WidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3D10351E2F34325200E76DAE /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,12 +27,37 @@
 			remoteGlobalIDString = 3D10350B2F34325100E76DAE;
 			remoteInfo = weather;
 		};
+		3D9FF7FF2F3564E400697F77 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 3D1035042F34325100E76DAE /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 3D9FF7EA2F3564E400697F77;
+			remoteInfo = "Andernet Weather WidgetExtension";
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		3D9FF8022F3564E400697F77 /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				3D9FF8012F3564E400697F77 /* Andernet Weather WidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		3D10350C2F34325100E76DAE /* weather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = weather.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D10351D2F34325200E76DAE /* weatherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = weatherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D1035272F34325200E76DAE /* weatherUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = weatherUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D9FF7EB2F3564E400697F77 /* Andernet Weather WidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = "Andernet Weather WidgetExtension.appex"; sourceTree = BUILT_PRODUCTS_DIR; };
+		3D9FF7ED2F3564E400697F77 /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		3D9FF7EF2F3564E400697F77 /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		3D9FF8072F3565A600697F77 /* Andernet Weather WidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = "Andernet Weather WidgetExtension.entitlements"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -36,6 +67,13 @@
 				Info.plist,
 			);
 			target = 3D10350B2F34325100E76DAE /* weather */;
+		};
+		3D9FF8062F3564E400697F77 /* Exceptions for "Andernet Weather Widget" folder in "Andernet Weather WidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 3D9FF7EA2F3564E400697F77 /* Andernet Weather WidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -56,6 +94,14 @@
 		3D10352A2F34325200E76DAE /* weatherUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = weatherUITests;
+			sourceTree = "<group>";
+		};
+		3D9FF7F12F3564E400697F77 /* Andernet Weather Widget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				3D9FF8062F3564E400697F77 /* Exceptions for "Andernet Weather Widget" folder in "Andernet Weather WidgetExtension" target */,
+			);
+			path = "Andernet Weather Widget";
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -82,15 +128,27 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3D9FF7E82F3564E400697F77 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				3D9FF7F02F3564E400697F77 /* SwiftUI.framework in Frameworks */,
+				3D9FF7EE2F3564E400697F77 /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		3D1035032F34325100E76DAE = {
 			isa = PBXGroup;
 			children = (
+				3D9FF8072F3565A600697F77 /* Andernet Weather WidgetExtension.entitlements */,
 				3D10350E2F34325100E76DAE /* weather */,
 				3D1035202F34325200E76DAE /* weatherTests */,
 				3D10352A2F34325200E76DAE /* weatherUITests */,
+				3D9FF7F12F3564E400697F77 /* Andernet Weather Widget */,
+				3D9FF7EC2F3564E400697F77 /* Frameworks */,
 				3D10350D2F34325100E76DAE /* Products */,
 			);
 			sourceTree = "<group>";
@@ -101,8 +159,18 @@
 				3D10350C2F34325100E76DAE /* weather.app */,
 				3D10351D2F34325200E76DAE /* weatherTests.xctest */,
 				3D1035272F34325200E76DAE /* weatherUITests.xctest */,
+				3D9FF7EB2F3564E400697F77 /* Andernet Weather WidgetExtension.appex */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		3D9FF7EC2F3564E400697F77 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				3D9FF7ED2F3564E400697F77 /* WidgetKit.framework */,
+				3D9FF7EF2F3564E400697F77 /* SwiftUI.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -115,10 +183,12 @@
 				3D1035082F34325100E76DAE /* Sources */,
 				3D1035092F34325100E76DAE /* Frameworks */,
 				3D10350A2F34325100E76DAE /* Resources */,
+				3D9FF8022F3564E400697F77 /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				3D9FF8002F3564E400697F77 /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				3D10350E2F34325100E76DAE /* weather */,
@@ -176,6 +246,28 @@
 			productReference = 3D1035272F34325200E76DAE /* weatherUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		3D9FF7EA2F3564E400697F77 /* Andernet Weather WidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 3D9FF8052F3564E400697F77 /* Build configuration list for PBXNativeTarget "Andernet Weather WidgetExtension" */;
+			buildPhases = (
+				3D9FF7E72F3564E400697F77 /* Sources */,
+				3D9FF7E82F3564E400697F77 /* Frameworks */,
+				3D9FF7E92F3564E400697F77 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				3D9FF7F12F3564E400697F77 /* Andernet Weather Widget */,
+			);
+			name = "Andernet Weather WidgetExtension";
+			packageProductDependencies = (
+			);
+			productName = "Andernet Weather WidgetExtension";
+			productReference = 3D9FF7EB2F3564E400697F77 /* Andernet Weather WidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -197,6 +289,9 @@
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = 3D10350B2F34325100E76DAE;
 					};
+					3D9FF7EA2F3564E400697F77 = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = 3D1035072F34325100E76DAE /* Build configuration list for PBXProject "weather" */;
@@ -216,6 +311,7 @@
 				3D10350B2F34325100E76DAE /* weather */,
 				3D10351C2F34325200E76DAE /* weatherTests */,
 				3D1035262F34325200E76DAE /* weatherUITests */,
+				3D9FF7EA2F3564E400697F77 /* Andernet Weather WidgetExtension */,
 			);
 		};
 /* End PBXProject section */
@@ -236,6 +332,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		3D1035252F34325200E76DAE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		3D9FF7E92F3564E400697F77 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -266,6 +369,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		3D9FF7E72F3564E400697F77 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -278,6 +388,11 @@
 			isa = PBXTargetDependency;
 			target = 3D10350B2F34325100E76DAE /* weather */;
 			targetProxy = 3D1035282F34325200E76DAE /* PBXContainerItemProxy */;
+		};
+		3D9FF8002F3564E400697F77 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 3D9FF7EA2F3564E400697F77 /* Andernet Weather WidgetExtension */;
+			targetProxy = 3D9FF7FF2F3564E400697F77 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -561,6 +676,68 @@
 			};
 			name = Release;
 		};
+		3D9FF8032F3564E400697F77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "Andernet Weather WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C8U3P6AJ6L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Andernet Weather Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Andernet Weather Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.andernet.weather.Andernet-Weather-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		3D9FF8042F3564E400697F77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = "Andernet Weather WidgetExtension.entitlements";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = C8U3P6AJ6L;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = "Andernet Weather Widget/Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = "Andernet Weather Widget";
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "dev.andernet.weather.Andernet-Weather-Widget";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -596,6 +773,15 @@
 			buildConfigurations = (
 				3D1035392F34325200E76DAE /* Debug */,
 				3D10353A2F34325200E76DAE /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		3D9FF8052F3564E400697F77 /* Build configuration list for PBXNativeTarget "Andernet Weather WidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				3D9FF8032F3564E400697F77 /* Debug */,
+				3D9FF8042F3564E400697F77 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
