@@ -1023,7 +1023,8 @@ struct WeatherRecommendationsCard: View {
         }
         
         // Rain recommendation
-        if let rainChance = hourly.precipitationProbability.prefix(6).max(),
+        if let precipProbs = hourly.precipitationProbability,
+           let rainChance = precipProbs.prefix(6).max(),
            rainChance > 30 {
             recs.append(Recommendation(
                 icon: "umbrella.fill",

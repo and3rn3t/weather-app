@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct SettingsView: View {
-    @Environment(SettingsManager.self) private var settings
-    @Environment(NotificationManager.self) private var notifications
+    @Bindable var settings: SettingsManager
+    @Bindable var notifications: NotificationManager
     @Environment(\.dismiss) private var dismiss
+    
+    init(settings: SettingsManager, notifications: NotificationManager) {
+        self.settings = settings
+        self.notifications = notifications
+    }
     
     var body: some View {
         NavigationStack {
@@ -184,7 +189,7 @@ struct SettingsView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.customGlass)
                 }
             }
         }
@@ -192,7 +197,5 @@ struct SettingsView: View {
 }
 
 #Preview {
-    SettingsView()
-        .environment(SettingsManager())
-        .environment(NotificationManager())
+    SettingsView(settings: SettingsManager(), notifications: NotificationManager())
 }

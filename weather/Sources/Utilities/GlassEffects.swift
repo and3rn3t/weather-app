@@ -133,7 +133,7 @@ struct GlassEffectContainer<Content: View>: View {
 
 // MARK: - Glass Button Styles
 
-struct GlassButtonStyle: ButtonStyle {
+struct CustomGlassButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     
     func makeBody(configuration: Configuration) -> some View {
@@ -162,7 +162,7 @@ struct GlassButtonStyle: ButtonStyle {
     }
 }
 
-struct GlassProminentButtonStyle: ButtonStyle {
+struct CustomGlassProminentButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
     
     func makeBody(configuration: Configuration) -> some View {
@@ -209,10 +209,10 @@ struct GlassProminentButtonStyle: ButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == GlassButtonStyle {
-    static var glass: GlassButtonStyle { GlassButtonStyle() }
+extension ButtonStyle where Self == CustomGlassButtonStyle {
+    static var customGlass: CustomGlassButtonStyle { CustomGlassButtonStyle() }
 }
 
-extension ButtonStyle where Self == GlassProminentButtonStyle {
-    static var glassProminent: GlassProminentButtonStyle { GlassProminentButtonStyle() }
+extension ButtonStyle where Self == CustomGlassProminentButtonStyle {
+    static var customGlassProminent: CustomGlassProminentButtonStyle { CustomGlassProminentButtonStyle() }
 }

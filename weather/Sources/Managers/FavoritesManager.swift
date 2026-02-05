@@ -8,39 +8,7 @@
 import Foundation
 import CoreLocation
 import SwiftData
-
-// MARK: - Saved Location Model
-
-@Model
-final class SavedLocation {
-    var id: UUID
-    var name: String
-    var latitude: Double
-    var longitude: Double
-    var order: Int
-    var dateAdded: Date
-    var isCurrentLocation: Bool
-    
-    init(
-        name: String,
-        latitude: Double,
-        longitude: Double,
-        order: Int = 0,
-        isCurrentLocation: Bool = false
-    ) {
-        self.id = UUID()
-        self.name = name
-        self.latitude = latitude
-        self.longitude = longitude
-        self.order = order
-        self.dateAdded = Date()
-        self.isCurrentLocation = isCurrentLocation
-    }
-    
-    var coordinate: CLLocationCoordinate2D {
-        CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
-    }
-}
+import SwiftUI
 
 // MARK: - Favorites Manager
 

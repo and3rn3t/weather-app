@@ -111,11 +111,11 @@ struct SmallWeatherWidgetView: View {
                     .fontWeight(.semibold)
                     .lineLimit(1)
                 
-                Image(systemName: WeatherCondition(code: weather.current.weatherCode).icon)
+                Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
                     .font(.system(size: 32))
                     .symbolRenderingMode(.multicolor)
                 
-                Text("\(Int(weather.current.temperature))°")
+                Text("\(Int(weather.current.temperature2m))°")
                     .font(.system(size: 36, weight: .semibold))
                 
                 Text(WeatherCondition(code: weather.current.weatherCode).description)
@@ -176,12 +176,12 @@ struct MediumWeatherWidgetView: View {
                         .lineLimit(1)
                     
                     HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: WeatherCondition(code: weather.current.weatherCode).icon)
+                        Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
                             .font(.system(size: 48))
                             .symbolRenderingMode(.multicolor)
                         
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("\(Int(weather.current.temperature))°")
+                            Text("\(Int(weather.current.temperature2m))°")
                                 .font(.system(size: 48, weight: .semibold))
                             
                             Text(WeatherCondition(code: weather.current.weatherCode).description)
@@ -197,19 +197,19 @@ struct MediumWeatherWidgetView: View {
                     HStack(spacing: 6) {
                         Image(systemName: "wind")
                             .font(.caption)
-                        Text("\(Int(weather.current.windSpeed)) mph")
+                        Text("\(Int(weather.current.windSpeed10m)) mph")
                             .font(.caption)
                     }
                     
                     HStack(spacing: 6) {
                         Image(systemName: "humidity")
                             .font(.caption)
-                        Text("\(weather.current.humidity)%")
+                        Text("\(weather.current.relativeHumidity2m)%")
                             .font(.caption)
                     }
                     
-                    if let high = weather.daily.temperatureMax.first,
-                       let low = weather.daily.temperatureMin.first {
+                    if let high = weather.daily.temperature2mMax.first,
+                       let low = weather.daily.temperature2mMin.first {
                         HStack(spacing: 6) {
                             Image(systemName: "thermometer")
                                 .font(.caption)
@@ -279,21 +279,21 @@ struct LargeWeatherWidgetView: View {
                     
                     Spacer()
                     
-                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).icon)
+                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
                         .font(.system(size: 48))
                         .symbolRenderingMode(.multicolor)
                 }
                 
                 // Current temperature
                 HStack(alignment: .top) {
-                    Text("\(Int(weather.current.temperature))°")
+                    Text("\(Int(weather.current.temperature2m))°")
                         .font(.system(size: 56, weight: .semibold))
                     
                     Spacer()
                     
                     VStack(alignment: .trailing, spacing: 8) {
-                        if let high = weather.daily.temperatureMax.first,
-                           let low = weather.daily.temperatureMin.first {
+                        if let high = weather.daily.temperature2mMax.first,
+                           let low = weather.daily.temperature2mMin.first {
                             Text("H:\(Int(high))° L:\(Int(low))°")
                                 .font(.subheadline)
                         }
@@ -313,11 +313,11 @@ struct LargeWeatherWidgetView: View {
                             Text(formattedHour(weather.hourly.time[index]))
                                 .font(.caption2)
                             
-                            Image(systemName: WeatherCondition(code: weather.hourly.weatherCode[index]).icon)
+                            Image(systemName: WeatherCondition(code: weather.hourly.weatherCode[index]).symbolName)
                                 .font(.body)
                                 .symbolRenderingMode(.multicolor)
                             
-                            Text("\(Int(weather.hourly.temperature[index]))°")
+                            Text("\(Int(weather.hourly.temperature2m[index]))°")
                                 .font(.caption.bold())
                         }
                         .frame(maxWidth: .infinity)
@@ -447,10 +447,10 @@ struct LockScreenWeatherWidgetView: View {
     private var circularView: some View {
         ZStack {
             if let weather = entry.weatherData {
-                Gauge(value: weather.current.temperature, in: 0...100) {
-                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).icon)
+                Gauge(value: weather.current.temperature2m, in: 0...100) {
+                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
                 } currentValueLabel: {
-                    Text("\(Int(weather.current.temperature))°")
+                    Text("\(Int(weather.current.temperature2m))°")
                         .font(.caption2.bold())
                 }
                 .gaugeStyle(.accessoryCircular)
@@ -465,10 +465,10 @@ struct LockScreenWeatherWidgetView: View {
         VStack(alignment: .leading, spacing: 4) {
             if let weather = entry.weatherData {
                 HStack(spacing: 6) {
-                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).icon)
+                    Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
                         .font(.title2)
                     
-                    Text("\(Int(weather.current.temperature))°")
+                    Text("\(Int(weather.current.temperature2m))°")
                         .font(.title2.bold())
                 }
                 
@@ -488,7 +488,7 @@ struct LockScreenWeatherWidgetView: View {
     
     private var inlineView: some View {
         if let weather = entry.weatherData {
-            Text("\(Int(weather.current.temperature))° \(WeatherCondition(code: weather.current.weatherCode).description)")
+            Text("\(Int(weather.current.temperature2m))° \(WeatherCondition(code: weather.current.weatherCode).description)")
         } else {
             Text("Loading weather...")
         }
@@ -496,8 +496,10 @@ struct LockScreenWeatherWidgetView: View {
 }
 
 // MARK: - Widget Bundle
+// Note: To use this widget, create a Widget Extension target in Xcode
+// and move this code there. The @main attribute conflicts with the app's entry point.
 
-@main
+// @main - Uncomment when moved to Widget Extension target
 struct WeatherWidgetBundle: WidgetBundle {
     var body: some Widget {
         WeatherWidget()

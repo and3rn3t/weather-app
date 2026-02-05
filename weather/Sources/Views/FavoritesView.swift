@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreLocation
 
 struct FavoritesView: View {
     @Environment(FavoritesManager.self) private var favoritesManager
@@ -32,7 +33,7 @@ struct FavoritesView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .buttonStyle(.glass)
+                    .buttonStyle(.customGlass)
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -41,7 +42,7 @@ struct FavoritesView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.customGlassProminent)
                 }
             }
             .sheet(isPresented: $showingSearch) {
@@ -63,7 +64,7 @@ struct FavoritesView: View {
             } label: {
                 Label("Add Location", systemImage: "plus")
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.customGlassProminent)
             .controlSize(.large)
         }
     }
@@ -135,7 +136,7 @@ struct FavoritesButton: View {
             Image(systemName: isFavorite ? "star.fill" : "star")
                 .font(.title3)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(isFavorite ? .yellow.gradient : .blue.gradient)
+                .foregroundStyle(isFavorite ? Color.yellow : Color.blue)
                 .frame(width: 44, height: 44)
                 .background(.secondary.opacity(0.2), in: Circle())
                 .symbolEffect(.bounce, value: isFavorite)

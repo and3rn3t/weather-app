@@ -57,8 +57,8 @@ class NotificationManager: NSObject {
         content.title = "Daily Weather Forecast"
         
         let condition = WeatherCondition(code: weather.current.weatherCode)
-        let high = Int(weather.daily.temperatureMax.first ?? 0)
-        let low = Int(weather.daily.temperatureMin.first ?? 0)
+        let high = Int(weather.daily.temperature2mMax.first ?? 0)
+        let low = Int(weather.daily.temperature2mMin.first ?? 0)
         
         let location = locationName ?? "your location"
         content.body = "Today in \(location): \(condition.description). High \(high)°, Low \(low)°"
@@ -126,7 +126,7 @@ class NotificationManager: NSObject {
             guard let time = formatter.date(from: timeString) else { continue }
             
             if time > now && time <= twoHoursLater {
-                let precipProb = weather.hourly.precipitationProbability[index]
+                let precipProb = weather.hourly.precipitationProbability?[index] ?? 0
                 if precipProb > 50 {
                     willRain = true
                     break

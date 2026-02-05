@@ -384,7 +384,7 @@ struct WeatherParticleContainer: View {
             case .thunderstorm:
                 RainEffect(intensity: 1.0)
                 LightningEffect()
-            case .fog:
+            case .foggy:
                 FogEffect(intensity: 0.7)
             case .cloudy, .partlyCloudy:
                 CloudsEffect(speed: 0.5)

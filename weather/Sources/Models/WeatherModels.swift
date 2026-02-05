@@ -58,11 +58,13 @@ struct HourlyWeather: Codable {
     let time: [String]
     let temperature2m: [Double]
     let weatherCode: [Int]
+    let precipitationProbability: [Int]?
     
     enum CodingKeys: String, CodingKey {
         case time
         case temperature2m = "temperature_2m"
         case weatherCode = "weather_code"
+        case precipitationProbability = "precipitation_probability"
     }
 }
 

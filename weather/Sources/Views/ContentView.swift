@@ -319,7 +319,7 @@ struct ErrorView: View {
                     .frame(maxWidth: 300)
                     .padding(.vertical, 4)
             }
-            .buttonStyle(.glassProminent)
+            .buttonStyle(.customGlassProminent)
             .controlSize(.large)
             .padding(.bottom, 40)
         }
@@ -388,7 +388,7 @@ struct WelcomeView: View {
                             .frame(maxWidth: 300)
                             .padding(.vertical, 4)
                     }
-                    .buttonStyle(.glassProminent)
+                    .buttonStyle(.customGlassProminent)
                     .controlSize(.large)
                     
                     Text("Location access is required to show\nweather for your area")
@@ -513,7 +513,7 @@ struct VisualEffectsShowcase: View {
                         showExtraGlass.toggle()
                     }
                 }
-                .buttonStyle(.glass)
+                .buttonStyle(.customGlass)
                 .controlSize(.large)
                 
                 Button("Prominent Glass") {
@@ -521,7 +521,7 @@ struct VisualEffectsShowcase: View {
                         showExtraGlass.toggle()
                     }
                 }
-                .buttonStyle(.glassProminent)
+                .buttonStyle(.customGlassProminent)
                 .controlSize(.large)
             }
         }

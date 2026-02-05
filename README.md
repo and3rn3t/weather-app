@@ -19,9 +19,8 @@ weather/
 │   │   │   ├── LocationSearchView.swift
 │   │   │   └── WeatherWidget.swift
 │   │   ├── Models/                   # Data models
-│   │   │   ├── WeatherModels.swift
-│   │   │   ├── Models.swift
-│   │   │   └── Item.swift
+│   │   │   ├── WeatherModels.swift   # API response models
+│   │   │   └── Models.swift          # App models & enums
 │   │   ├── Services/                 # API & network services
 │   │   │   └── WeatherService.swift
 │   │   ├── Managers/                 # State & data managers
@@ -38,7 +37,9 @@ weather/
 │   └── weather.entitlements
 ├── weather.xcodeproj/                # Xcode project file
 ├── weatherTests/                     # Unit tests
-└── weatherUITests/                   # UI tests
+├── weatherUITests/                   # UI tests
+├── .gitignore
+└── .swiftlint.yml                    # SwiftLint configuration
 ```
 
 ## 🚀 Getting Started
