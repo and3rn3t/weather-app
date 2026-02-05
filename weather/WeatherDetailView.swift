@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Charts
+import CoreLocation
 
 struct WeatherDetailView: View {
     let weatherData: WeatherData
@@ -15,46 +16,64 @@ struct WeatherDetailView: View {
     let onSearchTapped: () -> Void
     
     @Namespace private var glassNamespace
+    @ObservedObject var settings: SimpleSettingsManager
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: 20) {
-                // Location Header with search button
-                LocationHeader(
-                    locationName: locationName,
-                    onSearchTapped: onSearchTapped
-                )
-                
-                // Current Weather - Prominent card
-                CurrentWeatherCard(current: weatherData.current)
-                
-                // Use GlassEffectContainer for grouped cards
-                GlassEffectContainer(spacing: 30.0) {
-                    VStack(spacing: 20) {
-                        // Sun & Moon Info
-                        SunMoonCard(
-                            daily: weatherData.daily,
-                            isDay: weatherData.current.isDay == 1,
-                            timezone: weatherData.timezone
-                        )
-                        
-                        // Hourly Forecast
-                        HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
-                        
-                        // Daily Forecast
-                        DailyForecastCard(daily: weatherData.daily)
-                        
-                        // Additional Details
-                        WeatherDetailsCard(current: weatherData.current)
+        ZStack {
+            // Weather background
+            weatherBackground
+            
+            ScrollView {
+                VStack(spacing: 20) {
+                    // Location Header with search button
+                    LocationHeader(
+                        locationName: locationName,
+                        onSearchTapped: onSearchTapped
+                    )
+                    
+                    // Current Weather - Prominent card
+                    CurrentWeatherCard(current: weatherData.current)
+                        .environmentObject(settings)
+                    
+                    // Use GlassEffectContainer for grouped cards
+                    GlassEffectContainer(spacing: 30.0) {
+                        VStack(spacing: 20) {
+                            // Weather Recommendations - Smart suggestions
+                            WeatherRecommendationsCard(
+                                current: weatherData.current,
+                                hourly: weatherData.hourly
+                            )
+                            
+                            // Sun & Moon Info
+                            SunMoonCard(
+                                daily: weatherData.daily,
+                                isDay: weatherData.current.isDay == 1,
+                                timezone: weatherData.timezone
+                            )
+                            
+                            // Hourly Forecast with interactive chart
+                            HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
+                                .environmentObject(settings)
+                            
+                            // Daily Forecast
+                            DailyForecastCard(daily: weatherData.daily)
+                                .environmentObject(settings)
+                            
+                            // Air Quality Index
+                            AirQualityCard(current: weatherData.current)
+                            
+                            // Additional Details
+                            WeatherDetailsCard(current: weatherData.current)
+                                .environmentObject(settings)
+                        }
                     }
                 }
+                .padding()
             }
-            .padding()
+            .refreshable {
+                await onRefresh()
+            }
         }
-        .refreshable {
-            await onRefresh()
-        }
-        .background(weatherBackground)
     }
     
     private var weatherBackground: some View {
@@ -68,17 +87,22 @@ struct WeatherDetailView: View {
             )
             
             // Subtle mesh gradient overlay for depth (iOS 18+)
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: [
-                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                    [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
-                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
-                ],
-                colors: meshColors(for: condition)
-            )
-            .opacity(0.3)
+            if settings.showAnimatedBackgrounds {
+                MeshGradient(
+                    width: 3,
+                    height: 3,
+                    points: [
+                        [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                        [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
+                        [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                    ],
+                    colors: meshColors(for: condition)
+                )
+                .opacity(0.3)
+            }
+            
+            // Weather particles - temporarily disabled until file is added
+            // TODO: Add back WeatherParticleContainer when WeatherParticleEffects.swift is in target
         }
         .ignoresSafeArea()
     }
@@ -115,6 +139,7 @@ struct WeatherDetailView: View {
 struct CurrentWeatherCard: View {
     let current: CurrentWeather
     @State private var isTapped = false
+    @EnvironmentObject var settings: SimpleSettingsManager
     
     var body: some View {
         VStack(spacing: 16) {
@@ -126,6 +151,7 @@ struct CurrentWeatherCard: View {
                 .symbolRenderingMode(.multicolor)
                 .symbolEffect(.bounce, value: current.temperature2m)
                 .padding(.top, 8)
+                .accessibilityLabel("Weather condition: \(condition.description)")
             
             // Temperature display - tap it for interaction!
             Button(action: {
@@ -141,27 +167,34 @@ struct CurrentWeatherCard: View {
                     isTapped = false
                 }
             }) {
-                Text("\(Int(current.temperature2m))°")
+                Text(settings.formatTemperature(current.temperature2m))
                     .font(.system(size: 80, weight: .thin, design: .rounded))
                     .contentTransition(.numericText())
                     .scaleEffect(isTapped ? 1.1 : 1.0)
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Current temperature")
+            .accessibilityValue(settings.formatTemperature(current.temperature2m))
+            .accessibilityHint("Tap for animation")
             
             // Condition description
             Text(condition.description)
                 .font(.title2.weight(.medium))
             
             // Feels like temperature
-            Text("Feels like \(Int(current.apparentTemperature))°")
-                .font(.callout)
-                .foregroundStyle(.secondary)
-                .padding(.bottom, 8)
+            if settings.showFeelsLike {
+                Text("Feels like \(settings.formatTemperature(current.apparentTemperature))")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .padding(.bottom, 8)
+                    .accessibilityLabel("Feels like temperature: \(settings.formatTemperature(current.apparentTemperature))")
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .padding(.horizontal, 20)
         .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
+        .accessibilityElement(children: .contain)
     }
 }
 
@@ -305,11 +338,43 @@ struct SunMoonCard: View {
 struct HourlyForecastCard: View {
     let hourly: HourlyWeather
     let timezone: String
+    @State private var selectedHour: Int?
+    @EnvironmentObject var settings: SimpleSettingsManager
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Hourly Forecast")
-                .font(.headline.weight(.semibold))
+            HStack {
+                Text("Hourly Forecast")
+                    .font(.headline.weight(.semibold))
+                
+                Spacer()
+                
+                // Temperature trend indicator
+                if let trend = temperatureTrend {
+                    HStack(spacing: 4) {
+                        Image(systemName: trend.icon)
+                            .font(.caption)
+                        Text(trend.text)
+                            .font(.caption.weight(.medium))
+                    }
+                    .foregroundStyle(trend.color)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(trend.color.opacity(0.15), in: Capsule())
+                }
+            }
+            .padding(.horizontal, 20)
+            
+            // Interactive Temperature Chart
+            TemperatureChart(
+                hourly: hourly,
+                timezone: timezone,
+                selectedHour: $selectedHour
+            )
+            .frame(height: 200)
+            .padding(.horizontal, 16)
+            
+            Divider()
                 .padding(.horizontal, 20)
             
             ScrollView(.horizontal, showsIndicators: false) {
@@ -319,8 +384,17 @@ struct HourlyForecastCard: View {
                             time: time,
                             temperature: hourly.temperature2m[index],
                             weatherCode: hourly.weatherCode[index],
-                            timezone: timezone
+                            timezone: timezone,
+                            isSelected: selectedHour == index
                         )
+                        .onTapGesture {
+                            let generator = UIImpactFeedbackGenerator(style: .light)
+                            generator.impactOccurred()
+                            
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                selectedHour = selectedHour == index ? nil : index
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 20)
@@ -330,6 +404,22 @@ struct HourlyForecastCard: View {
         .padding(.vertical, 16)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
+    
+    private var temperatureTrend: (icon: String, text: String, color: Color)? {
+        guard hourly.temperature2m.count >= 6 else { return nil }
+        
+        let firstThree = hourly.temperature2m.prefix(3).reduce(0, +) / 3
+        let nextThree = hourly.temperature2m.dropFirst(3).prefix(3).reduce(0, +) / 3
+        let diff = nextThree - firstThree
+        
+        if diff > 2 {
+            return ("arrow.up.right", "Warming", .orange)
+        } else if diff < -2 {
+            return ("arrow.down.right", "Cooling", .blue)
+        } else {
+            return ("minus", "Steady", .secondary)
+        }
+    }
 }
 
 struct HourlyWeatherItem: View {
@@ -337,24 +427,35 @@ struct HourlyWeatherItem: View {
     let temperature: Double
     let weatherCode: Int
     let timezone: String
+    var isSelected: Bool = false
+    @EnvironmentObject var settings: SimpleSettingsManager
     
     var body: some View {
         VStack(spacing: 8) {
             Text(formattedTime)
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.caption.weight(isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
             
             Image(systemName: WeatherCondition(code: weatherCode).symbolName)
                 .font(.title2)
                 .symbolRenderingMode(.multicolor)
                 .frame(height: 28)
+                .scaleEffect(isSelected ? 1.2 : 1.0)
+                .symbolEffect(.bounce, value: isSelected)
             
-            Text("\(Int(temperature))°")
-                .font(.body.weight(.semibold))
+            Text(settings.formatTemperature(temperature))
+                .font(.body.weight(isSelected ? .bold : .semibold))
                 .monospacedDigit()
+                .foregroundStyle(isSelected ? .primary : .secondary)
         }
         .frame(width: 60)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(
+            isSelected ? Color.blue.opacity(0.15) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 12)
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
     }
     
     private var formattedTime: String {
@@ -415,6 +516,7 @@ struct DailyWeatherRow: View {
     let precipProbability: Int
     let uvIndex: Double
     let windSpeed: Double
+    @EnvironmentObject var settings: SimpleSettingsManager
     
     var body: some View {
         VStack(spacing: 8) {
@@ -449,15 +551,15 @@ struct DailyWeatherRow: View {
                 
                 // Temperatures
                 HStack(spacing: 12) {
-                    Text("\(Int(low))°")
+                    Text(settings.formatTemperature(low))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
-                        .frame(width: 36, alignment: .trailing)
+                        .frame(width: 40, alignment: .trailing)
                     
-                    Text("\(Int(high))°")
+                    Text(settings.formatTemperature(high))
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
-                        .frame(width: 36, alignment: .trailing)
+                        .frame(width: 40, alignment: .trailing)
                 }
             }
             .padding(.horizontal, 20)
@@ -769,5 +871,354 @@ struct LocationHeader: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 16))
     }
 }
+
+// MARK: - Advanced Features
+
+/// Interactive temperature chart with selection support
+struct TemperatureChart: View {
+    let hourly: HourlyWeather
+    let timezone: String
+    @Binding var selectedHour: Int?
+    @EnvironmentObject var settings: SimpleSettingsManager
+    
+    private var chartData: [(hour: String, temp: Double)] {
+        Array(zip(hourly.time.prefix(24), hourly.temperature2m.prefix(24)))
+            .map { (hour: $0.0, temp: $0.1) }
+    }
+    
+    var body: some View {
+        Chart {
+            ForEach(Array(chartData.enumerated()), id: \.offset) { index, data in
+                // Area fill
+                AreaMark(
+                    x: .value("Hour", index),
+                    y: .value("Temperature", data.temp)
+                )
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
+                            temperatureColor(data.temp).opacity(0.3),
+                            temperatureColor(data.temp).opacity(0.1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                
+                // Line
+                LineMark(
+                    x: .value("Hour", index),
+                    y: .value("Temperature", data.temp)
+                )
+                .foregroundStyle(temperatureColor(data.temp))
+                .lineStyle(StrokeStyle(lineWidth: 3, lineCap: .round, lineJoin: .round))
+                
+                // Point marker for selected hour
+                if selectedHour == index {
+                    PointMark(
+                        x: .value("Hour", index),
+                        y: .value("Temperature", data.temp)
+                    )
+                    .foregroundStyle(temperatureColor(data.temp))
+                    .symbolSize(100)
+                }
+            }
+            
+            // Rule mark for selected temperature
+            if let selected = selectedHour,
+               selected < chartData.count {
+                RuleMark(
+                    y: .value("Selected Temp", chartData[selected].temp)
+                )
+                .foregroundStyle(.secondary.opacity(0.3))
+                .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 5]))
+                .annotation(position: .top, alignment: .trailing) {
+                    Text(settings.formatTemperature(chartData[selected].temp))
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.ultraThinMaterial, in: Capsule())
+                }
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: 3)) { value in
+                if let index = value.as(Int.self),
+                   index < chartData.count {
+                    AxisValueLabel {
+                        Text(formatChartTime(chartData[index].hour))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisValueLabel {
+                    if let temp = value.as(Double.self) {
+                        Text(settings.formatTemperature(temp))
+                            .font(.caption2)
+                    }
+                }
+            }
+        }
+    }
+    
+    private func temperatureColor(_ temp: Double) -> Color {
+        switch temp {
+        case ..<32: return .blue
+        case 32..<50: return .cyan
+        case 50..<70: return .green
+        case 70..<85: return .orange
+        default: return .red
+        }
+    }
+    
+    private func formatChartTime(_ isoString: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: isoString) else { return "" }
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "ha"
+        
+        if let timeZone = TimeZone(identifier: timezone) {
+            timeFormatter.timeZone = timeZone
+        }
+        
+        return timeFormatter.string(from: date)
+    }
+}
+
+/// Smart weather recommendations based on current conditions
+struct WeatherRecommendationsCard: View {
+    let current: CurrentWeather
+    let hourly: HourlyWeather
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Recommendations")
+                .font(.headline.weight(.semibold))
+            
+            VStack(spacing: 12) {
+                ForEach(recommendations, id: \.title) { recommendation in
+                    RecommendationRow(recommendation: recommendation)
+                }
+            }
+        }
+        .padding(20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+    }
+    
+    private var recommendations: [Recommendation] {
+        var recs: [Recommendation] = []
+        
+        // UV Index recommendation
+        if current.uvIndex >= 6 {
+            recs.append(Recommendation(
+                icon: "sun.max.fill",
+                title: "Sun Protection",
+                description: "UV index is high. Wear sunscreen and protective clothing.",
+                color: .orange
+            ))
+        }
+        
+        // Rain recommendation
+        if let rainChance = hourly.precipitationProbability.prefix(6).max(),
+           rainChance > 30 {
+            recs.append(Recommendation(
+                icon: "umbrella.fill",
+                title: "Bring Umbrella",
+                description: "\(rainChance)% chance of rain in the next 6 hours.",
+                color: .blue
+            ))
+        }
+        
+        // Temperature recommendation
+        if current.apparentTemperature < 32 {
+            recs.append(Recommendation(
+                icon: "thermometer.snowflake",
+                title: "Dress Warm",
+                description: "Feels like \(Int(current.apparentTemperature))°. Bundle up!",
+                color: .cyan
+            ))
+        } else if current.apparentTemperature > 90 {
+            recs.append(Recommendation(
+                icon: "thermometer.sun.fill",
+                title: "Stay Cool",
+                description: "Feels like \(Int(current.apparentTemperature))°. Stay hydrated!",
+                color: .red
+            ))
+        }
+        
+        // Wind recommendation
+        if current.windSpeed10m > 20 {
+            recs.append(Recommendation(
+                icon: "wind",
+                title: "Windy Conditions",
+                description: "Winds at \(Int(current.windSpeed10m)) mph. Secure loose objects.",
+                color: .gray
+            ))
+        }
+        
+        // Visibility recommendation
+        if current.visibility < 5000 {
+            recs.append(Recommendation(
+                icon: "eye.slash.fill",
+                title: "Low Visibility",
+                description: "Drive carefully. Visibility is reduced.",
+                color: .purple
+            ))
+        }
+        
+        // Default good weather
+        if recs.isEmpty {
+            recs.append(Recommendation(
+                icon: "checkmark.circle.fill",
+                title: "Pleasant Weather",
+                description: "Conditions are ideal. Enjoy your day!",
+                color: .green
+            ))
+        }
+        
+        return recs
+    }
+}
+
+struct Recommendation: Hashable {
+    let icon: String
+    let title: String
+    let description: String
+    let color: Color
+}
+
+struct RecommendationRow: View {
+    let recommendation: Recommendation
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: recommendation.icon)
+                .font(.title3)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(recommendation.color.gradient)
+                .frame(width: 32)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(recommendation.title)
+                    .font(.subheadline.weight(.semibold))
+                
+                Text(recommendation.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+        }
+        .padding(12)
+        .background(recommendation.color.opacity(0.1), in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+/// Air Quality Index card (placeholder for future API integration)
+struct AirQualityCard: View {
+    let current: CurrentWeather
+    
+    // Mock AQI - in production, this would come from an API
+    private var mockAQI: Int {
+        // Generate a "realistic" AQI based on visibility and other factors
+        let visibilityFactor = max(0, 100 - Int(current.visibility / 100))
+        return min(visibilityFactor + Int.random(in: 20...40), 200)
+    }
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            HStack {
+                Text("Air Quality")
+                    .font(.headline.weight(.semibold))
+                
+                Spacer()
+                
+                Text(aqiCategory.name)
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(aqiCategory.color)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(aqiCategory.color.opacity(0.2), in: Capsule())
+            }
+            
+            HStack(spacing: 20) {
+                // AQI gauge
+                ZStack {
+                    Circle()
+                        .stroke(Color.secondary.opacity(0.2), lineWidth: 12)
+                        .frame(width: 100, height: 100)
+                    
+                    Circle()
+                        .trim(from: 0, to: CGFloat(mockAQI) / 200.0)
+                        .stroke(
+                            aqiCategory.color.gradient,
+                            style: StrokeStyle(lineWidth: 12, lineCap: .round)
+                        )
+                        .frame(width: 100, height: 100)
+                        .rotationEffect(.degrees(-90))
+                    
+                    VStack(spacing: 4) {
+                        Text("\(mockAQI)")
+                            .font(.title.weight(.bold))
+                            .foregroundStyle(aqiCategory.color)
+                        Text("AQI")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                
+                VStack(alignment: .leading, spacing: 8) {
+                    InfoRow(label: "PM2.5", value: "\(mockAQI / 2) μg/m³")
+                    InfoRow(label: "PM10", value: "\(mockAQI / 3) μg/m³")
+                    InfoRow(label: "O₃", value: "\(Int.random(in: 20...60)) ppb")
+                }
+            }
+            
+            Text(aqiCategory.description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .padding(.top, 4)
+        }
+        .padding(20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+    }
+    
+    private var aqiCategory: (name: String, color: Color, description: String) {
+        switch mockAQI {
+        case 0..<51:
+            return ("Good", .green, "Air quality is satisfactory. Outdoor activities are encouraged.")
+        case 51..<101:
+            return ("Moderate", .yellow, "Air quality is acceptable for most people.")
+        case 101..<151:
+            return ("Unhealthy for Sensitive Groups", .orange, "Sensitive individuals should limit prolonged outdoor exertion.")
+        case 151..<201:
+            return ("Unhealthy", .red, "Everyone may begin to experience health effects.")
+        default:
+            return ("Very Unhealthy", .purple, "Health alert: everyone may experience serious effects.")
+        }
+    }
+}
+
+struct InfoRow: View {
+    let label: String
+    let value: String
+    
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(value)
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+        }
+    }
+}
+
 
 

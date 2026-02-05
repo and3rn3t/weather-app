@@ -4,4 +4,85 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:WeatherService.swift">
+   </FileRef>
+   <FileRef
+      location = "group:LocationManager.swift">
+   </FileRef>
+   <FileRef
+      location = "group:GlassEffects.swift">
+   </FileRef>
+   <FileRef
+      location = "group:FavoritesManager.swift">
+   </FileRef>
+   <FileRef
+      location = "group:SettingsManager.swift">
+   </FileRef>
+   <FileRef
+      location = "group:NotificationManager.swift">
+   </FileRef>
+   <FileRef
+      location = "group:WeatherCards.swift">
+   </FileRef>
+   <FileRef
+      location = "group:SettingsView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:FavoritesView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:WeatherParticleEffects.swift">
+   </FileRef>
+   <FileRef
+      location = "group:WeatherWidget.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ENHANCEMENTS_COMPLETE.md">
+   </FileRef>
+   <FileRef
+      location = "group:QUICK_START.md">
+   </FileRef>
+   <FileRef
+      location = "group:README.md">
+   </FileRef>
+   <FileRef
+      location = "group:INFO_PLIST_GUIDE.md">
+   </FileRef>
+   <FileRef
+      location = "group:PROJECT_SUMMARY.md">
+   </FileRef>
+   <FileRef
+      location = "group:IMPLEMENTATION_CHECKLIST.md">
+   </FileRef>
+   <FileRef
+      location = "group:Models.swift">
+   </FileRef>
+   <FileRef
+      location = "group:BUILD_FIXES.md">
+   </FileRef>
+   <FileRef
+      location = "group:SimpleSettingsManager.swift">
+   </FileRef>
+   <FileRef
+      location = "group:SimpleSettingsView.swift">
+   </FileRef>
+   <FileRef
+      location = "group:SettingsManagerSimple.swift">
+   </FileRef>
+   <FileRef
+      location = "group:SettingsViewSimple.swift">
+   </FileRef>
+   <FileRef
+      location = "group:ADVANCED_FEATURES_SUMMARY.md">
+   </FileRef>
+   <FileRef
+      location = "group:QUICK_START_ADVANCED_FEATURES.md">
+   </FileRef>
+   <FileRef
+      location = "group:CHANGELOG.md">
+   </FileRef>
+   <FileRef
+      location = "group:VISUAL_FEATURE_MAP.md">
+   </FileRef>
 </Workspace>
