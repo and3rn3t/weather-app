@@ -111,7 +111,9 @@ class WeatherService {
             "precipitation",
             "wind_speed_10m",
             "wind_direction_10m",
+            "wind_gusts_10m",
             "relative_humidity_2m",
+            "dew_point_2m",
             "surface_pressure",
             "visibility",
             "uv_index",
@@ -144,6 +146,7 @@ class WeatherService {
             "precipitation_sum",
             "precipitation_probability_max",
             "wind_speed_10m_max",
+            "wind_gusts_10m_max",
             "uv_index_max"
         ].joined(separator: ",")
     }
