@@ -11,10 +11,12 @@ import CoreLocation
 @Observable
 final class LocationManager: NSObject {
     var location: CLLocation?
+    var locationName: String?
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
     var errorMessage: String?
     
     private let locationManager = CLLocationManager()
+    private let geocoder = CLGeocoder()
     
     override init() {
         super.init()
@@ -26,11 +28,40 @@ final class LocationManager: NSObject {
         locationManager.requestWhenInUseAuthorization()
         locationManager.requestLocation()
     }
+    
+    private func reverseGeocode(location: CLLocation) {
+        geocoder.reverseGeocodeLocation(location) { [weak self] placemarks, error in
+            guard let self = self else { return }
+            
+            if let error = error {
+                print("Reverse geocoding failed: \(error.localizedDescription)")
+                return
+            }
+            
+            if let placemark = placemarks?.first {
+                // Format location name
+                var components: [String] = []
+                
+                if let locality = placemark.locality {
+                    components.append(locality)
+                }
+                
+                if let administrativeArea = placemark.administrativeArea {
+                    components.append(administrativeArea)
+                }
+                
+                self.locationName = components.joined(separator: ", ")
+            }
+        }
+    }
 }
 
 extension LocationManager: CLLocationManagerDelegate {
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        location = locations.first
+        if let newLocation = locations.first {
+            location = newLocation
+            reverseGeocode(location: newLocation)
+        }
     }
     
     func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {

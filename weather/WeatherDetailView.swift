@@ -10,11 +10,21 @@ import Charts
 
 struct WeatherDetailView: View {
     let weatherData: WeatherData
+    let locationName: String?
+    let onRefresh: () async -> Void
+    let onSearchTapped: () -> Void
+    
     @Namespace private var glassNamespace
     
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
+                // Location Header with search button
+                LocationHeader(
+                    locationName: locationName,
+                    onSearchTapped: onSearchTapped
+                )
+                
                 // Current Weather - Prominent card
                 CurrentWeatherCard(current: weatherData.current)
                 
@@ -22,10 +32,14 @@ struct WeatherDetailView: View {
                 GlassEffectContainer(spacing: 30.0) {
                     VStack(spacing: 20) {
                         // Sun & Moon Info
-                        SunMoonCard(daily: weatherData.daily, isDay: weatherData.current.isDay == 1)
+                        SunMoonCard(
+                            daily: weatherData.daily,
+                            isDay: weatherData.current.isDay == 1,
+                            timezone: weatherData.timezone
+                        )
                         
                         // Hourly Forecast
-                        HourlyForecastCard(hourly: weatherData.hourly)
+                        HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
                         
                         // Daily Forecast
                         DailyForecastCard(daily: weatherData.daily)
@@ -36,6 +50,9 @@ struct WeatherDetailView: View {
                 }
             }
             .padding()
+        }
+        .refreshable {
+            await onRefresh()
         }
         .background(weatherBackground)
     }
@@ -132,12 +149,25 @@ struct CurrentWeatherCard: View {
 struct SunMoonCard: View {
     let daily: DailyWeather
     let isDay: Bool
+    let timezone: String
     
     var body: some View {
         VStack(spacing: 20) {
-            Text(isDay ? "Daylight" : "Tonight")
-                .font(.headline.weight(.semibold))
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack {
+                Text(isDay ? "Daylight" : "Tonight")
+                    .font(.headline.weight(.semibold))
+                
+                Spacer()
+                
+                // Show timezone abbreviation
+                Text(timezoneAbbreviation)
+                    .font(.caption.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(.secondary.opacity(0.15), in: Capsule())
+            }
+            .frame(maxWidth: .infinity)
             
             HStack(spacing: 32) {
                 // Sunrise
@@ -152,9 +182,13 @@ struct SunMoonCard: View {
                         .foregroundStyle(.secondary)
                     
                     if let sunrise = daily.sunrise.first {
-                        Text(formatTime(sunrise))
+                        Text(formatTime(sunrise, timezone: timezone))
                             .font(.title3.weight(.semibold))
                             .monospacedDigit()
+                    } else {
+                        Text("--:--")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -174,9 +208,13 @@ struct SunMoonCard: View {
                         .foregroundStyle(.secondary)
                     
                     if let sunset = daily.sunset.first {
-                        Text(formatTime(sunset))
+                        Text(formatTime(sunset, timezone: timezone))
                             .font(.title3.weight(.semibold))
                             .monospacedDigit()
+                    } else {
+                        Text("--:--")
+                            .font(.title3.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
                 }
                 .frame(maxWidth: .infinity)
@@ -201,12 +239,33 @@ struct SunMoonCard: View {
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
     }
     
-    private func formatTime(_ isoString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: isoString) else { return "" }
+    private var timezoneAbbreviation: String {
+        guard let timeZone = TimeZone(identifier: timezone) else {
+            return timezone
+        }
+        return timeZone.abbreviation() ?? timezone
+    }
+    
+    private func formatTime(_ isoString: String, timezone: String) -> String {
+        // OpenMeteo returns sunrise/sunset in simple format: "2026-02-04T07:10"
+        // This is in the location's local time (already adjusted)
+        
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        
+        // Important: Set the timezone to match the location
+        if let timeZone = TimeZone(identifier: timezone) {
+            dateFormatter.timeZone = timeZone
+        }
+        
+        guard let date = dateFormatter.date(from: isoString) else {
+            return "N/A"
+        }
         
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "h:mm a"
+        timeFormatter.timeZone = dateFormatter.timeZone // Use same timezone
+        
         return timeFormatter.string(from: date)
     }
     
@@ -225,6 +284,7 @@ struct SunMoonCard: View {
 
 struct HourlyForecastCard: View {
     let hourly: HourlyWeather
+    let timezone: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -238,7 +298,8 @@ struct HourlyForecastCard: View {
                         HourlyWeatherItem(
                             time: time,
                             temperature: hourly.temperature2m[index],
-                            weatherCode: hourly.weatherCode[index]
+                            weatherCode: hourly.weatherCode[index],
+                            timezone: timezone
                         )
                     }
                 }
@@ -255,6 +316,7 @@ struct HourlyWeatherItem: View {
     let time: String
     let temperature: Double
     let weatherCode: Int
+    let timezone: String
     
     var body: some View {
         VStack(spacing: 10) {
@@ -280,6 +342,12 @@ struct HourlyWeatherItem: View {
         
         let timeFormatter = DateFormatter()
         timeFormatter.dateFormat = "ha"
+        
+        // Set the timezone to the location's timezone
+        if let timeZone = TimeZone(identifier: timezone) {
+            timeFormatter.timeZone = timeZone
+        }
+        
         return timeFormatter.string(from: date)
     }
 }
@@ -619,3 +687,55 @@ struct WeatherDetailItem: View {
         .frame(maxWidth: .infinity)
     }
 }
+struct LocationHeader: View {
+    let locationName: String?
+    let onSearchTapped: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            VStack(spacing: 8) {
+                HStack(spacing: 6) {
+                    Image(systemName: "location.fill")
+                        .font(.caption)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.blue.gradient)
+                    
+                    if let locationName = locationName {
+                        Text(locationName)
+                            .font(.title2.weight(.semibold))
+                    } else {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                                .scaleEffect(0.8)
+                            Text("Finding location...")
+                                .font(.title3.weight(.medium))
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                
+                // Last updated time
+                Text("Updated \(Date.now, format: .dateTime.hour().minute())")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            
+            // Search button
+            Button(action: onSearchTapped) {
+                Image(systemName: "magnifyingglass")
+                    .font(.title3)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.blue.gradient)
+                    .frame(width: 44, height: 44)
+                    .background(.secondary.opacity(0.15), in: Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+    }
+}
+
+
