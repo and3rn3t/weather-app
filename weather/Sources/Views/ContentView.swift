@@ -20,7 +20,8 @@ struct ContentView: View {
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
     
-    @StateObject private var settings = SimpleSettingsManager()
+    @State private var settings = SettingsManager()
+    @State private var notificationManager = NotificationManager()
     @Environment(\.modelContext) private var modelContext
     @State private var favoritesManager: FavoritesManager?
     
@@ -35,7 +36,7 @@ struct ContentView: View {
                         onSearchTapped: { showingSearch = true },
                         settings: settings
                     )
-                    .id(settings.useCelsius) // Force refresh when settings change
+                    .id(settings.temperatureUnit) // Force refresh when settings change
                 } else if weatherService.isLoading {
                     LoadingView()
                 } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
@@ -79,8 +80,7 @@ struct ContentView: View {
                 VisualEffectsShowcase()
             }
             .sheet(isPresented: $showingSettings) {
-                SimpleSettingsView()
-                    .environmentObject(settings)
+                SettingsView(settings: settings, notifications: notificationManager)
             }
             .sheet(isPresented: $showingFavorites) {
                 if let favManager = favoritesManager {
@@ -662,119 +662,6 @@ struct VisualEffectsShowcase: View {
         Label(text, systemImage: icon)
             .font(.title2.bold())
             .foregroundStyle(.primary)
-    }
-}
-
-// MARK: - Simple Settings Manager
-
-class SimpleSettingsManager: ObservableObject {
-    // Unit Preferences
-    @Published var useCelsius: Bool
-    @Published var showAnimatedBackgrounds: Bool
-    @Published var showWeatherParticles: Bool
-    @Published var showFeelsLike: Bool
-    
-    init() {
-        self.useCelsius = UserDefaults.standard.object(forKey: "useCelsius") as? Bool ?? false
-        self.showAnimatedBackgrounds = UserDefaults.standard.object(forKey: "showAnimatedBackgrounds") as? Bool ?? true
-        self.showWeatherParticles = UserDefaults.standard.object(forKey: "showWeatherParticles") as? Bool ?? true
-        self.showFeelsLike = UserDefaults.standard.object(forKey: "showFeelsLike") as? Bool ?? true
-    }
-    
-    // Save settings when they change
-    func saveSettings() {
-        UserDefaults.standard.set(useCelsius, forKey: "useCelsius")
-        UserDefaults.standard.set(showAnimatedBackgrounds, forKey: "showAnimatedBackgrounds")
-        UserDefaults.standard.set(showWeatherParticles, forKey: "showWeatherParticles")
-        UserDefaults.standard.set(showFeelsLike, forKey: "showFeelsLike")
-    }
-    
-    // MARK: - Formatting Helpers
-    
-    func formatTemperature(_ fahrenheit: Double) -> String {
-        if useCelsius {
-            let celsius = (fahrenheit - 32) * 5 / 9
-            return "\(Int(celsius))°C"
-        } else {
-            return "\(Int(fahrenheit))°F"
-        }
-    }
-    
-    func formatWindSpeed(_ mph: Double) -> String {
-        return "\(Int(mph)) mph"
-    }
-    
-    func formatPrecipitation(_ inches: Double) -> String {
-        return String(format: "%.2f in", inches)
-    }
-}
-
-// MARK: - Simple Settings View
-
-struct SimpleSettingsView: View {
-    @EnvironmentObject var settings: SimpleSettingsManager
-    @Environment(\.dismiss) private var dismiss
-    
-    var body: some View {
-        NavigationStack {
-            Form {
-                // Units Section
-                Section {
-                    Toggle("Use Celsius", isOn: $settings.useCelsius)
-                } header: {
-                    Label("Units", systemImage: "ruler")
-                }
-                
-                // Appearance Section
-                Section {
-                    Toggle("Animated Backgrounds", isOn: $settings.showAnimatedBackgrounds)
-                    Toggle("Weather Particles", isOn: $settings.showWeatherParticles)
-                } header: {
-                    Label("Appearance", systemImage: "paintbrush")
-                } footer: {
-                    Text("Weather particles include rain, snow, clouds, lightning, and fog effects.")
-                }
-                
-                // Display Section
-                Section {
-                    Toggle("Show \"Feels Like\" Temperature", isOn: $settings.showFeelsLike)
-                } header: {
-                    Label("Display", systemImage: "eye")
-                }
-                
-                // About Section
-                Section {
-                    HStack {
-                        Text("Version")
-                        Spacer()
-                        Text("1.0.0")
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    HStack {
-                        Text("Data Source")
-                        Spacer()
-                        Text("Open-Meteo")
-                            .foregroundStyle(.secondary)
-                    }
-                } header: {
-                    Label("About", systemImage: "info.circle")
-                }
-            }
-            .navigationTitle("Settings")
-            .navigationBarTitleDisplayMode(.large)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
-                        settings.saveSettings()
-                        dismiss()
-                    }
-                }
-            }
-            .onDisappear {
-                settings.saveSettings()
-            }
-        }
     }
 }
 

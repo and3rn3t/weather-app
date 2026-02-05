@@ -16,7 +16,7 @@ struct WeatherDetailView: View {
     let onSearchTapped: () -> Void
     
     @Namespace private var glassNamespace
-    @ObservedObject var settings: SimpleSettingsManager
+    var settings: SettingsManager
     
     var body: some View {
         ZStack {
@@ -33,7 +33,7 @@ struct WeatherDetailView: View {
                     
                     // Current Weather - Prominent card
                     CurrentWeatherCard(current: weatherData.current)
-                        .environmentObject(settings)
+                        .environment(settings)
                     
                     // Use GlassEffectContainer for grouped cards
                     GlassEffectContainer(spacing: 30.0) {
@@ -53,18 +53,18 @@ struct WeatherDetailView: View {
                             
                             // Hourly Forecast with interactive chart
                             HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
-                                .environmentObject(settings)
+                                .environment(settings)
                             
                             // Daily Forecast
                             DailyForecastCard(daily: weatherData.daily)
-                                .environmentObject(settings)
+                                .environment(settings)
                             
                             // Air Quality Index
                             AirQualityCard(current: weatherData.current)
                             
                             // Additional Details
                             WeatherDetailsCard(current: weatherData.current)
-                                .environmentObject(settings)
+                                .environment(settings)
                         }
                     }
                 }
@@ -139,7 +139,7 @@ struct WeatherDetailView: View {
 struct CurrentWeatherCard: View {
     let current: CurrentWeather
     @State private var isTapped = false
-    @EnvironmentObject var settings: SimpleSettingsManager
+    @Environment(SettingsManager.self) var settings
     
     var body: some View {
         VStack(spacing: 16) {
@@ -339,7 +339,7 @@ struct HourlyForecastCard: View {
     let hourly: HourlyWeather
     let timezone: String
     @State private var selectedHour: Int?
-    @EnvironmentObject var settings: SimpleSettingsManager
+    @Environment(SettingsManager.self) var settings
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -428,7 +428,7 @@ struct HourlyWeatherItem: View {
     let weatherCode: Int
     let timezone: String
     var isSelected: Bool = false
-    @EnvironmentObject var settings: SimpleSettingsManager
+    @Environment(SettingsManager.self) var settings
     
     var body: some View {
         VStack(spacing: 8) {
@@ -516,7 +516,7 @@ struct DailyWeatherRow: View {
     let precipProbability: Int
     let uvIndex: Double
     let windSpeed: Double
-    @EnvironmentObject var settings: SimpleSettingsManager
+    @Environment(SettingsManager.self) var settings
     
     var body: some View {
         VStack(spacing: 8) {
@@ -879,7 +879,7 @@ struct TemperatureChart: View {
     let hourly: HourlyWeather
     let timezone: String
     @Binding var selectedHour: Int?
-    @EnvironmentObject var settings: SimpleSettingsManager
+    @Environment(SettingsManager.self) var settings
     
     private var chartData: [(hour: String, temp: Double)] {
         Array(zip(hourly.time.prefix(24), hourly.temperature2m.prefix(24)))

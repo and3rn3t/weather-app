@@ -185,11 +185,20 @@ class SettingsManager {
 
 extension SettingsManager {
     func formatTemperature(_ value: Double) -> String {
+        let convertedValue: Double
+        switch temperatureUnit {
+        case .celsius:
+            // API returns Fahrenheit, convert to Celsius
+            convertedValue = (value - 32) * 5 / 9
+        case .fahrenheit:
+            convertedValue = value
+        }
+        
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
         
-        let formatted = formatter.string(from: NSNumber(value: value)) ?? "\(Int(value))"
+        let formatted = formatter.string(from: NSNumber(value: convertedValue)) ?? "\(Int(convertedValue))"
         return "\(formatted)\(temperatureUnit.symbol)"
     }
     
