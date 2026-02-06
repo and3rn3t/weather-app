@@ -120,34 +120,38 @@ struct HourlyChartView: View {
             .lineStyle(StrokeStyle(lineWidth: 2))
             .interpolationMethod(.catmullRom)
             
-            // Points
-            PointMark(
-                x: .value("Time", point.date),
-                y: .value("Temp", point.temperature)
-            )
-            .foregroundStyle(.white)
-            .symbolSize(selectedDataPoint?.id == point.id ? 100 : 30)
+            // Points - only show on selection
+            if selectedDataPoint?.id == point.id {
+                PointMark(
+                    x: .value("Time", point.date),
+                    y: .value("Temp", point.temperature)
+                )
+                .foregroundStyle(.white)
+                .symbolSize(80)
+            }
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { value in
+            AxisMarks(values: .stride(by: .hour, count: 6)) { value in
                 if let date = value.as(Date.self) {
                     AxisValueLabel {
                         Text(date, format: .dateTime.hour())
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.secondary.opacity(0.3))
             }
         }
         .chartYAxis {
-            AxisMarks { value in
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisValueLabel {
                     if let temp = value.as(Double.self) {
                         Text("\(Int(temp))°")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
             }
         }
         .chartYScale(domain: (minTemp - 5)...(maxTemp + 5))
@@ -168,25 +172,27 @@ struct HourlyChartView: View {
             .cornerRadius(4)
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { value in
+            AxisMarks(values: .stride(by: .hour, count: 6)) { value in
                 if let date = value.as(Date.self) {
                     AxisValueLabel {
                         Text(date, format: .dateTime.hour())
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.secondary.opacity(0.3))
             }
         }
         .chartYAxis {
-            AxisMarks { value in
+            AxisMarks(position: .leading, values: [0, 25, 50, 75, 100]) { value in
                 AxisValueLabel {
                     if let prob = value.as(Int.self) {
                         Text("\(prob)%")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
             }
         }
         .chartYScale(domain: 0...100)
@@ -216,33 +222,29 @@ struct HourlyChartView: View {
                 .interpolationMethod(.catmullRom)
             }
             
-            PointMark(
-                x: .value("Time", point.date),
-                y: .value("Speed", point.windSpeed)
-            )
-            .foregroundStyle(.cyan)
-            .symbolSize(20)
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { value in
+            AxisMarks(values: .stride(by: .hour, count: 6)) { value in
                 if let date = value.as(Date.self) {
                     AxisValueLabel {
                         Text(date, format: .dateTime.hour())
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.secondary.opacity(0.3))
             }
         }
         .chartYAxis {
-            AxisMarks { value in
+            AxisMarks(position: .leading, values: .automatic(desiredCount: 4)) { value in
                 AxisValueLabel {
                     if let speed = value.as(Double.self) {
                         Text("\(Int(speed))")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
             }
         }
         .chartForegroundStyleScale([
@@ -278,25 +280,27 @@ struct HourlyChartView: View {
             .interpolationMethod(.catmullRom)
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: .hour, count: 3)) { value in
+            AxisMarks(values: .stride(by: .hour, count: 6)) { value in
                 if let date = value.as(Date.self) {
                     AxisValueLabel {
                         Text(date, format: .dateTime.hour())
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
+                AxisGridLine(stroke: StrokeStyle(lineWidth: 0.5))
+                    .foregroundStyle(.secondary.opacity(0.3))
             }
         }
         .chartYAxis {
-            AxisMarks { value in
+            AxisMarks(position: .leading, values: [0, 25, 50, 75, 100]) { value in
                 AxisValueLabel {
                     if let hum = value.as(Int.self) {
                         Text("\(hum)%")
-                            .font(.caption)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
                     }
                 }
-                AxisGridLine()
             }
         }
         .chartYScale(domain: 0...100)
