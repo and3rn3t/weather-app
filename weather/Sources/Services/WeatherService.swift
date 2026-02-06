@@ -62,9 +62,8 @@ class WeatherService {
         }
         
         do {
-            let weather = try await retryHandler.execute(config: .default) {
-                try await self.performWeatherFetch(latitude: latitude, longitude: longitude)
-            }
+            // Perform fetch with retry logic inline
+            let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude)
             
             await MainActor.run {
                 self.weatherData = weather
@@ -84,6 +83,25 @@ class WeatherService {
         } catch {
             await handleError(.unknown(error.localizedDescription))
         }
+    }
+    
+    private func performWeatherFetchWithRetry(latitude: Double, longitude: Double) async throws -> WeatherData {
+        let config = RetryConfiguration.default
+        var lastError: Error?
+        
+        for attempt in 1...config.maxAttempts {
+            do {
+                return try await performWeatherFetch(latitude: latitude, longitude: longitude)
+            } catch let error as WeatherError where error.isRetryable && attempt < config.maxAttempts {
+                lastError = error
+                let delay = config.delay(for: attempt)
+                try await Task.sleep(for: .seconds(delay))
+            } catch {
+                throw error
+            }
+        }
+        
+        throw lastError ?? WeatherError.unknown("Request failed after retries")
     }
     
     func retry() async {

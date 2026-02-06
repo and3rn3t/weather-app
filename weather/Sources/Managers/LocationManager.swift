@@ -8,6 +8,7 @@
 import Foundation
 import CoreLocation
 import Contacts
+@preconcurrency import MapKit
 
 @Observable
 class LocationManager: NSObject, CLLocationManagerDelegate {
@@ -39,14 +40,16 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     // MARK: - CLLocationManagerDelegate
     
     nonisolated func locationManagerDidChangeAuthorization(_ manager: CLLocationManager) {
-        Task { @MainActor in
-            authorizationStatus = manager.authorizationStatus
+        let status = manager.authorizationStatus
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.authorizationStatus = status
             
-            if authorizationStatus == .authorizedWhenInUse || 
-               authorizationStatus == .authorizedAlways {
-                manager.requestLocation()
-            } else if authorizationStatus == .denied || authorizationStatus == .restricted {
-                errorMessage = "Location access denied. Please enable in Settings."
+            if status == .authorizedWhenInUse || 
+               status == .authorizedAlways {
+                self.manager.requestLocation()
+            } else if status == .denied || status == .restricted {
+                self.errorMessage = "Location access denied. Please enable in Settings."
             }
         }
     }
@@ -70,37 +73,30 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     
     // MARK: - Reverse Geocoding
     
+    @MainActor
     private func fetchLocationName(for location: CLLocation) async {
-        let geocoder = CLGeocoder()
-        
         do {
-            let placemarks = try await geocoder.reverseGeocodeLocation(location)
+            guard let request = MKReverseGeocodingRequest(location: location) else { return }
+            let mapItems = try await request.mapItems
             
-            if let placemark = placemarks.first {
-                await MainActor.run {
-                    locationName = formatLocationName(from: placemark)
-                }
+            if let mapItem = mapItems.first {
+                locationName = formatLocationName(from: mapItem)
             }
         } catch {
             print("Geocoding error: \(error.localizedDescription)")
         }
     }
     
-    private func formatLocationName(from placemark: CLPlacemark) -> String {
-        var components: [String] = []
-        
-        if let locality = placemark.locality {
-            components.append(locality)
+    private func formatLocationName(from mapItem: MKMapItem) -> String {
+        // Use the short address for a concise location name, falling back to full address
+        if let address = mapItem.address {
+            if let shortAddress = address.shortAddress {
+                return shortAddress
+            }
+            return address.fullAddress
         }
         
-        if let state = placemark.administrativeArea {
-            components.append(state)
-        }
-        
-        if components.isEmpty, let country = placemark.country {
-            components.append(country)
-        }
-        
-        return components.joined(separator: ", ")
+        // Fallback to name if address isn't available
+        return mapItem.name ?? "Unknown Location"
     }
 }

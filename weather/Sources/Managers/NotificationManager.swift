@@ -29,7 +29,7 @@ class NotificationManager: NSObject {
             await MainActor.run {
                 hasPermission = granted
             }
-            await checkAuthorizationStatus()
+            checkAuthorizationStatus()
             return granted
         } catch {
             // Log error silently - user will see system permission dialog

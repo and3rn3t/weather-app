@@ -194,6 +194,7 @@ struct ContentView: View {
                             .symbolEffect(.pulse)
                     }
                     .buttonStyle(.glass)
+                    .accessibilityIdentifier("settingsButton")
                 }
             }
             .onChange(of: settings.liveActivitiesEnabled) { _, enabled in
@@ -344,7 +345,7 @@ struct LoadingView: View {
                         .foregroundStyle(.secondary)
                 }
                 .padding()
-                .glassEffect(.regular.tint(.blue.opacity(0.2)))
+                .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -458,7 +459,7 @@ struct ErrorView: View {
                         .frame(maxWidth: 300)
                         .padding(.vertical, 4)
                 }
-                .buttonStyle(.customGlassProminent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.large)
                 .padding(.bottom, 40)
                 .accessibilityHint("Double tap to retry loading weather data")
@@ -473,7 +474,7 @@ struct ErrorView: View {
                         .frame(maxWidth: 300)
                         .padding(.vertical, 4)
                 }
-                .buttonStyle(.customGlassProminent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.large)
                 .padding(.bottom, 40)
                 .accessibilityHint("Double tap to open Settings and enable location access")
@@ -532,7 +533,7 @@ struct WelcomeView: View {
                             .multilineTextAlignment(.center)
                     }
                     .padding()
-                    .glassEffect(.regular.tint(.white.opacity(0.1)))
+                    .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
                 }
                 
                 Spacer()
@@ -544,7 +545,7 @@ struct WelcomeView: View {
                             .frame(maxWidth: 300)
                             .padding(.vertical, 4)
                     }
-                    .buttonStyle(.customGlassProminent)
+                    .buttonStyle(.glassProminent)
                     .controlSize(.large)
                     
                     Text("Location access is required to show\nweather for your area")
@@ -656,7 +657,8 @@ struct VisualEffectsShowcase: View {
                 .font(.headline)
         }
         .frame(width: 140, height: 140)
-        .glassEffect(.regular.tint(color.opacity(0.3)).interactive())
+        .background(color.opacity(0.2))
+        .glassEffect(Glass.regular, in: .rect(cornerRadius: 20))
     }
     
     private var glassButtonsSection: some View {
@@ -669,7 +671,7 @@ struct VisualEffectsShowcase: View {
                         showExtraGlass.toggle()
                     }
                 }
-                .buttonStyle(.customGlass)
+                .buttonStyle(.glass)
                 .controlSize(.large)
                 
                 Button("Prominent Glass") {
@@ -677,7 +679,7 @@ struct VisualEffectsShowcase: View {
                         showExtraGlass.toggle()
                     }
                 }
-                .buttonStyle(.customGlassProminent)
+                .buttonStyle(.glassProminent)
                 .controlSize(.large)
             }
         }
@@ -692,14 +694,16 @@ struct VisualEffectsShowcase: View {
                     Image(systemName: "star.fill")
                         .font(.system(size: 36))
                         .frame(width: 80, height: 80)
-                        .glassEffect(.regular.tint(.yellow.opacity(0.3)))
+                        .background(Color.yellow.opacity(0.2))
+                        .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
                         .glassEffectID("star", in: glassNamespace)
                     
                     if showExtraGlass {
                         Image(systemName: "moon.stars.fill")
                             .font(.system(size: 36))
                             .frame(width: 80, height: 80)
-                            .glassEffect(.regular.tint(.indigo.opacity(0.3)))
+                            .background(Color.indigo.opacity(0.2))
+                            .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
                             .glassEffectID("moon", in: glassNamespace)
                             .transition(.scale.combined(with: .opacity))
                     }
@@ -773,7 +777,8 @@ struct VisualEffectsShowcase: View {
             .foregroundStyle(color.gradient)
             .symbolEffect(effect)
             .frame(width: 70, height: 70)
-            .glassEffect(.regular.tint(color.opacity(0.2)))
+            .background(color.opacity(0.15))
+            .glassEffect(Glass.regular, in: .rect(cornerRadius: 14))
     }
     
     private var meshGradientSection: some View {
@@ -808,7 +813,7 @@ struct VisualEffectsShowcase: View {
                         .foregroundStyle(.white.opacity(0.8))
                 }
                 .padding()
-                .glassEffect(.regular.tint(.white.opacity(0.1)))
+                .glassEffect(Glass.regular, in: .rect(cornerRadius: 12))
             }
         }
         .padding(.bottom, 40)

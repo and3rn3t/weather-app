@@ -11,6 +11,7 @@ import Foundation
 
 // MARK: - Weather Service Tests
 
+@MainActor
 struct WeatherServiceTests {
     
     @Test func initialState() {
@@ -115,6 +116,7 @@ struct MockWeatherData {
 
 // MARK: - Weather Data Model Tests
 
+@MainActor
 struct WeatherDataModelTests {
     
     @Test func decodesSampleData() {
@@ -161,6 +163,7 @@ struct WeatherDataModelTests {
 
 // MARK: - Air Quality Data Tests
 
+@MainActor
 struct AirQualityDataTests {
     
     @Test func decodesAirQualityData() throws {

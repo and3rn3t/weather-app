@@ -21,16 +21,16 @@ struct WeatherEntry: TimelineEntry {
 // MARK: - Widget Intent
 
 struct WeatherWidgetIntent: WidgetConfigurationIntent {
-    static var title: LocalizedStringResource = "Weather Location"
-    static var description = IntentDescription("Choose a location for weather updates")
+    static let title: LocalizedStringResource = "Weather Location"
+    static let description = IntentDescription("Choose a location for weather updates")
     
     @Parameter(title: "Location")
     var location: LocationEntity?
 }
 
 struct LocationEntity: AppEntity {
-    static var typeDisplayRepresentation = TypeDisplayRepresentation(name: "Location")
-    static var defaultQuery = LocationQuery()
+    static let typeDisplayRepresentation = TypeDisplayRepresentation(name: "Location")
+    static let defaultQuery = LocationQuery()
     
     let id: UUID
     let name: String

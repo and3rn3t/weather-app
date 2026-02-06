@@ -43,7 +43,7 @@ final class weatherUITests: XCTestCase {
     
     @MainActor
     func testOpenSettings() throws {
-        let settingsButton = app.buttons["gear"].firstMatch
+        let settingsButton = app.buttons["settingsButton"].firstMatch
         
         if settingsButton.waitForExistence(timeout: 5) {
             settingsButton.tap()
@@ -55,7 +55,7 @@ final class weatherUITests: XCTestCase {
     
     @MainActor
     func testSettingsContainsUnitsSection() throws {
-        let settingsButton = app.buttons["gear"].firstMatch
+        let settingsButton = app.buttons["settingsButton"].firstMatch
         
         if settingsButton.waitForExistence(timeout: 5) {
             settingsButton.tap()

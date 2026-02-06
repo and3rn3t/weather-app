@@ -72,6 +72,7 @@ struct WeatherErrorTests {
 
 // MARK: - Retry Configuration Tests
 
+@MainActor
 struct RetryConfigurationTests {
     
     @Test func defaultConfiguration() {
@@ -98,6 +99,7 @@ struct RetryConfigurationTests {
 
 // MARK: - Settings Manager Tests
 
+@MainActor
 struct SettingsManagerTests {
     
     @Test func defaultValues() {
@@ -146,6 +148,7 @@ struct SettingsManagerTests {
 
 // MARK: - Shared Weather Data Tests
 
+@MainActor
 struct SharedWeatherDataTests {
     
     @Test func encodingDecoding() throws {
@@ -186,6 +189,7 @@ struct SharedWeatherDataTests {
 
 // MARK: - Weather Condition Tests (Snippet View)
 
+@MainActor
 struct WeatherConditionSnippetTests {
     
     @Test func clearSkyCode() {
@@ -227,6 +231,7 @@ struct WeatherConditionSnippetTests {
 
 // MARK: - Temperature Unit Tests
 
+@MainActor
 struct TemperatureUnitTests {
     
     @Test func allCasesExist() {
@@ -253,6 +258,7 @@ struct TemperatureUnitTests {
 
 // MARK: - Wind Speed Unit Tests
 
+@MainActor
 struct WindSpeedUnitTests {
     
     @Test func allCasesExist() {

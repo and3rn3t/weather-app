@@ -7,14 +7,14 @@
 
 import AppIntents
 import CoreLocation
-import MapKit
+@preconcurrency import MapKit
 import SwiftUI
 
 // MARK: - Get Current Weather Intent
 
 struct GetWeatherIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get Current Weather"
-    static var description = IntentDescription("Get the current weather conditions for your location or a specified city.")
+    static let title: LocalizedStringResource = "Get Current Weather"
+    static let description = IntentDescription("Get the current weather conditions for your location or a specified city.")
     
     @Parameter(title: "Location", description: "The city to get weather for. Uses your current location if not specified.")
     var locationName: String?
@@ -83,6 +83,7 @@ struct GetWeatherIntent: AppIntent {
         }
     }
     
+    @MainActor
     private func resolveLocation() async throws -> (Double, Double, String?) {
         if let name = locationName, !name.isEmpty {
             // Geocode the provided location name using MapKit
@@ -102,7 +103,7 @@ struct GetWeatherIntent: AppIntent {
             return (location.coordinate.latitude, location.coordinate.longitude, resolvedName)
         } else {
             // Use current location
-            let locationProvider = await MainActor.run { IntentLocationProvider() }
+            let locationProvider = IntentLocationProvider()
             let location = try await locationProvider.getCurrentLocation()
             return (location.coordinate.latitude, location.coordinate.longitude, nil)
         }
@@ -112,8 +113,8 @@ struct GetWeatherIntent: AppIntent {
 // MARK: - Will It Rain Intent
 
 struct WillItRainIntent: AppIntent {
-    static var title: LocalizedStringResource = "Will It Rain Today"
-    static var description = IntentDescription("Check if rain is expected today at your location.")
+    static let title: LocalizedStringResource = "Will It Rain Today"
+    static let description = IntentDescription("Check if rain is expected today at your location.")
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let locationProvider = await MainActor.run { IntentLocationProvider() }
@@ -157,8 +158,8 @@ struct WillItRainIntent: AppIntent {
 // MARK: - Get Temperature Intent
 
 struct GetTemperatureIntent: AppIntent {
-    static var title: LocalizedStringResource = "Get Current Temperature"
-    static var description = IntentDescription("Get just the current temperature.")
+    static let title: LocalizedStringResource = "Get Current Temperature"
+    static let description = IntentDescription("Get just the current temperature.")
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
         let locationProvider = await MainActor.run { IntentLocationProvider() }
