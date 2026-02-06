@@ -36,6 +36,7 @@ struct SharedWeatherData: Codable {
     let windSpeed: Double
     let highTemp: Double
     let lowTemp: Double
+    let precipitationProbability: Int
     let locationName: String
     let lastUpdated: Date
     let hourlyForecast: [SharedHourlyData]
@@ -80,6 +81,7 @@ class SharedDataManager {
             windSpeed: weatherData.current.windSpeed10m,
             highTemp: weatherData.daily.temperature2mMax.first ?? 0,
             lowTemp: weatherData.daily.temperature2mMin.first ?? 0,
+            precipitationProbability: weatherData.daily.precipitationProbabilityMax.first ?? 0,
             locationName: locationName ?? "Current Location",
             lastUpdated: Date(),
             hourlyForecast: hourlyData
