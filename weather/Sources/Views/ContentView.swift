@@ -52,7 +52,10 @@ struct ContentView: View {
                         retryAction: fetchWeather
                     )
                 } else {
-                    WelcomeView(requestLocationAction: requestLocation)
+                    WelcomeView(
+                        requestLocationAction: requestLocation,
+                        authorizationStatus: locationManager.authorizationStatus
+                    )
                 }
             }
             .task {
@@ -290,66 +293,45 @@ struct LoadingView: View {
     
     var body: some View {
         ZStack {
-            // Animated mesh gradient background
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: [
-                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                    [0.0, 0.5], [isAnimating ? 0.7 : 0.3, 0.5], [1.0, 0.5],
-                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
-                ],
-                colors: [
-                    .blue, .cyan, .blue,
-                    .indigo, .blue, .cyan,
-                    .blue, .cyan, .blue
-                ]
+            // Subtle gradient background
+            LinearGradient(
+                colors: [.blue.opacity(0.2), .cyan.opacity(0.15)],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
-            .opacity(0.3)
-            
-            // Floating particles
-            FloatingSparkles(count: 15)
             
             // Main content
-            VStack(spacing: 24) {
+            VStack(spacing: 32) {
                 ZStack {
-                    // Pulsing circles
-                    ForEach(0..<3) { i in
-                        Circle()
-                            .stroke(Color.blue.opacity(0.3), lineWidth: 2)
-                            .frame(width: 100, height: 100)
-                            .scaleEffect(isAnimating ? 1.5 : 0.8)
-                            .opacity(isAnimating ? 0 : 1)
-                            .animation(
-                                .easeOut(duration: 1.5)
-                                .repeatForever(autoreverses: false)
-                                .delay(Double(i) * 0.3),
-                                value: isAnimating
-                            )
-                    }
+                    // Single pulsing circle
+                    Circle()
+                        .stroke(Color.blue.opacity(0.2), lineWidth: 3)
+                        .frame(width: 100, height: 100)
+                        .scaleEffect(isAnimating ? 1.3 : 0.9)
+                        .opacity(isAnimating ? 0 : 0.8)
+                        .animation(
+                            .easeOut(duration: 1.2)
+                            .repeatForever(autoreverses: false),
+                            value: isAnimating
+                        )
                     
                     Image(systemName: "cloud.sun.fill")
                         .font(.system(size: 50))
                         .symbolRenderingMode(.multicolor)
                         .symbolEffect(.pulse.byLayer)
                 }
-                .frame(height: 150)
                 
-                VStack(spacing: 8) {
-                    Text("Loading weather data...")
+                VStack(spacing: 6) {
+                    Text("Loading weather...")
                         .font(.headline)
                     
-                    Text("Fetching forecast...")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                    ProgressView()
+                        .tint(.blue)
                 }
-                .padding()
-                .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.ultraThinMaterial)
         .onAppear {
             isAnimating = true
         }
@@ -488,7 +470,14 @@ struct ErrorView: View {
 
 struct WelcomeView: View {
     let requestLocationAction: () -> Void
+    var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @State private var isAnimating = false
+    
+    private var needsLocationPermission: Bool {
+        authorizationStatus == .notDetermined || 
+        authorizationStatus == .denied || 
+        authorizationStatus == .restricted
+    }
     
     var body: some View {
         ZStack {
@@ -538,25 +527,40 @@ struct WelcomeView: View {
                 
                 Spacer()
                 
-                VStack(spacing: 16) {
-                    Button(action: requestLocationAction) {
-                        Label("Enable Location", systemImage: "location.fill")
+                // Only show location button if permission is needed
+                if needsLocationPermission {
+                    VStack(spacing: 16) {
+                        Button(action: requestLocationAction) {
+                            Label(
+                                authorizationStatus == .denied ? "Open Settings" : "Enable Location",
+                                systemImage: authorizationStatus == .denied ? "gearshape" : "location.fill"
+                            )
                             .font(.headline)
-                            .frame(maxWidth: 300)
+                            .frame(maxWidth: 280)
                             .padding(.vertical, 4)
+                        }
+                        .buttonStyle(.glassProminent)
+                        .controlSize(.large)
+                        
+                        Text(authorizationStatus == .denied 
+                             ? "Location access was denied.\nEnable in Settings to continue."
+                             : "Location access is required to show\nweather for your area")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
                     }
-                    .buttonStyle(.glassProminent)
-                    .controlSize(.large)
-                    
-                    Text("Location access is required to show\nweather for your area")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .background(.ultraThinMaterial, in: Capsule())
+                    .padding(.bottom, 50)
+                } else {
+                    // Permission granted but still loading - show progress
+                    VStack(spacing: 12) {
+                        ProgressView()
+                            .tint(.white)
+                        Text("Getting your location...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.bottom, 50)
                 }
-                .padding(.bottom, 40)
             }
             .padding()
         }

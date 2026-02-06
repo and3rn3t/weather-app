@@ -149,18 +149,18 @@ struct SmallWeatherWidgetView: View {
     
     var body: some View {
         if let weather = entry.weatherData {
-            VStack(spacing: 8) {
+            VStack(spacing: 6) {
                 Text(weather.locationName)
-                    .font(.caption)
+                    .font(.caption2)
                     .fontWeight(.semibold)
                     .lineLimit(1)
                 
                 Image(systemName: WeatherCondition(code: weather.weatherCode).symbolName)
-                    .font(.system(size: 32))
+                    .font(.system(size: 36))
                     .symbolRenderingMode(.multicolor)
                 
                 Text("\(Int(weather.temperature))°")
-                    .font(.system(size: 36, weight: .semibold))
+                    .font(.system(size: 40, weight: .semibold))
                 
                 Text(WeatherCondition(code: weather.weatherCode).description)
                     .font(.caption2)
@@ -214,23 +214,23 @@ struct MediumWeatherWidgetView: View {
     
     var body: some View {
         if let weather = entry.weatherData {
-            HStack(spacing: 16) {
-                VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 6) {
                     Text(weather.locationName)
-                        .font(.headline)
+                        .font(.subheadline.weight(.semibold))
                         .lineLimit(1)
                     
-                    HStack(alignment: .top, spacing: 12) {
+                    HStack(alignment: .center, spacing: 10) {
                         Image(systemName: WeatherCondition(code: weather.weatherCode).symbolName)
-                            .font(.system(size: 48))
+                            .font(.system(size: 44))
                             .symbolRenderingMode(.multicolor)
                         
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: 2) {
                             Text("\(Int(weather.temperature))°")
-                                .font(.system(size: 48, weight: .semibold))
+                                .font(.system(size: 44, weight: .semibold))
                             
                             Text(WeatherCondition(code: weather.weatherCode).description)
-                                .font(.subheadline)
+                                .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
                     }
@@ -238,31 +238,32 @@ struct MediumWeatherWidgetView: View {
                 
                 Spacer()
                 
-                VStack(alignment: .trailing, spacing: 12) {
-                    HStack(spacing: 6) {
+                VStack(alignment: .trailing, spacing: 8) {
+                    HStack(spacing: 4) {
                         Image(systemName: "wind")
-                            .font(.caption)
+                            .font(.caption2)
                         Text("\(Int(weather.windSpeed)) mph")
-                            .font(.caption)
+                            .font(.caption2)
                     }
                     
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: "humidity")
-                            .font(.caption)
+                            .font(.caption2)
                         Text("\(weather.humidity)%")
-                            .font(.caption)
+                            .font(.caption2)
                     }
                     
-                    HStack(spacing: 6) {
+                    HStack(spacing: 4) {
                         Image(systemName: "thermometer")
-                            .font(.caption)
+                            .font(.caption2)
                         Text("H:\(Int(weather.highTemp))° L:\(Int(weather.lowTemp))°")
-                            .font(.caption)
+                            .font(.caption2)
                     }
                 }
                 .foregroundStyle(.secondary)
             }
-            .padding()
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
             .containerBackground(for: .widget) {
                 backgroundGradient(for: weather.weatherCode)
             }
@@ -307,38 +308,38 @@ struct LargeWeatherWidgetView: View {
     
     var body: some View {
         if let weather = entry.weatherData {
-            VStack(alignment: .leading, spacing: 16) {
+            VStack(alignment: .leading, spacing: 12) {
                 // Header
                 HStack {
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(weather.locationName)
-                            .font(.title2.bold())
+                            .font(.headline)
                         
                         Text("Updated \(weather.lastUpdated, style: .time)")
-                            .font(.caption)
+                            .font(.caption2)
                             .foregroundStyle(.secondary)
                     }
                     
                     Spacer()
                     
                     Image(systemName: WeatherCondition(code: weather.weatherCode).symbolName)
-                        .font(.system(size: 48))
+                        .font(.system(size: 40))
                         .symbolRenderingMode(.multicolor)
                 }
                 
                 // Current temperature
-                HStack(alignment: .top) {
+                HStack(alignment: .center) {
                     Text("\(Int(weather.temperature))°")
-                        .font(.system(size: 56, weight: .semibold))
+                        .font(.system(size: 52, weight: .semibold))
                     
                     Spacer()
                     
-                    VStack(alignment: .trailing, spacing: 8) {
+                    VStack(alignment: .trailing, spacing: 4) {
                         Text("H:\(Int(weather.highTemp))° L:\(Int(weather.lowTemp))°")
                             .font(.subheadline)
                         
                         Text(WeatherCondition(code: weather.weatherCode).description)
-                            .font(.subheadline)
+                            .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -346,14 +347,14 @@ struct LargeWeatherWidgetView: View {
                 Divider()
                 
                 // Hourly forecast
-                HStack(spacing: 12) {
+                HStack(spacing: 0) {
                     ForEach(Array(weather.hourlyForecast.prefix(5).enumerated()), id: \.offset) { _, hourData in
-                        VStack(spacing: 6) {
+                        VStack(spacing: 4) {
                             Text(formattedHour(hourData.time))
                                 .font(.caption2)
                             
                             Image(systemName: WeatherCondition(code: hourData.weatherCode).symbolName)
-                                .font(.body)
+                                .font(.callout)
                                 .symbolRenderingMode(.multicolor)
                             
                             Text("\(Int(hourData.temperature))°")
@@ -363,7 +364,7 @@ struct LargeWeatherWidgetView: View {
                     }
                 }
                 
-                Spacer()
+                Spacer(minLength: 0)
             }
             .padding()
             .containerBackground(for: .widget) {
