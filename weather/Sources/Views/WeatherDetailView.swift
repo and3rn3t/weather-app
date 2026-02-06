@@ -229,6 +229,7 @@ struct SunMoonCard: View {
                         .symbolRenderingMode(.multicolor)
                         .foregroundStyle(.orange.gradient)
                         .frame(height: 40)
+                        .accessibilityHidden(true)
                     
                     Text("Sunrise")
                         .font(.caption.weight(.medium))
@@ -245,9 +246,12 @@ struct SunMoonCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(sunriseAccessibilityLabel)
                 
                 Divider()
                     .frame(height: 80)
+                    .accessibilityHidden(true)
                 
                 // Sunset
                 VStack(spacing: 8) {
@@ -256,6 +260,7 @@ struct SunMoonCard: View {
                         .symbolRenderingMode(.multicolor)
                         .foregroundStyle(.orange.gradient)
                         .frame(height: 40)
+                        .accessibilityHidden(true)
                     
                     Text("Sunset")
                         .font(.caption.weight(.medium))
@@ -272,6 +277,8 @@ struct SunMoonCard: View {
                     }
                 }
                 .frame(maxWidth: .infinity)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(sunsetAccessibilityLabel)
             }
             
             // Day length
@@ -282,15 +289,33 @@ struct SunMoonCard: View {
                     Image(systemName: "clock.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text("Daylight: \(dayLength)")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
                 .padding(.top, 4)
+                .accessibilityLabel("Total daylight: \(dayLength)")
             }
         }
         .padding(20)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Sun information")
+    }
+    
+    private var sunriseAccessibilityLabel: String {
+        if let sunrise = daily.sunrise.first {
+            return WeatherAccessibility.sunriseLabel(sunrise)
+        }
+        return "Sunrise time unavailable"
+    }
+    
+    private var sunsetAccessibilityLabel: String {
+        if let sunset = daily.sunset.first {
+            return WeatherAccessibility.sunsetLabel(sunset)
+        }
+        return "Sunset time unavailable"
     }
     
     private var timezoneAbbreviation: String {
@@ -1180,12 +1205,17 @@ struct AirQualityCard: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(WeatherAccessibility.airQualityLabel(aqi))
                     
                     VStack(alignment: .leading, spacing: 8) {
                         InfoRow(label: "PM2.5", value: String(format: "%.1f μg/m³", data.pm25))
+                            .accessibilityLabel("PM 2.5: \(String(format: "%.1f", data.pm25)) micrograms per cubic meter")
                         InfoRow(label: "PM10", value: String(format: "%.1f μg/m³", data.pm10))
+                            .accessibilityLabel("PM 10: \(String(format: "%.1f", data.pm10)) micrograms per cubic meter")
                         if let ozone = data.ozone {
                             InfoRow(label: "O₃", value: String(format: "%.0f μg/m³", ozone))
+                                .accessibilityLabel("Ozone: \(String(format: "%.0f", ozone)) micrograms per cubic meter")
                         }
                     }
                 }
@@ -1201,6 +1231,7 @@ struct AirQualityCard: View {
                         Image(systemName: "aqi.low")
                             .font(.largeTitle)
                             .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                         Text("Air quality data is currently unavailable")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -1208,10 +1239,13 @@ struct AirQualityCard: View {
                     .padding(.vertical, 20)
                     Spacer()
                 }
+                .accessibilityElement(children: .combine)
             }
         }
         .padding(20)
         .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Air Quality")
     }
     
     private func aqiCategory(for aqi: Int) -> (name: String, color: Color, description: String) {

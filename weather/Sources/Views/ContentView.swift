@@ -42,7 +42,11 @@ struct ContentView: View {
                 } else if weatherService.isLoading {
                     LoadingView()
                 } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
-                    ErrorView(message: errorMessage, retryAction: fetchWeather)
+                    ErrorView(
+                        message: errorMessage,
+                        error: weatherService.lastError,
+                        retryAction: fetchWeather
+                    )
                 } else {
                     WelcomeView(requestLocationAction: requestLocation)
                 }
@@ -345,39 +349,82 @@ struct FloatingSparkles: View {
 
 struct ErrorView: View {
     let message: String
+    var error: WeatherError?
     let retryAction: () -> Void
+    
+    init(message: String, error: WeatherError? = nil, retryAction: @escaping () -> Void) {
+        self.message = message
+        self.error = error
+        self.retryAction = retryAction
+    }
+    
+    private var displayIcon: String {
+        error?.systemImage ?? "exclamationmark.triangle.fill"
+    }
+    
+    private var displayTitle: String {
+        error?.errorDescription ?? "Oops!"
+    }
+    
+    private var displayMessage: String {
+        error?.recoverySuggestion ?? message
+    }
+    
+    private var showRetry: Bool {
+        error?.isRetryable ?? true
+    }
     
     var body: some View {
         VStack(spacing: 28) {
             Spacer()
             
-            Image(systemName: "exclamationmark.triangle.fill")
+            Image(systemName: displayIcon)
                 .font(.system(size: 72))
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.orange.gradient)
+                .accessibilityLabel("Error icon")
             
             VStack(spacing: 12) {
-                Text("Oops!")
+                Text(displayTitle)
                     .font(.title.bold())
                 
-                Text(message)
+                Text(displayMessage)
                     .font(.body)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .padding(.horizontal)
             }
+            .accessibilityElement(children: .combine)
             
             Spacer()
             
-            Button(action: retryAction) {
-                Label("Retry", systemImage: "arrow.clockwise")
-                    .font(.headline)
-                    .frame(maxWidth: 300)
-                    .padding(.vertical, 4)
+            if showRetry {
+                Button(action: retryAction) {
+                    Label("Try Again", systemImage: "arrow.clockwise")
+                        .font(.headline)
+                        .frame(maxWidth: 300)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.customGlassProminent)
+                .controlSize(.large)
+                .padding(.bottom, 40)
+                .accessibilityHint("Double tap to retry loading weather data")
+            } else if error == .locationAccessDenied {
+                Button {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                } label: {
+                    Label("Open Settings", systemImage: "gear")
+                        .font(.headline)
+                        .frame(maxWidth: 300)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.customGlassProminent)
+                .controlSize(.large)
+                .padding(.bottom, 40)
+                .accessibilityHint("Double tap to open Settings and enable location access")
             }
-            .buttonStyle(.customGlassProminent)
-            .controlSize(.large)
-            .padding(.bottom, 40)
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity)

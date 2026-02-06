@@ -8,32 +8,81 @@
 import XCTest
 
 final class weatherUITests: XCTestCase {
+    
+    var app: XCUIApplication!
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation - required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launchArguments = ["UI_TESTING"]
+        app.launch()
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
+    
+    // MARK: - App Launch Tests
 
     @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
-
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    func testAppLaunches() throws {
+        XCTAssertTrue(app.state == .runningForeground)
     }
+    
+    @MainActor
+    func testWelcomeScreenOrWeatherDisplays() throws {
+        let welcomeText = app.staticTexts["Welcome to Weather"]
+        let loadingExists = app.staticTexts["Loading weather data..."].exists
+        let navigationBar = app.navigationBars.firstMatch
+        
+        let exists = welcomeText.waitForExistence(timeout: 5) || loadingExists || navigationBar.exists
+        XCTAssertTrue(exists, "Either welcome screen, loading, or weather should be visible")
+    }
+    
+    // MARK: - Settings Tests
+    
+    @MainActor
+    func testOpenSettings() throws {
+        let settingsButton = app.buttons["gear"].firstMatch
+        
+        if settingsButton.waitForExistence(timeout: 5) {
+            settingsButton.tap()
+            
+            let settingsTitle = app.staticTexts["Settings"].firstMatch
+            XCTAssertTrue(settingsTitle.waitForExistence(timeout: 3), "Settings title should appear")
+        }
+    }
+    
+    @MainActor
+    func testSettingsContainsUnitsSection() throws {
+        let settingsButton = app.buttons["gear"].firstMatch
+        
+        if settingsButton.waitForExistence(timeout: 5) {
+            settingsButton.tap()
+            
+            let unitsHeader = app.staticTexts["Units"].firstMatch
+            XCTAssertTrue(unitsHeader.waitForExistence(timeout: 3), "Units section should exist")
+        }
+    }
+    
+    // MARK: - Favorites Tests
+    
+    @MainActor
+    func testOpenFavorites() throws {
+        let favoritesButton = app.buttons["list.bullet"].firstMatch
+        
+        if favoritesButton.waitForExistence(timeout: 5) {
+            favoritesButton.tap()
+            
+            let favoritesTitle = app.staticTexts["Favorites"].firstMatch
+            XCTAssertTrue(favoritesTitle.waitForExistence(timeout: 3), "Favorites title should appear")
+        }
+    }
+    
+    // MARK: - Performance Tests
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

@@ -43,10 +43,14 @@ class WeatherService {
     var airQualityData: AirQualityData?
     var isLoading = false
     var errorMessage: String?
+    var lastError: WeatherError?
     var currentLocationName: String?
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
+    private let retryHandler = RetryHandler()
+    
+    // MARK: - Public Methods
     
     func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil) async {
         self.currentLocationName = locationName
@@ -54,46 +58,13 @@ class WeatherService {
         await MainActor.run {
             isLoading = true
             errorMessage = nil
+            lastError = nil
         }
         
         do {
-            // Build URL components
-            var components = URLComponents(string: baseURL)
-            components?.queryItems = [
-                URLQueryItem(name: "latitude", value: String(latitude)),
-                URLQueryItem(name: "longitude", value: String(longitude)),
-                URLQueryItem(name: "current", value: currentParameters),
-                URLQueryItem(name: "hourly", value: hourlyParameters),
-                URLQueryItem(name: "daily", value: dailyParameters),
-                URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
-                URLQueryItem(name: "wind_speed_unit", value: "mph"),
-                URLQueryItem(name: "precipitation_unit", value: "inch"),
-                URLQueryItem(name: "timezone", value: "auto"),
-                URLQueryItem(name: "forecast_days", value: "14")
-            ]
-            
-            guard let url = components?.url else {
-                await MainActor.run {
-                    self.errorMessage = "Invalid URL"
-                    self.isLoading = false
-                }
-                return
+            let weather = try await retryHandler.execute(config: .default) {
+                try await self.performWeatherFetch(latitude: latitude, longitude: longitude)
             }
-            
-            let (data, response) = try await URLSession.shared.data(from: url)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                await MainActor.run {
-                    self.errorMessage = "Server error"
-                    self.isLoading = false
-                }
-                return
-            }
-            
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            let weather = try decoder.decode(WeatherData.self, from: data)
             
             await MainActor.run {
                 self.weatherData = weather
@@ -103,14 +74,81 @@ class WeatherService {
             // Save to shared storage for widgets
             SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
             
-            // Fetch air quality data in parallel
+            // Fetch air quality data (non-blocking, optional)
             await fetchAirQuality(latitude: latitude, longitude: longitude)
+            
+        } catch let error as WeatherError {
+            await handleError(error)
+        } catch let urlError as URLError {
+            await handleError(.from(urlError))
         } catch {
-            await MainActor.run {
-                self.errorMessage = "Failed to fetch weather: \(error.localizedDescription)"
-                self.isLoading = false
-            }
+            await handleError(.unknown(error.localizedDescription))
         }
+    }
+    
+    func retry() async {
+        guard let location = weatherData?.location ?? getCurrentCachedLocation() else {
+            await handleError(.locationUnavailable)
+            return
+        }
+        await fetchWeather(latitude: location.latitude, longitude: location.longitude, locationName: currentLocationName)
+    }
+    
+    // MARK: - Private Methods
+    
+    private func performWeatherFetch(latitude: Double, longitude: Double) async throws -> WeatherData {
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "current", value: currentParameters),
+            URLQueryItem(name: "hourly", value: hourlyParameters),
+            URLQueryItem(name: "daily", value: dailyParameters),
+            URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
+            URLQueryItem(name: "wind_speed_unit", value: "mph"),
+            URLQueryItem(name: "precipitation_unit", value: "inch"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "forecast_days", value: "14")
+        ]
+        
+        guard let url = components?.url else {
+            throw WeatherError.invalidURL
+        }
+        
+        let (data, response) = try await URLSession.shared.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw WeatherError.invalidResponse
+        }
+        
+        if let error = WeatherError.from(statusCode: httpResponse.statusCode) {
+            throw error
+        }
+        
+        do {
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            return try decoder.decode(WeatherData.self, from: data)
+        } catch let decodingError as DecodingError {
+            throw WeatherError.decodingError(decodingError.localizedDescription)
+        }
+    }
+    
+    private func handleError(_ error: WeatherError) async {
+        await MainActor.run {
+            self.lastError = error
+            self.errorMessage = error.errorDescription
+            self.isLoading = false
+        }
+    }
+    
+    private func getCurrentCachedLocation() -> (latitude: Double, longitude: Double)? {
+        // Try to get last location from shared data
+        if let sharedData = SharedDataManager.shared.loadWeatherData() {
+            // SharedWeatherData doesn't store coordinates, so return nil
+            return nil
+        }
+        return nil
     }
     
     func fetchAirQuality(latitude: Double, longitude: Double) async {
