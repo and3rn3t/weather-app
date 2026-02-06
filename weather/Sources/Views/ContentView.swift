@@ -17,6 +17,9 @@ struct ContentView: View {
     @State private var showingEffectsShowcase = false
     @State private var showingSettings = false
     @State private var showingFavorites = false
+    @State private var showingMap = false
+    @State private var showingHourlyChart = false
+    @State private var showingOnboarding = !OnboardingChecker.hasCompletedOnboarding
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
     
@@ -24,6 +27,7 @@ struct ContentView: View {
     @State private var notificationManager = NotificationManager()
     @State private var liveActivityManager = LiveActivityManager()
     @Environment(\.modelContext) private var modelContext
+    @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
     
     var body: some View {
@@ -132,6 +136,26 @@ struct ContentView: View {
                     .environment(favManager)
                 }
             }
+            .sheet(isPresented: $showingMap) {
+                if let weatherData = weatherService.weatherData {
+                    WeatherMapView(
+                        weatherData: weatherData,
+                        locationName: displayLocationName ?? "Current Location",
+                        latitude: currentLatitude,
+                        longitude: currentLongitude
+                    )
+                }
+            }
+            .sheet(isPresented: $showingHourlyChart) {
+                if let weatherData = weatherService.weatherData {
+                    HourlyChartView(weatherData: weatherData)
+                        .environment(settings)
+                }
+            }
+            .fullScreenCover(isPresented: $showingOnboarding) {
+                OnboardingView(isPresented: $showingOnboarding)
+                    .environment(locationManager)
+            }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -142,7 +166,24 @@ struct ContentView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItemGroup(placement: .topBarTrailing) {
+                    // Map button
+                    if weatherService.weatherData != nil {
+                        Button {
+                            showingMap = true
+                        } label: {
+                            Image(systemName: "map")
+                        }
+                        
+                        // Chart button
+                        Button {
+                            showingHourlyChart = true
+                        } label: {
+                            Image(systemName: "chart.xyaxis.line")
+                        }
+                    }
+                    
+                    // Settings button
                     Button {
                         showingSettings = true
                     } label: {
@@ -172,6 +213,14 @@ struct ContentView: View {
     
     private var displayLocationName: String? {
         selectedLocationName ?? locationManager.locationName
+    }
+    
+    private var currentLatitude: Double {
+        selectedCoordinate?.latitude ?? locationManager.location?.coordinate.latitude ?? 0
+    }
+    
+    private var currentLongitude: Double {
+        selectedCoordinate?.longitude ?? locationManager.location?.coordinate.longitude ?? 0
     }
     
     private func checkAndFetchWeather() async {

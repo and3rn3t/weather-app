@@ -12,6 +12,7 @@ import AppIntents
 @main
 struct weatherApp: App {
     let modelContainer: ModelContainer
+    @State private var themeManager = ThemeManager()
     
     init() {
         do {
@@ -28,6 +29,7 @@ struct weatherApp: App {
         WindowGroup {
             ContentView()
                 .modelContainer(modelContainer)
+                .environment(themeManager)
         }
     }
 }

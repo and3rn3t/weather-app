@@ -210,6 +210,7 @@ class WeatherService {
             "precipitation",
             "precipitation_probability",
             "wind_speed_10m",
+            "wind_gusts_10m",
             "wind_direction_10m",
             "relative_humidity_2m",
             "uv_index",

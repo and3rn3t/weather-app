@@ -11,6 +11,8 @@ struct SettingsView: View {
     @Bindable var settings: SettingsManager
     @Bindable var notifications: NotificationManager
     @Environment(\.dismiss) private var dismiss
+    @Environment(ThemeManager.self) private var themeManager
+    @State private var showingThemePicker = false
     
     init(settings: SettingsManager, notifications: NotificationManager) {
         self.settings = settings
@@ -67,6 +69,27 @@ struct SettingsView: View {
                     Toggle(isOn: $settings.showWeatherParticles) {
                         Label("Weather Particles", systemImage: "snow")
                     }
+                    
+                    // Theme Picker
+                    Button {
+                        showingThemePicker = true
+                    } label: {
+                        HStack {
+                            Label("Color Theme", systemImage: "paintpalette")
+                            Spacer()
+                            HStack(spacing: 4) {
+                                ForEach(themeManager.currentTheme.previewColors.prefix(3), id: \.self) { color in
+                                    Circle()
+                                        .fill(color)
+                                        .frame(width: 16, height: 16)
+                                }
+                            }
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .foregroundStyle(.primary)
                 } header: {
                     Label("Appearance", systemImage: "paintbrush")
                 }
@@ -203,10 +226,15 @@ struct SettingsView: View {
                     .buttonStyle(.customGlass)
                 }
             }
+            .sheet(isPresented: $showingThemePicker) {
+                ThemePickerView()
+                    .environment(themeManager)
+            }
         }
     }
 }
 
 #Preview {
     SettingsView(settings: SettingsManager(), notifications: NotificationManager())
+        .environment(ThemeManager())
 }

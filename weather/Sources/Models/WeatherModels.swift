@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 // MARK: - Weather Data Models
 
@@ -59,12 +60,18 @@ struct HourlyWeather: Codable {
     let temperature2m: [Double]
     let weatherCode: [Int]
     let precipitationProbability: [Int]?
+    let windSpeed10m: [Double]?
+    let windGusts10m: [Double]?
+    let relativeHumidity2m: [Int]?
     
     enum CodingKeys: String, CodingKey {
         case time
         case temperature2m = "temperature_2m"
         case weatherCode = "weather_code"
         case precipitationProbability = "precipitation_probability"
+        case windSpeed10m = "wind_speed_10m"
+        case windGusts10m = "wind_gusts_10m"
+        case relativeHumidity2m = "relative_humidity_2m"
     }
 }
 
@@ -155,6 +162,23 @@ enum WeatherCondition {
         case .snow: return "cloud.snow.fill"
         case .thunderstorm: return "cloud.bolt.fill"
         case .unknown: return "questionmark.circle.fill"
+        }
+    }
+    
+    // Alias for consistency
+    var sfSymbol: String { symbolName }
+    
+    var iconColor: Color {
+        switch self {
+        case .clearSky: return .orange
+        case .partlyCloudy: return .yellow
+        case .cloudy: return .gray
+        case .foggy: return .gray.opacity(0.7)
+        case .drizzle: return .blue.opacity(0.7)
+        case .rain: return .blue
+        case .snow: return .cyan
+        case .thunderstorm: return .purple
+        case .unknown: return .gray
         }
     }
 }
