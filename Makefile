@@ -5,7 +5,7 @@ SCHEME = weather
 PROJECT = weather.xcodeproj
 CONFIGURATION_DEBUG = Debug
 CONFIGURATION_RELEASE = Release
-DESTINATION = platform=iOS Simulator,name=iPhone 16 Pro
+DESTINATION = platform=iOS Simulator,name=iPhone 17 Pro
 
 .PHONY: clean build test archive lint format
 
@@ -17,21 +17,37 @@ clean:
 
 # Build for Debug
 build:
-	xcodebuild build \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration $(CONFIGURATION_DEBUG) \
-		-destination "$(DESTINATION)" \
-		| xcbeautify
+	@if command -v xcbeautify >/dev/null 2>&1; then \
+		xcodebuild build \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_DEBUG) \
+			-destination "$(DESTINATION)" \
+			| xcbeautify; \
+	else \
+		xcodebuild build \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_DEBUG) \
+			-destination "$(DESTINATION)"; \
+	fi
 
 # Build for Release
 build-release:
-	xcodebuild build \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration $(CONFIGURATION_RELEASE) \
-		-destination "$(DESTINATION)" \
-		| xcbeautify
+	@if command -v xcbeautify >/dev/null 2>&1; then \
+		xcodebuild build \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_RELEASE) \
+			-destination "$(DESTINATION)" \
+			| xcbeautify; \
+	else \
+		xcodebuild build \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_RELEASE) \
+			-destination "$(DESTINATION)"; \
+	fi
 
 # Run tests
 test:
@@ -53,20 +69,38 @@ test-coverage:
 
 # Build archive for App Store
 archive:
-	xcodebuild archive \
-		-project $(PROJECT) \
-		-scheme $(SCHEME) \
-		-configuration $(CONFIGURATION_RELEASE) \
-		-archivePath build/weather.xcarchive \
-		| xcbeautify
+	@mkdir -p build
+	@if command -v xcbeautify >/dev/null 2>&1; then \
+		xcodebuild archive \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_RELEASE) \
+			-archivePath build/weather.xcarchive \
+			| xcbeautify; \
+	else \
+		xcodebuild archive \
+			-project $(PROJECT) \
+			-scheme $(SCHEME) \
+			-configuration $(CONFIGURATION_RELEASE) \
+			-archivePath build/weather.xcarchive; \
+	fi
+	@echo "✅ Archive created at build/weather.xcarchive"
 
 # Export IPA from archive
 export-ipa: archive
-	xcodebuild -exportArchive \
-		-archivePath build/weather.xcarchive \
-		-exportPath build/ipa \
-		-exportOptionsPlist ExportOptions.plist \
-		| xcbeautify
+	@mkdir -p build/ipa
+	@if command -v xcbeautify >/dev/null 2>&1; then \
+		xcodebuild -exportArchive \
+			-archivePath build/weather.xcarchive \
+			-exportPath build/ipa \
+			-exportOptionsPlist ExportOptions.plist \
+			| xcbeautify; \
+	else \
+		xcodebuild -exportArchive \
+			-archivePath build/weather.xcarchive \
+			-exportPath build/ipa \
+			-exportOptionsPlist ExportOptions.plist; \
+	fi
 	@echo "✅ IPA exported to build/ipa/"
 
 # Quick lint check (requires SwiftLint)

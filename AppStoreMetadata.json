@@ -1,0 +1,111 @@
+{
+  "app_information": {
+    "name": "Andernet Weather",
+    "subtitle": "Liquid Glass Forecasts",
+    "bundle_id": "dev.andernet.weather",
+    "version": "1.0",
+    "build": "1",
+    "sku": "andernet-weather-001",
+    "primary_category": "Weather",
+    "secondary_category": "Utilities"
+  },
+  "pricing": {
+    "price_tier": "Free",
+    "available_territories": "All"
+  },
+  "app_store_listing": {
+    "description": "Experience weather like never before with Andernet Weather — designed exclusively for iOS 26 with Apple's stunning Liquid Glass design language.\n\nBEAUTIFUL LIQUID GLASS INTERFACE\n• Native iOS 26 Liquid Glass effects throughout\n• Dynamic weather backgrounds that match conditions\n• Smooth animations and haptic feedback\n\nCOMPREHENSIVE WEATHER DATA\n• Real-time temperature with \"feels like\" readings\n• Hourly and 7-day forecasts with interactive charts\n• Air Quality Index (AQI) with detailed pollutant data\n• Sunrise/sunset times with daylight duration\n• Wind speed, humidity, and precipitation data\n\nPOWERFUL WIDGETS & LIVE ACTIVITIES\n• Home Screen widgets in multiple sizes\n• Lock Screen widgets for quick glances\n• Live Activities show weather on your Lock Screen\n• Control Center widget for instant access\n\nSMART FEATURES\n• Siri Shortcuts for voice-activated weather\n• Save favorite locations for quick access\n• Weather maps with satellite overlays\n• Customizable themes and units\n• Background location for automatic updates\n\nPRIVACY FOCUSED\n• No tracking or advertising\n• Location used only for weather data\n• Open-source weather API (Open-Meteo)\n\nDownload Andernet Weather today and experience the future of weather apps!",
+    "keywords": "weather,forecast,temperature,rain,snow,humidity,air quality,widgets,live activities,ios26",
+    "promotional_text": "Now with iOS 26 Liquid Glass design! Experience weather forecasts with stunning translucent effects and Live Activities.",
+    "support_url": "https://andernet.dev/weather/support",
+    "marketing_url": "https://andernet.dev/weather",
+    "privacy_policy_url": "https://andernet.dev/weather/privacy"
+  },
+  "version_information": {
+    "whats_new": "Version 1.0 - Initial Release\n\n✨ NEW FEATURES\n• Beautiful Liquid Glass design for iOS 26\n• Interactive hourly weather charts\n• Weather maps with multiple overlays\n• Air Quality Index monitoring\n• Live Activities on Lock Screen\n• Control Center weather widget\n• Siri Shortcuts integration\n• 8 customizable color themes\n\n🌡️ WEATHER DATA\n• Current conditions with feels-like temperature\n• Hourly forecast for 24 hours\n• 7-day extended forecast\n• Detailed weather metrics\n\n🎨 DESIGNED FOR iOS 26\n• Native Liquid Glass effects\n• Floating tab bar navigation\n• Glass-styled buttons and cards\n• Dynamic weather backgrounds"
+  },
+  "age_rating": {
+    "rating": "4+",
+    "content_descriptors": []
+  },
+  "app_privacy": {
+    "privacy_policy_url": "https://andernet.dev/weather/privacy",
+    "data_types": [
+      {
+        "type": "Location",
+        "subtype": "Precise Location",
+        "purposes": ["App Functionality"],
+        "linked_to_user": false,
+        "used_for_tracking": false
+      }
+    ],
+    "tracking": false
+  },
+  "testflight": {
+    "beta_app_description": "Thank you for testing Andernet Weather!\n\nThis beta includes all features of the upcoming 1.0 release:\n• Beautiful Liquid Glass design for iOS 26\n• Real-time weather with hourly/daily forecasts\n• Interactive charts and weather maps\n• Widgets and Live Activities\n• Air Quality Index monitoring\n• Customizable themes\n\nWHAT TO TEST:\n• Search and save favorite locations\n• Try all widget sizes (Home/Lock Screen)\n• Test Live Activities on Lock Screen\n• Switch between Celsius/Fahrenheit\n• Try different color themes\n• Test with different network conditions\n• Check VoiceOver accessibility\n\nKNOWN ISSUES:\n• Weather particle effects temporarily disabled\n• Widget refresh timing controlled by iOS\n\nPLEASE REPORT:\n• Crashes or freezes\n• UI layout issues\n• Missing accessibility labels\n• Confusing interactions\n• Feature requests\n\nUse TestFlight's built-in feedback tool (shake device) or email support@andernet.dev",
+    "feedback_email": "support@andernet.dev",
+    "what_to_test": "• All weather data displays correctly\n• Widgets update and show accurate data\n• Live Activities work on Lock Screen\n• Location services work properly\n• Settings persist correctly\n• Themes apply properly\n• Accessibility features (VoiceOver, Dynamic Type)\n• Dark/Light mode transitions"
+  },
+  "screenshots": {
+    "iphone_6_9_inch": {
+      "size": "1320x2868",
+      "devices": ["iPhone 17 Pro Max"],
+      "required": true,
+      "filenames": [
+        "01-main-weather-view.png",
+        "02-hourly-charts.png",
+        "03-weather-map.png",
+        "04-widgets-showcase.png",
+        "05-live-activities.png",
+        "06-settings-themes.png",
+        "07-favorites-list.png",
+        "08-air-quality.png"
+      ]
+    },
+    "iphone_6_3_inch": {
+      "size": "1206x2622",
+      "devices": ["iPhone 17 Pro"],
+      "required": true,
+      "filenames": [
+        "01-main-weather-view.png",
+        "02-hourly-charts.png",
+        "03-weather-map.png",
+        "04-widgets-showcase.png",
+        "05-live-activities.png"
+      ]
+    },
+    "ipad_13_inch": {
+      "size": "2064x2752",
+      "devices": ["iPad Pro 13-inch"],
+      "required": false,
+      "filenames": [
+        "01-main-weather-view.png",
+        "02-hourly-charts.png",
+        "03-weather-map.png"
+      ]
+    }
+  },
+  "app_icon": {
+    "size": "1024x1024",
+    "format": "PNG",
+    "no_alpha": true,
+    "no_rounded_corners": true,
+    "location": "weather/Assets.xcassets/AppIcon.appiconset/"
+  },
+  "review_notes": {
+    "notes": "Andernet Weather is a weather forecast app designed for iOS 26.\n\nTEST ACCOUNT: Not required\n\nFEATURES TO REVIEW:\n• Main weather view with current conditions\n• Hourly forecast with interactive charts\n• 7-day forecast\n• Weather maps\n• Widgets (Home/Lock Screen)\n• Live Activities\n• Location search and favorites\n\nLOCATION USAGE:\n• Used only for weather forecasts\n• Can be declined - manual search available\n• Background location (optional) for widget updates\n\nTHIRD-PARTY APIS:\n• Open-Meteo (free weather API, no tracking)\n• No other third-party services\n\nPRIVACY:\n• No user accounts\n• No tracking or analytics\n• Location not stored/shared\n• All data local to device",
+    "demo_credentials": null,
+    "special_instructions": "The app works best with location enabled, but can be fully tested with manual city search if you prefer not to grant location access."
+  },
+  "export_compliance": {
+    "uses_encryption": true,
+    "encryption_type": "Standard iOS encryption (HTTPS, UserDefaults, SwiftData)",
+    "exempt": true,
+    "exemption_code": "Standard iOS encryption only"
+  },
+  "contacts": {
+    "support_email": "support@andernet.dev",
+    "marketing_email": "hello@andernet.dev",
+    "github": "https://github.com/and3rn3t/weather-app"
+  }
+}
