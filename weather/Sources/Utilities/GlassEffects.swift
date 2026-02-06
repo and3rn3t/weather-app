@@ -108,6 +108,26 @@ extension View {
         modifier(GlassEffect(style: style))
     }
     
+    func glassEffect<S: InsettableShape>(_ style: GlassStyle = .regular, in shape: S) -> some View {
+        self
+            .background(style.material, in: shape)
+            .overlay {
+                shape
+                    .strokeBorder(
+                        LinearGradient(
+                            colors: [
+                                .white.opacity(style.borderOpacity),
+                                .clear
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        ),
+                        lineWidth: style.borderWidth
+                    )
+            }
+            .shadow(color: style.shadowColor, radius: style.shadowRadius, x: 0, y: style.shadowY)
+    }
+    
     func glassEffectID(_ id: String, in namespace: Namespace.ID) -> some View {
         self.matchedGeometryEffect(id: id, in: namespace)
     }

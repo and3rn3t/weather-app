@@ -243,8 +243,8 @@ private enum WeatherConditionAccessibility {
 struct ReduceMotionModifier: ViewModifier {
     @Environment(\.accessibilityReduceMotion) var reduceMotion
     
-    let animation: Animation
-    let reducedAnimation: Animation
+    let animation: Animation?
+    let reducedAnimation: Animation?
     
     func body(content: Content) -> some View {
         content
@@ -254,7 +254,7 @@ struct ReduceMotionModifier: ViewModifier {
 
 extension View {
     /// Applies animation that respects accessibility reduce motion setting
-    func accessibleAnimation(_ animation: Animation, reduced: Animation = .none) -> some View {
+    func accessibleAnimation(_ animation: Animation?, reduced: Animation? = nil) -> some View {
         modifier(ReduceMotionModifier(animation: animation, reducedAnimation: reduced))
     }
 }

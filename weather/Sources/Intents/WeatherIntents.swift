@@ -7,6 +7,7 @@
 
 import AppIntents
 import CoreLocation
+import MapKit
 import SwiftUI
 
 // MARK: - Get Current Weather Intent
@@ -23,19 +24,21 @@ struct GetWeatherIntent: AppIntent {
     }
     
     func perform() async throws -> some IntentResult & ProvidesDialog & ShowsSnippetView {
-        let weatherService = WeatherService()
-        
         // Get coordinates for location
         let (latitude, longitude, resolvedName) = try await resolveLocation()
         
-        // Fetch weather
+        // Create WeatherService on MainActor and fetch weather
+        let weatherService = await MainActor.run { WeatherService() }
         await weatherService.fetchWeather(
             latitude: latitude,
             longitude: longitude,
             locationName: resolvedName
         )
         
-        guard let weatherData = weatherService.weatherData else {
+        // Access weatherData on MainActor
+        let weatherData = await MainActor.run { weatherService.weatherData }
+        
+        guard let weatherData else {
             throw WeatherIntentError.fetchFailed
         }
         
@@ -52,16 +55,18 @@ struct GetWeatherIntent: AppIntent {
         It feels like \(feelsLike)°F with a high of \(high)°F and low of \(low)°F today.
         """
         
-        return .result(
-            dialog: IntentDialog(stringLiteral: dialog),
-            view: WeatherSnippetView(
-                temperature: temp,
-                condition: WeatherConditionSnippet(code: conditionCode),
-                locationName: resolvedName ?? "Current Location",
-                high: high,
-                low: low
+        return await MainActor.run {
+            .result(
+                dialog: IntentDialog(stringLiteral: dialog),
+                view: WeatherSnippetView(
+                    temperature: temp,
+                    condition: WeatherConditionSnippet(code: conditionCode),
+                    locationName: resolvedName ?? "Current Location",
+                    high: high,
+                    low: low
+                )
             )
-        )
+        }
     }
     
     private func weatherConditionDescription(for code: Int) -> String {
@@ -80,20 +85,24 @@ struct GetWeatherIntent: AppIntent {
     
     private func resolveLocation() async throws -> (Double, Double, String?) {
         if let name = locationName, !name.isEmpty {
-            // Geocode the provided location name
-            let geocoder = CLGeocoder()
-            let placemarks = try await geocoder.geocodeAddressString(name)
-            
-            guard let placemark = placemarks.first,
-                  let location = placemark.location else {
+            // Geocode the provided location name using MapKit
+            guard let request = MKGeocodingRequest(addressString: name) else {
                 throw WeatherIntentError.locationNotFound
             }
             
-            let resolvedName = placemark.locality ?? placemark.name ?? name
+            let mapItems = try await request.mapItems
+            
+            guard let mapItem = mapItems.first else {
+                throw WeatherIntentError.locationNotFound
+            }
+            
+            let location = mapItem.location
+            // Use address.city for the city name
+            let resolvedName = mapItem.name ?? mapItem.address?.city ?? name
             return (location.coordinate.latitude, location.coordinate.longitude, resolvedName)
         } else {
             // Use current location
-            let locationProvider = IntentLocationProvider()
+            let locationProvider = await MainActor.run { IntentLocationProvider() }
             let location = try await locationProvider.getCurrentLocation()
             return (location.coordinate.latitude, location.coordinate.longitude, nil)
         }
@@ -107,30 +116,32 @@ struct WillItRainIntent: AppIntent {
     static var description = IntentDescription("Check if rain is expected today at your location.")
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let weatherService = WeatherService()
-        let locationProvider = IntentLocationProvider()
+        let locationProvider = await MainActor.run { IntentLocationProvider() }
         
         // Get current location
         let location = try await locationProvider.getCurrentLocation()
         
-        // Fetch weather
+        // Create WeatherService on MainActor and fetch weather
+        let weatherService = await MainActor.run { WeatherService() }
         await weatherService.fetchWeather(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
             locationName: nil
         )
         
-        guard let weatherData = weatherService.weatherData else {
+        // Access weatherData on MainActor
+        let weatherData = await MainActor.run { weatherService.weatherData }
+        
+        guard let weatherData else {
             throw WeatherIntentError.fetchFailed
         }
         
         // Check precipitation probability for today
         let todayPrecipProb = weatherData.daily.precipitationProbabilityMax.first ?? 0
-        let precipAmount = weatherData.daily.precipitationSum.first ?? 0
         
         let dialog: String
         if todayPrecipProb >= 70 {
-            dialog = "Yes, there's a \(todayPrecipProb)% chance of rain today with about \(String(format: "%.1f", precipAmount)) inches expected. You should bring an umbrella! ☔️"
+            dialog = "Yes, there's a \(todayPrecipProb)% chance of rain today. You should bring an umbrella! ☔️"
         } else if todayPrecipProb >= 40 {
             dialog = "Maybe. There's a \(todayPrecipProb)% chance of rain today. You might want to keep an umbrella handy."
         } else if todayPrecipProb > 0 {
@@ -150,18 +161,22 @@ struct GetTemperatureIntent: AppIntent {
     static var description = IntentDescription("Get just the current temperature.")
     
     func perform() async throws -> some IntentResult & ProvidesDialog {
-        let weatherService = WeatherService()
-        let locationProvider = IntentLocationProvider()
+        let locationProvider = await MainActor.run { IntentLocationProvider() }
         
         let location = try await locationProvider.getCurrentLocation()
         
+        // Create WeatherService on MainActor and fetch weather
+        let weatherService = await MainActor.run { WeatherService() }
         await weatherService.fetchWeather(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
             locationName: nil
         )
         
-        guard let weatherData = weatherService.weatherData else {
+        // Access weatherData on MainActor
+        let weatherData = await MainActor.run { weatherService.weatherData }
+        
+        guard let weatherData else {
             throw WeatherIntentError.fetchFailed
         }
         

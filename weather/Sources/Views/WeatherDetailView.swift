@@ -194,7 +194,7 @@ struct CurrentWeatherCard: View {
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
         .padding(.horizontal, 20)
-        .glassEffect(.regular.interactive(), in: .rect(cornerRadius: 24))
+        .glassEffect(GlassStyle.regular.interactive(), in: RoundedRectangle(cornerRadius: 24))
         .accessibilityElement(children: .contain)
     }
 }
@@ -299,7 +299,7 @@ struct SunMoonCard: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Sun information")
     }
@@ -428,7 +428,7 @@ struct HourlyForecastCard: View {
             }
         }
         .padding(.vertical, 16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
     
     private var temperatureTrend: (icon: String, text: String, color: Color)? {
@@ -530,7 +530,7 @@ struct DailyForecastCard: View {
             .padding(.vertical, 8)
         }
         .padding(.vertical, 16)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
 }
 
@@ -765,7 +765,7 @@ struct WeatherDetailsCard: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
     
     private var windDirection: String {
@@ -894,7 +894,7 @@ struct LocationHeader: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 16))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 16))
     }
 }
 
@@ -1032,7 +1032,7 @@ struct WeatherRecommendationsCard: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
     
     private var recommendations: [Recommendation] {
@@ -1243,7 +1243,7 @@ struct AirQualityCard: View {
             }
         }
         .padding(20)
-        .glassEffect(.regular, in: .rect(cornerRadius: 20))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Air Quality")
     }

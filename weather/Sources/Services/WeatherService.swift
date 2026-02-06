@@ -87,11 +87,12 @@ class WeatherService {
     }
     
     func retry() async {
-        guard let location = weatherData?.location ?? getCurrentCachedLocation() else {
+        // Use the stored location from weatherData if available
+        if let weather = weatherData {
+            await fetchWeather(latitude: weather.latitude, longitude: weather.longitude, locationName: currentLocationName)
+        } else {
             await handleError(.locationUnavailable)
-            return
         }
-        await fetchWeather(latitude: location.latitude, longitude: location.longitude, locationName: currentLocationName)
     }
     
     // MARK: - Private Methods
