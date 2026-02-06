@@ -1,0 +1,44 @@
+//
+// Debug.xcconfig
+// Andernet Weather - Debug Build Configuration
+//
+// Usage: Set in Xcode Project > Info > Configurations > Debug
+//
+
+#include? "Warnings.xcconfig"
+
+// MARK: - Compilation
+
+// No optimization for faster builds
+SWIFT_OPTIMIZATION_LEVEL = -Onone
+GCC_OPTIMIZATION_LEVEL = 0
+
+// Only build active architecture for faster builds
+ONLY_ACTIVE_ARCH = YES
+
+// Enable testability
+ENABLE_TESTABILITY = YES
+
+// Debug information
+DEBUG_INFORMATION_FORMAT = dwarf
+MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE
+
+// Debug preprocessor
+GCC_PREPROCESSOR_DEFINITIONS = DEBUG=1 $(inherited)
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG $(inherited)
+
+// MARK: - Debugging Aids
+
+// Enable Address Sanitizer detection (optional, uncomment to enable)
+// CLANG_ADDRESS_SANITIZER = YES
+
+// Enable Thread Sanitizer detection (optional, uncomment to enable)  
+// CLANG_THREAD_SANITIZER = YES
+
+// Enable Undefined Behavior Sanitizer (optional, uncomment to enable)
+// CLANG_UNDEFINED_BEHAVIOR_SANITIZER = YES
+
+// MARK: - Assertions
+
+// Keep assertions enabled
+ENABLE_NS_ASSERTIONS = YES

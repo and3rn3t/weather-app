@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Network Link Conditioner Profile: Very Slow 2G
+  
+  Install: Double-click to install, or copy to:
+    macOS: /Library/Application Support/Network Link Conditioner/
+    iOS: Settings → Developer → Network Link Conditioner
+  
+  Use for testing extreme network conditions (rural areas, elevators, etc.)
+-->
+<plist version="1.0">
+<dict>
+    <key>DNSDelayInMilliseconds</key>
+    <integer>3000</integer>
+    
+    <key>DownlinkBandwidth</key>
+    <integer>50</integer>
+    <key>DownlinkBandwidthUnit</key>
+    <string>Kbps</string>
+    
+    <key>DownlinkDelay</key>
+    <integer>2000</integer>
+    <key>DownlinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>DownlinkPacketLossPercentage</key>
+    <integer>5</integer>
+    
+    <key>Interface</key>
+    <string>Any</string>
+    
+    <key>Name</key>
+    <string>Very Slow 2G (Weather Testing)</string>
+    
+    <key>Protocol</key>
+    <string>Any</string>
+    
+    <key>UplinkBandwidth</key>
+    <integer>25</integer>
+    <key>UplinkBandwidthUnit</key>
+    <string>Kbps</string>
+    
+    <key>UplinkDelay</key>
+    <integer>2000</integer>
+    <key>UplinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>UplinkPacketLossPercentage</key>
+    <integer>3</integer>
+</dict>
+</plist>

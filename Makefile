@@ -156,27 +156,71 @@ profile:
 	@echo "✅ Ready for profiling with Instruments"
 	@echo "   Run: open -a Instruments"
 
+# Run memory diagnostics
+memory-diagnostics:
+	@chmod +x scripts/memory-diagnostics.sh
+	@./scripts/memory-diagnostics.sh all
+
+# Run memory leak detection
+memory-leaks:
+	@chmod +x scripts/memory-diagnostics.sh
+	@./scripts/memory-diagnostics.sh leaks
+
+# Run accessibility audit
+accessibility:
+	@chmod +x scripts/accessibility-audit.sh
+	@./scripts/accessibility-audit.sh
+
+# Build with sanitizers
+build-sanitizers:
+	xcodebuild build \
+		-project $(PROJECT) \
+		-scheme "weather (Debug with Sanitizers)" \
+		-destination "$(DESTINATION)" \
+		| xcbeautify
+
 # Full CI pipeline
 ci: clean build test
+
+# Quality gate - run all checks before release
+quality-gate: lint test-coverage analyze accessibility
+	@echo "✅ All quality checks passed"
 
 # Help
 help:
 	@echo "Available targets:"
+	@echo ""
+	@echo "  Building:"
 	@echo "  clean              - Clean build artifacts and DerivedData"
 	@echo "  build              - Build Debug configuration"
 	@echo "  build-release      - Build Release configuration"
+	@echo "  build-sanitizers   - Build with Address & Thread Sanitizers"
+	@echo ""
+	@echo "  Testing:"
 	@echo "  test               - Run unit tests"
 	@echo "  test-coverage      - Run tests with code coverage"
 	@echo "  test-plan          - Run tests with test plan"
 	@echo "  test-performance   - Run performance tests only"
-	@echo "  archive            - Create release archive"
-	@echo "  export-ipa         - Export IPA for distribution"
+	@echo ""
+	@echo "  Analysis:"
 	@echo "  lint               - Run SwiftLint"
-	@echo "  format             - Format code with swift-format"
 	@echo "  analyze            - Static analysis"
 	@echo "  analyze-build-times - Analyze slow compilation units"
 	@echo "  analyze-size       - Analyze app bundle size"
+	@echo "  accessibility      - Run accessibility audit"
+	@echo ""
+	@echo "  Memory:"
+	@echo "  memory-diagnostics - Run all memory diagnostics"
+	@echo "  memory-leaks       - Detect memory leaks with Instruments"
+	@echo ""
+	@echo "  Release:"
+	@echo "  archive            - Create release archive"
+	@echo "  export-ipa         - Export IPA for distribution"
 	@echo "  profile            - Build for Instruments profiling"
+	@echo "  quality-gate       - Run all checks before release"
+	@echo ""
+	@echo "  Setup:"
+	@echo "  format             - Format code with swift-format"
 	@echo "  install-hooks      - Install git pre-commit hooks"
-	@echo "  ci                 - Full CI pipeline (clean, build, test)"
 	@echo "  setup-tools        - Install optional build tools"
+	@echo "  ci                 - Full CI pipeline (clean, build, test)"

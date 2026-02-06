@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Network Link Conditioner Profile: High Latency
+  
+  Use for testing satellite/international connections with high latency but good bandwidth
+-->
+<plist version="1.0">
+<dict>
+    <key>DNSDelayInMilliseconds</key>
+    <integer>500</integer>
+    
+    <key>DownlinkBandwidth</key>
+    <integer>10</integer>
+    <key>DownlinkBandwidthUnit</key>
+    <string>Mbps</string>
+    
+    <key>DownlinkDelay</key>
+    <integer>800</integer>
+    <key>DownlinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>DownlinkPacketLossPercentage</key>
+    <integer>1</integer>
+    
+    <key>Interface</key>
+    <string>Any</string>
+    
+    <key>Name</key>
+    <string>High Latency (Weather Testing)</string>
+    
+    <key>Protocol</key>
+    <string>Any</string>
+    
+    <key>UplinkBandwidth</key>
+    <integer>5</integer>
+    <key>UplinkBandwidthUnit</key>
+    <string>Mbps</string>
+    
+    <key>UplinkDelay</key>
+    <integer>800</integer>
+    <key>UplinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>UplinkPacketLossPercentage</key>
+    <integer>1</integer>
+</dict>
+</plist>

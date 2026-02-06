@@ -4,6 +4,67 @@ All notable changes to the Weather App project.
 
 ---
 
+## [2.3.0] - 2026-02-05
+
+### 🏗️ Build & Xcode Configuration
+
+Comprehensive build process improvements and Xcode configurations.
+
+### ✨ Added
+
+- **xcconfig Files** (`Configurations/`)
+  - `Debug.xcconfig` - Fast builds, sanitizer support
+  - `Release.xcconfig` - LTO, dead code stripping, symbol stripping
+  - `Warnings.xcconfig` - Strict concurrency, comprehensive warnings
+
+- **Additional Schemes**
+  - `weather (Debug with Sanitizers)` - Address & Thread Sanitizer
+  - `weather (Profile)` - Optimized for Instruments profiling
+
+- **Build Phase Scripts** (`scripts/build-phases/`)
+  - `swiftlint.sh` - Auto-lint on build
+  - `todo-warnings.sh` - Convert TODOs to warnings
+  - `git-info.sh` - Inject git metadata
+  - `increment-build.sh` - Auto-increment build numbers
+  - `archive-dsym.sh` - Archive symbols for crash reports
+
+- **Network Link Conditioner Profiles** (`NetworkProfiles/`)
+  - `VerySlow2G.nlcprofile` - 50 Kbps, high latency
+  - `LossyNetwork.nlcprofile` - 15% packet loss
+  - `HighLatency.nlcprofile` - 800ms latency (satellite)
+
+- **Diagnostic Scripts**
+  - `scripts/memory-diagnostics.sh` - Memory leak detection
+  - `scripts/accessibility-audit.sh` - Accessibility checking
+
+- **Documentation**
+  - `BUILD_CONFIGURATION.md` - Complete Xcode configuration guide
+
+### 📝 Updated
+
+- **Makefile** - Added memory-diagnostics, accessibility, build-sanitizers, quality-gate targets
+- **Info.plist** - Launch screen configuration, status bar style
+
+### 🗑️ Removed (Consolidated)
+
+- `BUILD_FIXES.md` → Obsolete (issues resolved)
+- `BUILD_OPTIMIZATIONS.md` → Merged into `BUILD_CONFIGURATION.md`
+- `VISUAL_FEATURE_MAP.md` → Content in `FEATURES.md`
+
+### 📊 Documentation Structure
+
+| Document | Purpose |
+|----------|---------|
+| `README.md` | Documentation index |
+| `QUICK_START.md` | Getting started |
+| `FEATURES.md` | App features |
+| `BUILD_CONFIGURATION.md` | Xcode settings, schemes, diagnostics |
+| `AI_DEVELOPMENT_GUIDE.md` | AI assistant instructions |
+| `APP_STORE_GUIDE.md` | App Store metadata |
+| `CHANGELOG.md` | Version history |
+
+---
+
 ## [2.2.0] - 2026-02-05
 
 ### 📚 Documentation Consolidation
@@ -23,39 +84,6 @@ Streamlined documentation by consolidating redundant files.
 - `SEARCH_AND_REFRESH_FEATURES.md` → Merged into `FEATURES.md`
 - `TIMEZONE_FEATURE.md` → Merged into `FEATURES.md`
 - `INFO_PLIST_GUIDE.md` → Merged into `QUICK_START.md`
-
-### ✨ Added
-
-- **FEATURES.md** - Consolidated feature documentation
-  - Location services
-  - Timezone handling
-  - Pull-to-refresh
-  - Interactive charts
-  - Weather recommendations
-  - Notifications
-  - Widgets
-  - Glass UI design
-
-### 📝 Updated
-
-- **README.md** - Updated documentation links
-- **Documentation/README.md** - Simplified structure
-
-### 📊 Documentation Summary
-
-| Before | After |
-| ------ | ----- |
-| 15 files | 6 files |
-
-**Current Documentation:**
-
-- `README.md` - Main docs
-- `FEATURES.md` - All features
-- `QUICK_START.md` - Setup guide
-- `BUILD_FIXES.md` - Troubleshooting
-- `VISUAL_FEATURE_MAP.md` - UI reference
-- `CHANGELOG.md` - Version history
-- `AI_DEVELOPMENT_GUIDE.md` - AI assistance
 
 ---
 

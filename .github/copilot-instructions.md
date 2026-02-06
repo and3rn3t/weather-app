@@ -199,16 +199,23 @@ Always use the Makefile for consistent builds:
 # Building
 make build              # Debug build
 make build-release      # Release build (optimized)
+make build-sanitizers   # Build with Address & Thread Sanitizers
 make clean              # Clean DerivedData and build artifacts
 
 # Code Quality
 make lint               # Run SwiftLint
 make format             # Format with swift-format
 make analyze            # Static analysis
+make accessibility      # Run accessibility audit
+
+# Memory & Diagnostics
+make memory-diagnostics # Run all memory checks
+make memory-leaks       # Detect memory leaks with Instruments
 
 # Release
 make archive            # Create release archive
 make export-ipa         # Export IPA for App Store
+make quality-gate       # All pre-release checks (lint, test, analyze, accessibility)
 
 # Analysis
 make analyze-build-times  # Identify slow-compiling files
@@ -219,6 +226,34 @@ make profile              # Build for Instruments profiling
 make setup-tools        # Install xcbeautify, swiftlint
 make install-hooks      # Install git pre-commit hooks
 ```
+
+### Xcode Schemes
+
+Use appropriate schemes for different tasks:
+
+| Scheme | Purpose |
+|--------|--------|
+| `weather` | Standard development |
+| `weather (Debug with Sanitizers)` | Memory/thread debugging with ASan/TSan |
+| `weather (Profile)` | Instruments profiling (Release, no debugger) |
+
+### xcconfig Files
+
+Build settings are managed in `Configurations/`:
+
+- `Debug.xcconfig` - Fast builds, no optimization, sanitizer support
+- `Release.xcconfig` - LTO, dead code stripping, symbol stripping
+- `Warnings.xcconfig` - Strict concurrency (`complete`), comprehensive warnings
+
+### Build Phase Scripts
+
+Optional build phases in `scripts/build-phases/`:
+
+- `swiftlint.sh` - Auto-lint on build
+- `todo-warnings.sh` - Convert TODO/FIXME to Xcode warnings
+- `git-info.sh` - Inject git commit/branch into `BuildInfo.swift`
+- `increment-build.sh` - Auto-increment build numbers on Release
+- `archive-dsym.sh` - Archive dSYMs for crash symbolication
 
 ### Performance Optimizations
 
@@ -280,6 +315,17 @@ Install with: `make install-hooks`
 - Check Console for network errors
 - Run `make analyze-build-times` to find slow compilation
 - Use `make profile` then Instruments for performance issues
+- Use `weather (Debug with Sanitizers)` scheme to catch memory issues
+- Run `make memory-leaks` to detect memory leaks
+- Run `make accessibility` to audit accessibility labels
+
+### Network Testing
+
+Test poor network conditions with Network Link Conditioner profiles in `NetworkProfiles/`:
+
+- `VerySlow2G.nlcprofile` - 50 Kbps, 2s latency (rural/elevator)
+- `LossyNetwork.nlcprofile` - 5 Mbps with 15% packet loss
+- `HighLatency.nlcprofile` - 10 Mbps with 800ms latency (satellite)
 
 ## Do NOT
 

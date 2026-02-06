@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Network Link Conditioner Profile: Lossy Network
+  
+  Use for testing packet loss scenarios (WiFi interference, congested networks)
+-->
+<plist version="1.0">
+<dict>
+    <key>DNSDelayInMilliseconds</key>
+    <integer>100</integer>
+    
+    <key>DownlinkBandwidth</key>
+    <integer>5</integer>
+    <key>DownlinkBandwidthUnit</key>
+    <string>Mbps</string>
+    
+    <key>DownlinkDelay</key>
+    <integer>100</integer>
+    <key>DownlinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>DownlinkPacketLossPercentage</key>
+    <integer>15</integer>
+    
+    <key>Interface</key>
+    <string>Any</string>
+    
+    <key>Name</key>
+    <string>Lossy Network (Weather Testing)</string>
+    
+    <key>Protocol</key>
+    <string>Any</string>
+    
+    <key>UplinkBandwidth</key>
+    <integer>2</integer>
+    <key>UplinkBandwidthUnit</key>
+    <string>Mbps</string>
+    
+    <key>UplinkDelay</key>
+    <integer>100</integer>
+    <key>UplinkDelayUnit</key>
+    <string>milliseconds</string>
+    
+    <key>UplinkPacketLossPercentage</key>
+    <integer>10</integer>
+</dict>
+</plist>

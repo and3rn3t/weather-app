@@ -87,8 +87,9 @@ These files help AI assistants understand the project's architecture, coding pat
 
 | Document | Description |
 | -------- | ----------- |
-| [QUICK_START.md](weather/Documentation/QUICK_START.md) | Setup and integration guide |
+| [QUICK_START.md](weather/Documentation/QUICK_START.md) | Getting started, build commands |
 | [FEATURES.md](weather/Documentation/FEATURES.md) | Complete feature documentation |
+| [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) | Xcode settings, schemes, diagnostics |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 
 ### Reference
@@ -96,9 +97,8 @@ These files help AI assistants understand the project's architecture, coding pat
 | Document | Description |
 | -------- | ----------- |
 | [CHANGELOG.md](weather/Documentation/CHANGELOG.md) | Version history |
-| [BUILD_FIXES.md](weather/Documentation/BUILD_FIXES.md) | Troubleshooting |
-| [BUILD_OPTIMIZATIONS.md](weather/Documentation/BUILD_OPTIMIZATIONS.md) | Build & performance optimization |
-| [VISUAL_FEATURE_MAP.md](weather/Documentation/VISUAL_FEATURE_MAP.md) | UI component reference |
+| [AI_DEVELOPMENT_GUIDE.md](weather/Documentation/AI_DEVELOPMENT_GUIDE.md) | AI assistant instructions |
+| [APP_STORE_GUIDE.md](weather/Documentation/APP_STORE_GUIDE.md) | App Store metadata |
 
 ---
 
@@ -206,7 +206,7 @@ The app includes several performance optimizations:
 - **Request Debouncing**: API calls are debounced to prevent excessive requests
 - **Deferred Initialization**: Non-critical init (Siri shortcuts) is deferred after first frame
 
-See [BUILD_OPTIMIZATIONS.md](weather/Documentation/BUILD_OPTIMIZATIONS.md) for details.
+See [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) for details.
 
 ---
 

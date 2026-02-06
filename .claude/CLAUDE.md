@@ -158,6 +158,7 @@ Always use the Makefile for consistent builds:
 # Building
 make build              # Debug build
 make build-release      # Release build (optimized)
+make build-sanitizers   # Build with Address & Thread Sanitizers
 make clean              # Clean DerivedData and build artifacts
 
 # Testing
@@ -170,10 +171,16 @@ make test-performance   # Performance tests only
 make lint               # Run SwiftLint
 make format             # Format with swift-format
 make analyze            # Static analysis
+make accessibility      # Accessibility audit
+
+# Memory & Diagnostics
+make memory-diagnostics # All memory checks
+make memory-leaks       # Leak detection with Instruments
 
 # Release
 make archive            # Create release archive
 make export-ipa         # Export IPA for App Store
+make quality-gate       # All pre-release checks
 
 # Analysis
 make analyze-build-times  # Identify slow-compiling files
@@ -184,6 +191,30 @@ make profile              # Build for Instruments profiling
 make setup-tools        # Install xcbeautify, swiftlint
 make install-hooks      # Install git pre-commit hooks
 ```
+
+### Xcode Schemes
+
+| Scheme | Purpose |
+|--------|--------|
+| `weather` | Standard development |
+| `weather (Debug with Sanitizers)` | Memory/thread debugging |
+| `weather (Profile)` | Instruments profiling |
+
+### xcconfig Files
+
+Build settings in `Configurations/`:
+
+- `Debug.xcconfig` - Fast builds, sanitizer support
+- `Release.xcconfig` - LTO, dead code stripping, symbol stripping
+- `Warnings.xcconfig` - Strict concurrency, comprehensive warnings
+
+### Network Testing
+
+Test poor network with `NetworkProfiles/`:
+
+- `VerySlow2G.nlcprofile` - 50 Kbps, 2s latency
+- `LossyNetwork.nlcprofile` - 15% packet loss
+- `HighLatency.nlcprofile` - 800ms latency
 
 ### Performance Optimizations
 
@@ -273,12 +304,13 @@ The codebase follows these performance patterns:
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Project overview |
-| `QUICK_START.md` | Setup guide |
+| `README.md` | Documentation index |
+| `QUICK_START.md` | Getting started, build commands |
+| `FEATURES.md` | App features and functionality |
+| `BUILD_CONFIGURATION.md` | Xcode settings, schemes, diagnostics |
+| `AI_DEVELOPMENT_GUIDE.md` | AI assistant instructions |
+| `APP_STORE_GUIDE.md` | App Store metadata |
 | `CHANGELOG.md` | Version history |
-| `BUILD_FIXES.md` | Common build solutions |
-| `BUILD_OPTIMIZATIONS.md` | Build & performance optimization |
-| `VISUAL_FEATURE_MAP.md` | UI component reference |
 
 ## Restrictions
 
