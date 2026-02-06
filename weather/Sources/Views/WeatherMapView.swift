@@ -15,16 +15,49 @@ struct WeatherMapView: View {
     let locationName: String
     let coordinate: CLLocationCoordinate2D
     
+    @Environment(\.colorScheme) private var colorScheme
+    @AppStorage("hasSeenMapHints") private var hasSeenMapHints = false
+    
     @State private var selectedLayer: MapLayer = .standard
     @State private var showingLayerPicker = false
-    @State private var radarPath: String = ""
+    @State private var radarFrames: [RainViewerResponse.RadarFrame] = []
+    @State private var nowcastFrames: [RainViewerResponse.RadarFrame] = []
+    @State private var currentFrameIndex: Int = 0
     @State private var isLoadingRadar = false
     @State private var hasLoadedRadar = false
+    @State private var radarOpacity: Double = 0.7
+    @State private var isPlaying = false
+    @State private var showForecast = false
+    @State private var showingHints = false
+    @State private var mapViewRef: MKMapView?
+    
+    // Timer for animation
+    @State private var animationTimer: Timer?
     
     init(weatherData: WeatherData?, locationName: String, latitude: Double, longitude: Double) {
         self.weatherData = weatherData
         self.locationName = locationName
         self.coordinate = CLLocationCoordinate2D(latitude: latitude, longitude: longitude)
+    }
+    
+    private var currentRadarPath: String {
+        let frames = showForecast ? nowcastFrames : radarFrames
+        guard !frames.isEmpty, currentFrameIndex < frames.count else { return "" }
+        return frames[currentFrameIndex].path
+    }
+    
+    private var totalFrames: Int {
+        showForecast ? nowcastFrames.count : radarFrames.count
+    }
+    
+    private var currentFrameTime: String {
+        let frames = showForecast ? nowcastFrames : radarFrames
+        guard !frames.isEmpty, currentFrameIndex < frames.count else { return "" }
+        let timestamp = frames[currentFrameIndex].time
+        let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter.string(from: date)
     }
     
     var body: some View {
@@ -35,39 +68,123 @@ struct WeatherMapView: View {
                     coordinate: coordinate,
                     locationName: locationName,
                     weatherData: weatherData,
-                    radarPath: radarPath,
+                    radarPath: currentRadarPath,
                     showRadar: selectedLayer == .precipitation,
-                    mapType: selectedLayer.mkMapType
+                    radarOpacity: radarOpacity,
+                    mapType: effectiveMapType,
+                    onMapViewCreated: { mapView in
+                        mapViewRef = mapView
+                    }
                 )
                 .ignoresSafeArea(edges: .bottom)
                 
-                // Layer selector overlay
-                VStack {
+                // Controls overlay
+                VStack(spacing: 0) {
+                    // Top controls - Map type quick toggle
+                    HStack {
+                        MapTypeSegmentedControl(selectedLayer: $selectedLayer)
+                            .padding(.horizontal)
+                        Spacer()
+                    }
+                    .padding(.top, 8)
+                    
                     Spacer()
                     
+                    // Right side controls
                     HStack {
                         Spacer()
                         
-                        // Layer picker button
-                        Button {
-                            showingLayerPicker.toggle()
-                        } label: {
-                            Image(systemName: "square.3.layers.3d")
-                                .font(.title2)
-                                .foregroundStyle(.white)
-                                .padding(12)
-                                .background(.ultraThinMaterial, in: Circle())
+                        VStack(spacing: 12) {
+                            // Zoom controls
+                            VStack(spacing: 0) {
+                                Button {
+                                    zoomIn()
+                                } label: {
+                                    Image(systemName: "plus")
+                                        .font(.title3.weight(.medium))
+                                        .frame(width: 44, height: 44)
+                                }
+                                
+                                Divider()
+                                    .frame(width: 30)
+                                
+                                Button {
+                                    zoomOut()
+                                } label: {
+                                    Image(systemName: "minus")
+                                        .font(.title3.weight(.medium))
+                                        .frame(width: 44, height: 44)
+                                }
+                            }
+                            .foregroundStyle(.primary)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                            
+                            // Center on location
+                            Button {
+                                centerOnLocation()
+                            } label: {
+                                Image(systemName: "location.fill")
+                                    .font(.title3)
+                                    .frame(width: 44, height: 44)
+                            }
+                            .foregroundStyle(.blue)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                            
+                            // Reset rotation (compass)
+                            Button {
+                                resetRotation()
+                            } label: {
+                                Image(systemName: "compass.drawing")
+                                    .font(.title3)
+                                    .frame(width: 44, height: 44)
+                            }
+                            .foregroundStyle(.primary)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
+                            
+                            // Layer picker button
+                            Button {
+                                showingLayerPicker.toggle()
+                            } label: {
+                                Image(systemName: "square.3.layers.3d")
+                                    .font(.title3)
+                                    .frame(width: 44, height: 44)
+                            }
+                            .foregroundStyle(.primary)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 10))
                         }
-                        .padding()
+                        .padding(.trailing, 12)
                     }
                     
-                    // Weather legend
-                    WeatherMapLegend(layer: selectedLayer)
+                    // Bottom controls for radar
+                    if selectedLayer == .precipitation && hasLoadedRadar {
+                        VStack(spacing: 12) {
+                            // Radar timeline controls
+                            RadarTimelineControls(
+                                currentFrameIndex: $currentFrameIndex,
+                                isPlaying: $isPlaying,
+                                showForecast: $showForecast,
+                                totalFrames: totalFrames,
+                                currentTime: currentFrameTime,
+                                onPlayPause: togglePlayback
+                            )
+                            
+                            // Opacity slider
+                            RadarOpacitySlider(opacity: $radarOpacity)
+                            
+                            // Weather legend
+                            WeatherMapLegend(layer: selectedLayer)
+                        }
                         .padding(.horizontal)
                         .padding(.bottom, 8)
+                    } else {
+                        // Weather legend only
+                        WeatherMapLegend(layer: selectedLayer)
+                            .padding(.horizontal)
+                            .padding(.bottom, 8)
+                    }
                 }
                 
-                // Loading indicator for radar (only show when actively loading)
+                // Loading indicator for radar
                 if isLoadingRadar && !hasLoadedRadar {
                     VStack {
                         HStack {
@@ -84,46 +201,154 @@ struct WeatherMapView: View {
                     }
                     .padding(.top, 60)
                 }
+                
+                // First-use hints overlay
+                if showingHints {
+                    MapHintsOverlay(isPresented: $showingHints)
+                }
             }
             .navigationTitle("Weather Map")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingLayerPicker) {
-                MapLayerPicker(selectedLayer: $selectedLayer)
+                MapLayerPicker(selectedLayer: $selectedLayer, radarOpacity: $radarOpacity)
                     .presentationDetents([.medium])
                     .presentationDragIndicator(.visible)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    // Refresh radar button
-                    Button {
-                        Task {
-                            hasLoadedRadar = false
-                            await loadRadarData()
+                    HStack(spacing: 16) {
+                        // Help button
+                        Button {
+                            showingHints = true
+                        } label: {
+                            Image(systemName: "questionmark.circle")
                         }
-                    } label: {
-                        Image(systemName: "arrow.clockwise")
+                        
+                        // Refresh radar button
+                        Button {
+                            Task {
+                                hasLoadedRadar = false
+                                await loadRadarData()
+                            }
+                        } label: {
+                            Image(systemName: "arrow.clockwise")
+                        }
                     }
                 }
             }
             .task {
                 await loadRadarData()
+                
+                // Show hints on first use
+                if !hasSeenMapHints {
+                    try? await Task.sleep(for: .seconds(0.5))
+                    showingHints = true
+                    hasSeenMapHints = true
+                }
             }
             .onChange(of: selectedLayer) { _, newLayer in
-                if newLayer == .precipitation && radarPath.isEmpty {
+                if newLayer == .precipitation && radarFrames.isEmpty {
                     Task {
                         await loadRadarData()
                     }
                 }
+                // Stop playback when switching away from precipitation
+                if newLayer != .precipitation {
+                    stopPlayback()
+                }
+            }
+            .onChange(of: showForecast) { _, _ in
+                // Reset to first frame when switching between past/forecast
+                currentFrameIndex = 0
+            }
+            .onDisappear {
+                stopPlayback()
             }
         }
     }
+    
+    // MARK: - Map Type Based on Color Scheme
+    
+    private var effectiveMapType: MKMapType {
+        if selectedLayer == .precipitation {
+            return colorScheme == .dark ? .mutedStandard : .standard
+        }
+        return selectedLayer.mkMapType
+    }
+    
+    // MARK: - Zoom Controls
+    
+    private func zoomIn() {
+        guard let mapView = mapViewRef else { return }
+        var region = mapView.region
+        region.span.latitudeDelta /= 2
+        region.span.longitudeDelta /= 2
+        mapView.setRegion(region, animated: true)
+    }
+    
+    private func zoomOut() {
+        guard let mapView = mapViewRef else { return }
+        var region = mapView.region
+        region.span.latitudeDelta = min(region.span.latitudeDelta * 2, 180)
+        region.span.longitudeDelta = min(region.span.longitudeDelta * 2, 360)
+        mapView.setRegion(region, animated: true)
+    }
+    
+    private func centerOnLocation() {
+        guard let mapView = mapViewRef else { return }
+        let region = MKCoordinateRegion(
+            center: coordinate,
+            latitudinalMeters: 500000,
+            longitudinalMeters: 500000
+        )
+        mapView.setRegion(region, animated: true)
+    }
+    
+    private func resetRotation() {
+        guard let mapView = mapViewRef else { return }
+        let camera = MKMapCamera(
+            lookingAtCenter: mapView.centerCoordinate,
+            fromDistance: mapView.camera.centerCoordinateDistance,
+            pitch: 0,
+            heading: 0
+        )
+        mapView.setCamera(camera, animated: true)
+    }
+    
+    // MARK: - Radar Animation
+    
+    private func togglePlayback() {
+        if isPlaying {
+            stopPlayback()
+        } else {
+            startPlayback()
+        }
+    }
+    
+    private func startPlayback() {
+        isPlaying = true
+        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [self] _ in
+            Task { @MainActor in
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    currentFrameIndex = (currentFrameIndex + 1) % max(1, totalFrames)
+                }
+            }
+        }
+    }
+    
+    private func stopPlayback() {
+        isPlaying = false
+        animationTimer?.invalidate()
+        animationTimer = nil
+    }
+    
+    // MARK: - Data Loading
     
     private func loadRadarData() async {
         guard !hasLoadedRadar else { return }
         
         isLoadingRadar = true
         
-        // Fetch the latest radar data from RainViewer API
         guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else {
             isLoadingRadar = false
             return
@@ -133,22 +358,187 @@ struct WeatherMapView: View {
             let (data, _) = try await URLSession.shared.data(from: url)
             let response = try JSONDecoder().decode(RainViewerResponse.self, from: data)
             
-            if let latestRadar = response.radar.past.last {
-                await MainActor.run {
-                    radarPath = latestRadar.path
-                    hasLoadedRadar = true
-                    isLoadingRadar = false
-                }
-            } else {
-                await MainActor.run {
-                    isLoadingRadar = false
-                }
+            await MainActor.run {
+                radarFrames = response.radar.past
+                nowcastFrames = response.radar.nowcast
+                currentFrameIndex = max(0, radarFrames.count - 1)
+                hasLoadedRadar = true
+                isLoadingRadar = false
             }
         } catch {
             print("Failed to load radar data: \(error)")
             await MainActor.run {
                 isLoadingRadar = false
             }
+        }
+    }
+}
+
+// MARK: - Radar Timeline Controls
+
+struct RadarTimelineControls: View {
+    @Binding var currentFrameIndex: Int
+    @Binding var isPlaying: Bool
+    @Binding var showForecast: Bool
+    let totalFrames: Int
+    let currentTime: String
+    let onPlayPause: () -> Void
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            // Past/Forecast toggle
+            Picker("Mode", selection: $showForecast) {
+                Text("Past").tag(false)
+                Text("Forecast").tag(true)
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 200)
+            
+            HStack(spacing: 16) {
+                // Play/Pause button
+                Button(action: onPlayPause) {
+                    Image(systemName: isPlaying ? "pause.fill" : "play.fill")
+                        .font(.title2)
+                        .frame(width: 44, height: 44)
+                }
+                .foregroundStyle(.blue)
+                
+                // Timeline slider
+                VStack(spacing: 4) {
+                    Slider(value: Binding(
+                        get: { Double(currentFrameIndex) },
+                        set: { currentFrameIndex = Int($0) }
+                    ), in: 0...Double(max(0, totalFrames - 1)), step: 1)
+                    .tint(.blue)
+                    
+                    Text(currentTime)
+                        .font(.caption.weight(.medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(12)
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+// MARK: - Radar Opacity Slider
+
+struct RadarOpacitySlider: View {
+    @Binding var opacity: Double
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: "circle.lefthalf.filled")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Slider(value: $opacity, in: 0.2...1.0)
+                .tint(.blue)
+                .frame(width: 150)
+            
+            Image(systemName: "circle.fill")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Text("\(Int(opacity * 100))%")
+                .font(.caption.monospacedDigit())
+                .foregroundStyle(.secondary)
+                .frame(width: 40)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
+        .background(.ultraThinMaterial, in: Capsule())
+    }
+}
+
+// MARK: - Map Type Segmented Control
+
+struct MapTypeSegmentedControl: View {
+    @Binding var selectedLayer: MapLayer
+    
+    var body: some View {
+        HStack(spacing: 0) {
+            ForEach([MapLayer.standard, .satellite, .precipitation]) { layer in
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        selectedLayer = layer
+                    }
+                } label: {
+                    Image(systemName: layer.icon)
+                        .font(.subheadline)
+                        .frame(width: 44, height: 32)
+                        .foregroundStyle(selectedLayer == layer ? .white : .primary)
+                        .background(selectedLayer == layer ? Color.blue : Color.clear)
+                }
+            }
+        }
+        .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+}
+
+// MARK: - Map Hints Overlay
+
+struct MapHintsOverlay: View {
+    @Binding var isPresented: Bool
+    
+    var body: some View {
+        ZStack {
+            Color.black.opacity(0.6)
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation {
+                        isPresented = false
+                    }
+                }
+            
+            VStack(spacing: 24) {
+                Text("Map Controls")
+                    .font(.title2.bold())
+                    .foregroundStyle(.white)
+                
+                VStack(alignment: .leading, spacing: 16) {
+                    HintRow(icon: "hand.pinch", text: "Pinch to zoom in/out")
+                    HintRow(icon: "hand.draw", text: "Drag to pan the map")
+                    HintRow(icon: "rotate.right", text: "Two-finger rotate")
+                    HintRow(icon: "square.3.layers.3d", text: "Tap layers for radar view")
+                    HintRow(icon: "play.fill", text: "Animate radar over time")
+                }
+                
+                Button {
+                    withAnimation {
+                        isPresented = false
+                    }
+                } label: {
+                    Text("Got it!")
+                        .font(.headline)
+                        .foregroundStyle(.white)
+                        .frame(width: 200, height: 44)
+                        .background(.blue, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.top, 8)
+            }
+            .padding(32)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+            .padding(40)
+        }
+    }
+}
+
+struct HintRow: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.blue)
+                .frame(width: 30)
+            
+            Text(text)
+                .foregroundStyle(.white)
         }
     }
 }
@@ -161,16 +551,19 @@ struct RadarMapView: UIViewRepresentable {
     let weatherData: WeatherData?
     let radarPath: String
     let showRadar: Bool
+    let radarOpacity: Double
     let mapType: MKMapType
+    let onMapViewCreated: (MKMapView) -> Void
     
     func makeUIView(context: Context) -> MKMapView {
         let mapView = MKMapView()
         mapView.delegate = context.coordinator
         mapView.showsUserLocation = true
-        mapView.showsCompass = true
+        mapView.showsCompass = false
         mapView.showsScale = true
+        mapView.isRotateEnabled = true
+        mapView.isPitchEnabled = true
         
-        // Set initial region
         let region = MKCoordinateRegion(
             center: coordinate,
             latitudinalMeters: 500000,
@@ -178,7 +571,6 @@ struct RadarMapView: UIViewRepresentable {
         )
         mapView.setRegion(region, animated: false)
         
-        // Add weather annotation
         let annotation = WeatherAnnotation(
             coordinate: coordinate,
             title: locationName,
@@ -186,18 +578,21 @@ struct RadarMapView: UIViewRepresentable {
         )
         mapView.addAnnotation(annotation)
         
+        DispatchQueue.main.async {
+            onMapViewCreated(mapView)
+        }
+        
         return mapView
     }
     
     func updateUIView(_ mapView: MKMapView, context: Context) {
-        // Update map type
         mapView.mapType = mapType
         
-        // Update radar overlay
         context.coordinator.updateRadarOverlay(
             mapView: mapView,
             radarPath: radarPath,
-            showRadar: showRadar
+            showRadar: showRadar,
+            opacity: radarOpacity
         )
     }
     
@@ -208,32 +603,44 @@ struct RadarMapView: UIViewRepresentable {
     class Coordinator: NSObject, MKMapViewDelegate {
         let weatherData: WeatherData?
         private var currentOverlay: MKTileOverlay?
+        private var currentOpacity: Double = 0.7
         
         init(weatherData: WeatherData?) {
             self.weatherData = weatherData
         }
         
-        func updateRadarOverlay(mapView: MKMapView, radarPath: String, showRadar: Bool) {
-            // Remove existing overlay if conditions changed
-            if let overlay = currentOverlay {
-                mapView.removeOverlay(overlay)
-                currentOverlay = nil
+        func updateRadarOverlay(mapView: MKMapView, radarPath: String, showRadar: Bool, opacity: Double) {
+            currentOpacity = opacity
+            
+            let newTemplate = showRadar && !radarPath.isEmpty ?
+                "https://tilecache.rainviewer.com\(radarPath)/256/{z}/{x}/{y}/2/1_1.png" : nil
+            
+            let currentTemplate = currentOverlay?.urlTemplate
+            
+            if newTemplate != currentTemplate {
+                if let overlay = currentOverlay {
+                    mapView.removeOverlay(overlay)
+                    currentOverlay = nil
+                }
+                
+                if let template = newTemplate {
+                    let overlay = MKTileOverlay(urlTemplate: template)
+                    overlay.canReplaceMapContent = false
+                    mapView.addOverlay(overlay, level: .aboveLabels)
+                    currentOverlay = overlay
+                }
             }
             
-            // Add new overlay if needed
-            if showRadar && !radarPath.isEmpty {
-                let template = "https://tilecache.rainviewer.com\(radarPath)/256/{z}/{x}/{y}/2/1_1.png"
-                let overlay = MKTileOverlay(urlTemplate: template)
-                overlay.canReplaceMapContent = false
-                mapView.addOverlay(overlay, level: .aboveLabels)
-                currentOverlay = overlay
+            if let overlay = currentOverlay,
+               let renderer = mapView.renderer(for: overlay) as? MKTileOverlayRenderer {
+                renderer.alpha = opacity
             }
         }
         
         func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
             if let tileOverlay = overlay as? MKTileOverlay {
                 let renderer = MKTileOverlayRenderer(tileOverlay: tileOverlay)
-                renderer.alpha = 0.7
+                renderer.alpha = currentOpacity
                 return renderer
             }
             return MKOverlayRenderer(overlay: overlay)
@@ -243,32 +650,41 @@ struct RadarMapView: UIViewRepresentable {
             guard let weatherAnnotation = annotation as? WeatherAnnotation else { return nil }
             
             let identifier = "WeatherAnnotation"
-            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier)
+            var annotationView = mapView.dequeueReusableAnnotationView(withIdentifier: identifier) as? MKMarkerAnnotationView
             
             if annotationView == nil {
-                annotationView = MKAnnotationView(annotation: annotation, reuseIdentifier: identifier)
+                annotationView = MKMarkerAnnotationView(annotation: annotation, reuseIdentifier: identifier)
                 annotationView?.canShowCallout = true
+                
+                let detailView = UIHostingController(
+                    rootView: WeatherCalloutView(weatherData: weatherAnnotation.weatherData)
+                )
+                detailView.view.frame = CGRect(x: 0, y: 0, width: 200, height: 120)
+                detailView.view.backgroundColor = .clear
+                annotationView?.detailCalloutAccessoryView = detailView.view
             } else {
                 annotationView?.annotation = annotation
             }
             
-            // Create custom view for annotation
-            let hostingController = UIHostingController(
-                rootView: WeatherAnnotationContent(weatherData: weatherAnnotation.weatherData)
-            )
-            hostingController.view.backgroundColor = .clear
-            hostingController.view.frame = CGRect(x: 0, y: 0, width: 60, height: 70)
-            
-            // Convert to image
-            let renderer = UIGraphicsImageRenderer(size: hostingController.view.bounds.size)
-            let image = renderer.image { _ in
-                hostingController.view.drawHierarchy(in: hostingController.view.bounds, afterScreenUpdates: true)
+            if let temp = weatherAnnotation.weatherData?.current.temperature2m {
+                annotationView?.glyphText = "\(Int(temp))°"
+                annotationView?.markerTintColor = temperatureUIColor(for: temp)
+            } else {
+                annotationView?.glyphImage = UIImage(systemName: "cloud")
+                annotationView?.markerTintColor = .systemBlue
             }
             
-            annotationView?.image = image
-            annotationView?.centerOffset = CGPoint(x: 0, y: -35)
-            
             return annotationView
+        }
+        
+        private func temperatureUIColor(for temp: Double) -> UIColor {
+            switch temp {
+            case ..<32: return .systemBlue
+            case 32..<50: return .systemCyan
+            case 50..<68: return .systemGreen
+            case 68..<85: return .systemOrange
+            default: return .systemRed
+            }
         }
     }
 }
@@ -287,55 +703,49 @@ class WeatherAnnotation: NSObject, MKAnnotation {
     }
 }
 
-struct WeatherAnnotationContent: View {
+// MARK: - Weather Callout View
+
+struct WeatherCalloutView: View {
     let weatherData: WeatherData?
     
     var body: some View {
-        VStack(spacing: 4) {
-            ZStack {
-                Circle()
-                    .fill(temperatureGradient)
-                    .frame(width: 44, height: 44)
+        if let data = weatherData {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Image(systemName: WeatherCondition(code: data.current.weatherCode).sfSymbol)
+                        .font(.title2)
+                        .symbolRenderingMode(.multicolor)
+                    
+                    VStack(alignment: .leading) {
+                        Text("\(Int(data.current.temperature2m))°")
+                            .font(.title2.bold())
+                        Text("Feels like \(Int(data.current.apparentTemperature))°")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 
-                Image(systemName: weatherIcon)
-                    .font(.title3)
-                    .foregroundStyle(.white)
+                Divider()
+                
+                HStack(spacing: 16) {
+                    Label("\(data.current.relativeHumidity2m)%", systemImage: "humidity")
+                        .font(.caption)
+                    
+                    Label("\(Int(data.current.windSpeed10m)) mph", systemImage: "wind")
+                        .font(.caption)
+                }
+                
+                if let precip = data.hourly.precipitationProbability?.first {
+                    Label("\(precip)% rain", systemImage: "drop.fill")
+                        .font(.caption)
+                        .foregroundStyle(.blue)
+                }
             }
-            .shadow(color: .black.opacity(0.3), radius: 4)
-            
-            if let temp = weatherData?.current.temperature2m {
-                Text("\(Int(temp))°")
-                    .font(.caption.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(temperatureColor.opacity(0.9), in: Capsule())
-            }
-        }
-    }
-    
-    private var weatherIcon: String {
-        guard let code = weatherData?.current.weatherCode else { return "cloud" }
-        return WeatherCondition(code: code).sfSymbol
-    }
-    
-    private var temperatureGradient: LinearGradient {
-        LinearGradient(
-            colors: [temperatureColor.opacity(0.8), temperatureColor],
-            startPoint: .top,
-            endPoint: .bottom
-        )
-    }
-    
-    private var temperatureColor: Color {
-        guard let temp = weatherData?.current.temperature2m else { return .blue }
-        
-        switch temp {
-        case ..<32: return .blue
-        case 32..<50: return .cyan
-        case 50..<68: return .green
-        case 68..<85: return .orange
-        default: return .red
+            .padding(8)
+        } else {
+            Text("No weather data")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
     }
 }
@@ -393,9 +803,10 @@ enum MapLayer: String, CaseIterable, Identifiable {
     
     var mkMapType: MKMapType {
         switch self {
-        case .standard, .precipitation: return .standard
+        case .standard: return .standard
         case .satellite: return .satellite
         case .hybrid: return .hybrid
+        case .precipitation: return .mutedStandard
         }
     }
     
@@ -408,6 +819,7 @@ enum MapLayer: String, CaseIterable, Identifiable {
 
 struct MapLayerPicker: View {
     @Binding var selectedLayer: MapLayer
+    @Binding var radarOpacity: Double
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -421,10 +833,25 @@ struct MapLayerPicker: View {
                 
                 Section {
                     layerRow(.precipitation)
+                    
+                    if selectedLayer == .precipitation {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text("Radar Opacity")
+                                .font(.subheadline)
+                            
+                            HStack {
+                                Slider(value: $radarOpacity, in: 0.2...1.0)
+                                Text("\(Int(radarOpacity * 100))%")
+                                    .font(.caption.monospacedDigit())
+                                    .frame(width: 40)
+                            }
+                        }
+                        .padding(.vertical, 4)
+                    }
                 } header: {
                     Text("Weather Layers")
                 } footer: {
-                    Text("Precipitation layer shows live radar data from RainViewer.")
+                    Text("Precipitation layer shows live radar data from RainViewer with animation controls.")
                         .font(.caption)
                 }
             }
@@ -443,7 +870,6 @@ struct MapLayerPicker: View {
     private func layerRow(_ layer: MapLayer) -> some View {
         Button {
             selectedLayer = layer
-            dismiss()
         } label: {
             HStack {
                 Image(systemName: layer.icon)
