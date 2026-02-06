@@ -8,6 +8,35 @@ This guide will help you integrate all the new enhancements into your weather ap
 
 ---
 
+## Prerequisites
+
+### Install Build Tools
+
+```bash
+# Install required development tools
+make setup-tools
+
+# Install git hooks for code quality
+make install-hooks
+```
+
+### Build Commands
+
+Use the Makefile for all build operations:
+
+```bash
+make build              # Debug build
+make build-release      # Release build
+make test               # Run all tests
+make test-coverage      # Tests with code coverage
+make clean              # Clean DerivedData
+make lint               # Run SwiftLint
+```
+
+For full documentation on build commands, see [BUILD_OPTIMIZATIONS.md](BUILD_OPTIMIZATIONS.md).
+
+---
+
 ## Step 1: Add New Files to Xcode Project
 
 ### Core Services (Add to your project)

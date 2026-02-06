@@ -170,6 +170,99 @@ struct WeatherResponse: Codable {
 - Test async code with `XCTestExpectation`
 - Mock network responses for service tests
 
+### Running Tests
+
+Use the Makefile for consistent test execution:
+
+```bash
+make test               # Run all tests
+make test-coverage      # Tests with code coverage
+make test-plan          # Use test plan (parallel, sanitizers)
+make test-performance   # Performance tests only
+```
+
+### Test Plan
+
+The project includes `WeatherTestPlan.xctestplan` with:
+- Parallel test execution
+- Retry on failure (up to 3 attempts)
+- Code coverage for main target
+- Address Sanitizer and Thread Sanitizer configurations
+
+## Build Process
+
+### Makefile Commands
+
+Always use the Makefile for consistent builds:
+
+```bash
+# Building
+make build              # Debug build
+make build-release      # Release build (optimized)
+make clean              # Clean DerivedData and build artifacts
+
+# Code Quality
+make lint               # Run SwiftLint
+make format             # Format with swift-format
+make analyze            # Static analysis
+
+# Release
+make archive            # Create release archive
+make export-ipa         # Export IPA for App Store
+
+# Analysis
+make analyze-build-times  # Identify slow-compiling files
+make analyze-size         # Analyze app bundle size
+make profile              # Build for Instruments profiling
+
+# Setup
+make setup-tools        # Install xcbeautify, swiftlint
+make install-hooks      # Install git pre-commit hooks
+```
+
+### Performance Optimizations
+
+When writing code, follow these performance patterns:
+
+1. **Use Static Formatters** - Don't create formatters in loops or computed properties:
+   ```swift
+   // ✅ Good: Static cached formatter
+   private static let temperatureFormatter: NumberFormatter = {
+       let formatter = NumberFormatter()
+       formatter.maximumFractionDigits = 0
+       return formatter
+   }()
+   
+   // ❌ Bad: Creating formatter each time
+   func format(_ value: Double) -> String {
+       let formatter = NumberFormatter()  // Expensive!
+       return formatter.string(from: NSNumber(value: value))
+   }
+   ```
+
+2. **Use Cached URLSession** - The app uses a shared session with caching:
+   ```swift
+   private static let cachedSession: URLSession = {
+       let config = URLSessionConfiguration.default
+       config.urlCache = URLCache(memoryCapacity: 10_000_000, diskCapacity: 50_000_000)
+       return URLSession(configuration: config)
+   }()
+   ```
+
+3. **Debounce API Requests** - Prevent excessive API calls with minimum intervals
+
+4. **Defer Non-Critical Init** - Use `.task {}` for deferred initialization after first frame
+
+### Code Quality Hooks
+
+The project uses a pre-commit hook (`scripts/pre-commit`) that:
+- Runs SwiftLint on staged files
+- Warns about print statements
+- Detects force unwraps
+- Reports TODO/FIXME counts
+
+Install with: `make install-hooks`
+
 ## Important Notes
 
 1. **No External Dependencies**: App uses only Apple frameworks
@@ -177,6 +270,7 @@ struct WeatherResponse: Codable {
 3. **Offline Support**: Cache last weather data for offline viewing
 4. **Accessibility**: Add labels to all interactive elements
 5. **Dark Mode**: All UI should work in both light and dark modes
+6. **Performance**: Use cached formatters and sessions, debounce requests
 
 ## Debugging Tips
 
@@ -184,6 +278,8 @@ struct WeatherResponse: Codable {
 - Verify API URL parameters in `WeatherService`
 - Use Xcode's View Debugger for layout issues
 - Check Console for network errors
+- Run `make analyze-build-times` to find slow compilation
+- Use `make profile` then Instruments for performance issues
 
 ## Do NOT
 
@@ -192,3 +288,5 @@ struct WeatherResponse: Codable {
 - Hardcode API keys or secrets
 - Use deprecated SwiftUI APIs
 - Break existing functionality when adding features
+- Create new formatters inside loops or computed properties
+- Skip the Makefile for builds (use `make build` not `xcodebuild` directly)

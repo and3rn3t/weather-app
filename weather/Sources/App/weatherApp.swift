@@ -15,14 +15,23 @@ struct weatherApp: App {
     @State private var themeManager = ThemeManager()
     
     init() {
+        // MARK: - Launch Optimization
+        // Only perform critical initialization here
+        // Defer non-essential work to after first frame renders
+        
         do {
-            modelContainer = try ModelContainer(for: SavedLocation.self)
+            // Configure SwiftData with optimized settings
+            let config = ModelConfiguration(
+                isStoredInMemoryOnly: false,
+                allowsSave: true
+            )
+            modelContainer = try ModelContainer(
+                for: SavedLocation.self,
+                configurations: config
+            )
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
-        
-        // Register App Shortcuts with Siri
-        WeatherAppShortcuts.updateAppShortcutParameters()
     }
     
     var body: some Scene {
@@ -30,6 +39,22 @@ struct weatherApp: App {
             ContentView()
                 .modelContainer(modelContainer)
                 .environment(themeManager)
+                .task {
+                    // Defer non-critical initialization to after first render
+                    await deferredInitialization()
+                }
         }
+    }
+    
+    // MARK: - Deferred Initialization
+    
+    /// Perform non-critical initialization after the UI is visible
+    @MainActor
+    private func deferredInitialization() async {
+        // Small delay to ensure UI is fully rendered
+        try? await Task.sleep(for: .milliseconds(100))
+        
+        // Register App Shortcuts with Siri (can be deferred)
+        WeatherAppShortcuts.updateAppShortcutParameters()
     }
 }

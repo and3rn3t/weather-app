@@ -164,19 +164,82 @@ Current size optimizations:
 To analyze app size:
 
 ```bash
-# After archive
+make analyze-size
+# Or manually:
 xcrun lipo -info build/weather.xcarchive/Products/Applications/weather.app/weather
 ```
 
-## 🧪 Testing Performance
+## 🧪 Testing Optimization
 
-Run tests with timing:
+### Test Plan
+
+A comprehensive test plan (`WeatherTestPlan.xctestplan`) includes:
+
+- Parallel test execution
+- Code coverage for main target only
+- Test retry on failure (up to 3 attempts)
+- Test timeouts (60s default, 120s max)
+- Multiple configurations (Default, Address Sanitizer, Thread Sanitizer)
+
+Run with test plan:
 
 ```bash
-xcodebuild test -project weather.xcodeproj -scheme weather \
-  -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-  -parallel-testing-enabled YES 2>&1 | xcbeautify
+make test-plan
 ```
+
+### Performance Tests
+
+New performance tests measure:
+
+- **Launch Performance**: App startup time
+- **Launch to Interactive**: Time until app is responsive
+- **Scroll Performance**: UI smoothness
+- **Memory Performance**: Memory usage during operations
+- **CPU Performance**: CPU utilization
+
+Run performance tests:
+
+```bash
+make test-performance
+```
+
+## 🚀 Launch Time Optimization
+
+The app uses deferred initialization to improve launch time:
+
+1. **Critical init only in `App.init()`**: Only SwiftData container creation
+2. **Deferred init via `.task {}`**: Siri shortcuts registration happens after first frame
+
+This ensures the UI appears as quickly as possible.
+
+## 📊 Build Time Analysis
+
+Identify slow-compiling files:
+
+```bash
+make analyze-build-times
+```
+
+This script:
+
+- Builds with `-debug-time-function-bodies`
+- Reports top 20 slowest functions
+- Provides optimization tips
+
+## 🔧 Git Hooks
+
+Pre-commit hook for code quality:
+
+```bash
+make install-hooks
+```
+
+The hook runs:
+
+- SwiftLint on staged files
+- Checks for print statements
+- Warns about force unwraps
+- Reports TODO/FIXME counts
 
 ## 📈 Monitoring Build Times
 
@@ -192,9 +255,54 @@ Or in terminal:
 defaults write com.apple.dt.Xcode ShowBuildOperationDuration -bool YES
 ```
 
+## 🎯 Profiling
+
+Build for Instruments profiling:
+
+```bash
+make profile
+```
+
+Then open Instruments to analyze:
+
+- Time Profiler (CPU usage)
+- Allocations (memory)
+- Leaks (memory leaks)
+- Core Animation (UI performance)
+- Network (API calls)
+
 ## 🚀 Quick Start
 
 1. Install build tools: `make setup-tools`
-2. Build the app: `make build`
-3. Run tests: `make test`
-4. Create release build: `make build-release`
+2. Install git hooks: `make install-hooks`
+3. Build the app: `make build`
+4. Run tests: `make test`
+5. Analyze build times: `make analyze-build-times`
+6. Create release build: `make build-release`
+
+## 📋 All Available Make Targets
+
+```bash
+make help
+```
+
+| Target | Description |
+|--------|-------------|
+| `clean` | Clean build artifacts and DerivedData |
+| `build` | Build Debug configuration |
+| `build-release` | Build Release configuration |
+| `test` | Run unit tests |
+| `test-coverage` | Run tests with code coverage |
+| `test-plan` | Run tests with test plan |
+| `test-performance` | Run performance tests only |
+| `archive` | Create release archive |
+| `export-ipa` | Export IPA for distribution |
+| `lint` | Run SwiftLint |
+| `format` | Format code with swift-format |
+| `analyze` | Static analysis |
+| `analyze-build-times` | Analyze slow compilation units |
+| `analyze-size` | Analyze app bundle size |
+| `profile` | Build for Instruments profiling |
+| `install-hooks` | Install git pre-commit hooks |
+| `ci` | Full CI pipeline (clean, build, test) |
+| `setup-tools` | Install optional build tools |

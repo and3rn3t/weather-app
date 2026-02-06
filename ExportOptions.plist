@@ -2,21 +2,52 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Distribution Method -->
 	<key>method</key>
-	<string>app-store</string>
+	<string>app-store-connect</string>
+	
+	<!-- Team ID (update with your actual team ID) -->
 	<key>teamID</key>
-	<string>YOUR_TEAM_ID</string>
+	<string>C8U3P6AJ6L</string>
+	
+	<!-- Symbol Upload for Crash Reports -->
 	<key>uploadSymbols</key>
 	<true/>
+	
+	<!-- Bitcode (deprecated in Xcode 14+) -->
 	<key>uploadBitcode</key>
 	<false/>
+	
+	<!-- Signing -->
 	<key>signingStyle</key>
 	<string>automatic</string>
+	
+	<!-- Destination -->
 	<key>destination</key>
 	<string>upload</string>
+	
+	<!-- App Store Metadata -->
 	<key>generateAppStoreInformation</key>
 	<true/>
+	
+	<!-- Version Management -->
 	<key>manageAppVersionAndBuildNumber</key>
 	<true/>
+	
+	<!-- App Thinning - reduces download size per device -->
+	<key>thinning</key>
+	<string>&lt;thin-for-all-variants&gt;</string>
+	
+	<!-- On-Demand Resources (if used) -->
+	<key>embedOnDemandResourcesAssetPacksInBundle</key>
+	<false/>
+	
+	<!-- Strip Swift Symbols -->
+	<key>stripSwiftSymbols</key>
+	<true/>
+	
+	<!-- Compile Bitcode (for watchOS if needed) -->
+	<key>compileBitcode</key>
+	<false/>
 </dict>
 </plist>

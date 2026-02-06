@@ -1,0 +1,77 @@
+{
+  "configurations" : [
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000001",
+      "name" : "Default Configuration",
+      "options" : {
+        "targetForVariableExpansion" : {
+          "containerPath" : "container:weather.xcodeproj",
+          "identifier" : "3D10350B2F34325100E76DAE",
+          "name" : "weather"
+        }
+      }
+    },
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000002",
+      "name" : "Address Sanitizer",
+      "options" : {
+        "addressSanitizer" : {
+          "enabled" : true
+        }
+      }
+    },
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000003",
+      "name" : "Thread Sanitizer",
+      "options" : {
+        "threadSanitizerEnabled" : true
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:weather.xcodeproj",
+          "identifier" : "3D10350B2F34325100E76DAE",
+          "name" : "weather"
+        }
+      ]
+    },
+    "commandLineArgumentEntries" : [
+      {
+        "argument" : "-com.apple.CoreData.ConcurrencyDebug 1"
+      }
+    ],
+    "defaultTestExecutionTimeAllowance" : 60,
+    "environmentVariableEntries" : [
+      {
+        "key" : "IDEPreferLogStreaming",
+        "value" : "YES"
+      }
+    ],
+    "maximumTestExecutionTimeAllowance" : 120,
+    "maximumTestRepetitions" : 3,
+    "testRepetitionMode" : "retryOnFailure",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:weather.xcodeproj",
+        "identifier" : "3D10351C2F34325200E76DAE",
+        "name" : "weatherTests"
+      }
+    },
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:weather.xcodeproj",
+        "identifier" : "3D1035262F34325200E76DAE",
+        "name" : "weatherUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

@@ -27,6 +27,7 @@ Thank you for your interest in contributing to the Weather App! This document pr
 ### Setup
 
 1. **Fork the repository**
+
    ```bash
    # Click "Fork" on GitHub, then clone your fork
    git clone https://github.com/YOUR_USERNAME/weather-app.git
@@ -34,21 +35,69 @@ Thank you for your interest in contributing to the Weather App! This document pr
    ```
 
 2. **Open in Xcode**
+
    ```bash
    open weather.xcodeproj
    ```
 
-3. **Build and run**
-   - Select a simulator or device
-   - Press `Cmd+R` to build and run
+3. **Install build tools**
 
-4. **Verify everything works**
+   ```bash
+   make setup-tools
+   ```
+
+4. **Install git hooks**
+
+   ```bash
+   make install-hooks
+   ```
+
+5. **Build and run**
+
+   ```bash
+   make build
+   ```
+
+   Or in Xcode: Select a simulator and press `Cmd+R`
+
+6. **Verify everything works**
    - Grant location permissions when prompted
    - Confirm weather data loads correctly
 
 ---
 
 ## Development Environment
+
+### Build Commands
+
+Use the Makefile for consistent builds:
+
+```bash
+# Building
+make build              # Debug build
+make build-release      # Release build
+make clean              # Clean DerivedData
+
+# Testing
+make test               # Run all tests
+make test-coverage      # Tests with code coverage
+make test-plan          # Run with test plan (parallel, sanitizers)
+make test-performance   # Performance tests only
+
+# Code Quality
+make lint               # Run SwiftLint
+make format             # Format with swift-format
+make analyze            # Static analysis
+
+# Release
+make archive            # Create release archive
+make export-ipa         # Export IPA for App Store
+
+# Analysis
+make analyze-build-times  # Find slow-compiling files
+make analyze-size         # Analyze app bundle size
+make profile              # Build for Instruments profiling
+```
 
 ### Recommended Xcode Settings
 
@@ -86,12 +135,14 @@ weather/
 We follow the [Swift API Design Guidelines](https://swift.org/documentation/api-design-guidelines/) with these additions:
 
 #### Formatting
+
 - **Indentation**: 4 spaces (no tabs)
 - **Line length**: Prefer under 120 characters
 - **Trailing commas**: Use in multi-line collections
 - **Imports**: Alphabetize, separate system from local
 
 #### Naming
+
 ```swift
 // Types: PascalCase
 struct WeatherData { }
@@ -107,6 +158,7 @@ var hasLocationPermission: Bool
 ```
 
 #### Organization
+
 ```swift
 struct MyView: View {
     // MARK: - Environment
@@ -132,6 +184,7 @@ struct MyView: View {
 ### SwiftUI Patterns
 
 #### Prefer Composition
+
 ```swift
 // ✅ Good: Small, reusable components
 var body: some View {
@@ -151,6 +204,7 @@ var body: some View {
 ```
 
 #### Use ViewModifiers
+
 ```swift
 // ✅ Good: Reusable modifier
 struct GlassCard: ViewModifier {
@@ -163,6 +217,54 @@ struct GlassCard: ViewModifier {
 
 // Usage
 Text("Hello").modifier(GlassCard())
+```
+
+### Performance Best Practices
+
+#### Use Static Formatters
+
+Creating formatters is expensive. Cache them as static properties:
+
+```swift
+// ✅ Good: Static cached formatter
+private static let temperatureFormatter: NumberFormatter = {
+    let formatter = NumberFormatter()
+    formatter.maximumFractionDigits = 0
+    return formatter
+}()
+
+// ❌ Bad: Creating formatter each time
+func format(_ value: Double) -> String {
+    let formatter = NumberFormatter()  // Expensive!
+    return formatter.string(from: NSNumber(value: value)) ?? ""
+}
+```
+
+#### Use Cached URLSession
+
+The app uses a shared session with caching for network requests:
+
+```swift
+// ✅ Good: Shared session with caching
+private static let cachedSession: URLSession = {
+    let config = URLSessionConfiguration.default
+    config.urlCache = URLCache(memoryCapacity: 10_000_000, diskCapacity: 50_000_000)
+    return URLSession(configuration: config)
+}()
+```
+
+#### Defer Non-Critical Initialization
+
+Use `.task {}` to defer initialization after the first frame:
+
+```swift
+var body: some View {
+    ContentView()
+        .task {
+            // Runs after view appears, doesn't block UI
+            await deferredInitialization()
+        }
+}
 ```
 
 ---
@@ -203,6 +305,7 @@ test(service): add WeatherService unit tests
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation only
@@ -218,24 +321,30 @@ test(service): add WeatherService unit tests
 ### Before Submitting
 
 1. **Update your branch**
+
    ```bash
    git fetch origin
    git rebase origin/main
    ```
 
 2. **Run tests**
+
    ```bash
-   # In Xcode: Cmd+U
+   # Using Makefile (recommended)
+   make test
+   
+   # Or in Xcode: Cmd+U
    ```
 
 3. **Build for release**
+
    ```bash
-   # Product → Build for → Running
+   make build-release
    ```
 
 4. **Check for warnings**
    - Fix all compiler warnings
-   - Run SwiftLint if available
+   - Run SwiftLint: `make lint`
 
 ### PR Requirements
 
@@ -279,6 +388,7 @@ This project includes AI agent instructions for development assistance:
 ### GitHub Copilot
 
 Custom instructions are in `.github/copilot-instructions.md`. These help Copilot:
+
 - Understand project architecture
 - Follow our coding patterns
 - Generate consistent code
@@ -286,6 +396,7 @@ Custom instructions are in `.github/copilot-instructions.md`. These help Copilot
 ### Claude AI
 
 Instructions are in `.claude/CLAUDE.md`. These provide:
+
 - Project context and structure
 - Coding patterns and examples
 - Common issues and solutions

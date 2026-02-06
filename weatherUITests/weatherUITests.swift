@@ -102,4 +102,59 @@ final class weatherUITests: XCTestCase {
             XCUIApplication().launch()
         }
     }
+    
+    @MainActor
+    func testLaunchToInteractivePerformance() throws {
+        // Measures time from launch until the app is interactive
+        measure(metrics: [XCTApplicationLaunchMetric(waitUntilResponsive: true)]) {
+            XCUIApplication().launch()
+        }
+    }
+    
+    @MainActor
+    func testScrollPerformance() throws {
+        // Performance test for scrolling the main weather view
+        let app = XCUIApplication()
+        app.launch()
+        
+        // Wait for content to load
+        _ = app.wait(for: .runningForeground, timeout: 10)
+        
+        let scrollView = app.scrollViews.firstMatch
+        if scrollView.waitForExistence(timeout: 10) {
+            measure(metrics: [XCTOSSignpostMetric.scrollingAndDecelerationMetric]) {
+                scrollView.swipeUp(velocity: .fast)
+                scrollView.swipeDown(velocity: .fast)
+            }
+        }
+    }
+    
+    @MainActor
+    func testMemoryPerformance() throws {
+        // Measures memory usage during typical app usage
+        measure(metrics: [XCTMemoryMetric()]) {
+            let app = XCUIApplication()
+            app.launch()
+            
+            // Simulate typical user interactions
+            _ = app.wait(for: .runningForeground, timeout: 5)
+            
+            // Scroll if possible
+            let scrollView = app.scrollViews.firstMatch
+            if scrollView.exists {
+                scrollView.swipeUp()
+                scrollView.swipeDown()
+            }
+        }
+    }
+    
+    @MainActor
+    func testCPUPerformance() throws {
+        // Measures CPU usage during app operations
+        measure(metrics: [XCTCPUMetric()]) {
+            let app = XCUIApplication()
+            app.launch()
+            _ = app.wait(for: .runningForeground, timeout: 5)
+        }
+    }
 }

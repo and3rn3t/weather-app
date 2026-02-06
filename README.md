@@ -97,6 +97,7 @@ These files help AI assistants understand the project's architecture, coding pat
 | -------- | ----------- |
 | [CHANGELOG.md](weather/Documentation/CHANGELOG.md) | Version history |
 | [BUILD_FIXES.md](weather/Documentation/BUILD_FIXES.md) | Troubleshooting |
+| [BUILD_OPTIMIZATIONS.md](weather/Documentation/BUILD_OPTIMIZATIONS.md) | Build & performance optimization |
 | [VISUAL_FEATURE_MAP.md](weather/Documentation/VISUAL_FEATURE_MAP.md) | UI component reference |
 
 ---
@@ -137,10 +138,75 @@ These files help AI assistants understand the project's architecture, coding pat
 
 ## 🧪 Testing
 
-Run tests in Xcode with `Cmd+U`:
+Run tests in Xcode with `Cmd+U` or use the Makefile:
+
+```bash
+# Run all tests
+make test
+
+# Run tests with code coverage
+make test-coverage
+
+# Run with test plan (parallel, sanitizers)
+make test-plan
+
+# Run performance tests only
+make test-performance
+```
 
 - Unit tests: `weatherTests/`
 - UI tests: `weatherUITests/`
+- Test plan: `weather.xcodeproj/xcshareddata/TestPlans/WeatherTestPlan.xctestplan`
+
+---
+
+## 🏗️ Build & Development
+
+### Makefile Commands
+
+The project includes a Makefile for common development tasks:
+
+```bash
+# Build
+make build              # Debug build
+make build-release      # Release build
+make clean              # Clean DerivedData
+
+# Testing
+make test               # Run all tests
+make test-coverage      # Tests with coverage
+make test-plan          # Use test plan
+make test-performance   # Performance tests only
+
+# Code Quality
+make lint               # Run SwiftLint
+make format             # Format with swift-format
+make analyze            # Static analysis
+
+# Release
+make archive            # Create archive
+make export-ipa         # Export for App Store
+
+# Analysis
+make analyze-build-times  # Find slow compilation
+make analyze-size         # App bundle size analysis
+make profile              # Build for Instruments
+
+# Setup
+make setup-tools        # Install build tools
+make install-hooks      # Install git hooks
+```
+
+### Performance Optimizations
+
+The app includes several performance optimizations:
+
+- **Cached URLSession**: Network requests use a shared session with 10MB memory / 50MB disk cache
+- **Static Formatters**: Number and date formatters are cached to avoid repeated allocations
+- **Request Debouncing**: API calls are debounced to prevent excessive requests
+- **Deferred Initialization**: Non-critical init (Siri shortcuts) is deferred after first frame
+
+See [BUILD_OPTIMIZATIONS.md](weather/Documentation/BUILD_OPTIMIZATIONS.md) for details.
 
 ---
 
