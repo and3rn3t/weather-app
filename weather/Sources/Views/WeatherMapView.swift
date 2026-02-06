@@ -18,6 +18,8 @@ struct WeatherMapView: View {
     @State private var position: MapCameraPosition
     @State private var selectedLayer: MapLayer = .standard
     @State private var showingLayerPicker = false
+    @State private var radarTimestamp: String = ""
+    @State private var isLoadingRadar = false
     
     init(weatherData: WeatherData?, locationName: String, latitude: Double, longitude: Double) {
         self.weatherData = weatherData
@@ -27,7 +29,7 @@ struct WeatherMapView: View {
         // Initialize camera position centered on the location
         _position = State(initialValue: .camera(
             MapCamera(centerCoordinate: CLLocationCoordinate2D(latitude: latitude, longitude: longitude),
-                     distance: 50000, // ~50km view
+                     distance: 500000, // ~500km view for better radar coverage
                      heading: 0,
                      pitch: 0)
         ))
@@ -36,18 +38,27 @@ struct WeatherMapView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                // Map
-                Map(position: $position) {
-                    // Weather annotation at current location
-                    Annotation(locationName, coordinate: coordinate) {
-                        WeatherAnnotationView(weatherData: weatherData)
+                // Map with optional radar overlay
+                MapReader { reader in
+                    Map(position: $position) {
+                        // Weather annotation at current location
+                        Annotation(locationName, coordinate: coordinate) {
+                            WeatherAnnotationView(weatherData: weatherData)
+                        }
                     }
-                }
-                .mapStyle(selectedLayer.mapStyle)
-                .mapControls {
-                    MapCompass()
-                    MapScaleView()
-                    MapUserLocationButton()
+                    .mapStyle(selectedLayer.mapStyle)
+                    .mapControls {
+                        MapCompass()
+                        MapScaleView()
+                        MapUserLocationButton()
+                    }
+                    .overlay {
+                        // Radar overlay when precipitation layer is selected
+                        if selectedLayer == .precipitation && !radarTimestamp.isEmpty {
+                            RadarOverlayView(timestamp: radarTimestamp, position: position)
+                                .allowsHitTesting(false)
+                        }
+                    }
                 }
                 
                 // Layer selector overlay
@@ -75,6 +86,24 @@ struct WeatherMapView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 8)
                 }
+                
+                // Loading indicator for radar
+                if isLoadingRadar {
+                    VStack {
+                        HStack {
+                            ProgressView()
+                                .tint(.white)
+                            Text("Loading radar...")
+                                .font(.caption)
+                                .foregroundStyle(.white)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
+                        .background(.ultraThinMaterial, in: Capsule())
+                        Spacer()
+                    }
+                    .padding(.top, 60)
+                }
             }
             .navigationTitle("Weather Map")
             .navigationBarTitleDisplayMode(.inline)
@@ -90,7 +119,7 @@ struct WeatherMapView: View {
                         withAnimation {
                             position = .camera(
                                 MapCamera(centerCoordinate: coordinate,
-                                         distance: 50000,
+                                         distance: 500000,
                                          heading: 0,
                                          pitch: 0)
                             )
@@ -100,7 +129,142 @@ struct WeatherMapView: View {
                     }
                 }
             }
+            .task {
+                await loadRadarTimestamp()
+            }
+            .onChange(of: selectedLayer) { _, newLayer in
+                if newLayer == .precipitation && radarTimestamp.isEmpty {
+                    Task {
+                        await loadRadarTimestamp()
+                    }
+                }
+            }
         }
+    }
+    
+    private func loadRadarTimestamp() async {
+        isLoadingRadar = true
+        defer { isLoadingRadar = false }
+        
+        // Fetch the latest radar timestamp from RainViewer API
+        guard let url = URL(string: "https://api.rainviewer.com/public/weather-maps.json") else { return }
+        
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let response = try JSONDecoder().decode(RainViewerResponse.self, from: data)
+            
+            if let latestRadar = response.radar.past.last {
+                await MainActor.run {
+                    radarTimestamp = String(latestRadar.time)
+                }
+            }
+        } catch {
+            print("Failed to load radar timestamp: \(error)")
+        }
+    }
+}
+
+// MARK: - RainViewer API Response
+
+struct RainViewerResponse: Codable {
+    let version: String
+    let generated: Int
+    let host: String
+    let radar: RadarData
+    
+    struct RadarData: Codable {
+        let past: [RadarFrame]
+        let nowcast: [RadarFrame]
+    }
+    
+    struct RadarFrame: Codable {
+        let time: Int
+        let path: String
+    }
+}
+
+// MARK: - Radar Tile Overlay View
+
+struct RadarOverlayView: View {
+    let timestamp: String
+    let position: MapCameraPosition
+    
+    var body: some View {
+        GeometryReader { geometry in
+            // Create a grid of radar tiles based on current map view
+            if let camera = position.camera {
+                RadarTileGrid(
+                    centerCoordinate: camera.centerCoordinate,
+                    distance: camera.distance,
+                    timestamp: timestamp,
+                    size: geometry.size
+                )
+            }
+        }
+    }
+}
+
+struct RadarTileGrid: View {
+    let centerCoordinate: CLLocationCoordinate2D
+    let distance: Double
+    let timestamp: String
+    let size: CGSize
+    
+    // Calculate zoom level from distance
+    private var zoomLevel: Int {
+        // Approximate zoom level calculation based on camera distance
+        let zoom = max(1, min(10, Int(log2(40000000 / distance))))
+        return zoom
+    }
+    
+    // Calculate tile coordinates
+    private var tileX: Int {
+        let n = pow(2.0, Double(zoomLevel))
+        return Int((centerCoordinate.longitude + 180.0) / 360.0 * n)
+    }
+    
+    private var tileY: Int {
+        let n = pow(2.0, Double(zoomLevel))
+        let latRad = centerCoordinate.latitude * .pi / 180.0
+        return Int((1.0 - asinh(tan(latRad)) / .pi) / 2.0 * n)
+    }
+    
+    var body: some View {
+        // Load radar tiles in a 3x3 grid around center
+        ZStack {
+            ForEach(-1...1, id: \.self) { dy in
+                ForEach(-1...1, id: \.self) { dx in
+                    AsyncImage(url: radarTileURL(x: tileX + dx, y: tileY + dy)) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .opacity(0.6)
+                        case .failure:
+                            Color.clear
+                        case .empty:
+                            Color.clear
+                        @unknown default:
+                            Color.clear
+                        }
+                    }
+                    .frame(width: size.width / 3, height: size.height / 3)
+                    .offset(
+                        x: CGFloat(dx) * size.width / 3,
+                        y: CGFloat(dy) * size.height / 3
+                    )
+                }
+            }
+        }
+        .frame(width: size.width, height: size.height)
+    }
+    
+    private func radarTileURL(x: Int, y: Int) -> URL? {
+        // RainViewer tile URL format
+        // https://tilecache.rainviewer.com/v2/radar/{timestamp}/256/{z}/{x}/{y}/2/1_1.png
+        let urlString = "https://tilecache.rainviewer.com/v2/radar/\(timestamp)/256/\(zoomLevel)/\(x)/\(y)/2/1_1.png"
+        return URL(string: urlString)
     }
 }
 
@@ -167,7 +331,7 @@ struct WeatherAnnotationView: View {
                 Image(systemName: weatherIcon)
                     .font(.title2)
                     .foregroundStyle(.white)
-                    .symbolEffect(.pulse)
+                    .symbolRenderingMode(.hierarchical)
             }
             .shadow(color: .black.opacity(0.3), radius: 4)
             
