@@ -2,9 +2,42 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Background Modes -->
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+		<string>location</string>
 	</array>
+	
+	<!-- Siri Integration -->
+	<key>NSSiriUsageDescription</key>
+	<string>Siri can help you quickly check the weather and forecasts.</string>
+	
+	<!-- App Capabilities -->
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<true/>
+	
+	<!-- URL Schemes for Deep Linking -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.andernet.weather</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>andernetweather</string>
+			</array>
+		</dict>
+	</array>
+	
+	<!-- Spotlight Indexing -->
+	<key>CSSearchableIndex</key>
+	<true/>
+	
+	<!-- Widget Configuration -->
+	<key>NSWidgetWantsLocation</key>
+	<true/>
 </dict>
 </plist>

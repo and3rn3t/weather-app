@@ -2,17 +2,26 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<!-- Push Notifications -->
 	<key>aps-environment</key>
 	<string>development</string>
+	
+	<!-- iCloud -->
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array/>
 	<key>com.apple.developer.icloud-services</key>
 	<array>
 		<string>CloudKit</string>
 	</array>
+	
+	<!-- App Groups for Widget/Extension Data Sharing -->
 	<key>com.apple.security.application-groups</key>
 	<array>
 		<string>group.dev.andernet.weather</string>
 	</array>
+	
+	<!-- Siri and Shortcuts -->
+	<key>com.apple.developer.siri</key>
+	<true/>
 </dict>
 </plist>
