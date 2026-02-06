@@ -178,14 +178,14 @@ struct RetryConfiguration: Sendable {
     let maxDelay: TimeInterval
     let multiplier: Double
     
-    static let `default` = RetryConfiguration(
+    nonisolated static let `default` = RetryConfiguration(
         maxAttempts: 3,
         initialDelay: 1.0,
         maxDelay: 10.0,
         multiplier: 2.0
     )
     
-    static let aggressive = RetryConfiguration(
+    nonisolated static let aggressive = RetryConfiguration(
         maxAttempts: 5,
         initialDelay: 0.5,
         maxDelay: 15.0,

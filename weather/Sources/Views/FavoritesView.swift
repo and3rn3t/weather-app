@@ -33,7 +33,7 @@ struct FavoritesView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .buttonStyle(.customGlass)
+                    .buttonStyle(.glass)
                 }
                 
                 ToolbarItem(placement: .topBarTrailing) {
@@ -42,7 +42,7 @@ struct FavoritesView: View {
                     } label: {
                         Image(systemName: "plus")
                     }
-                    .buttonStyle(.customGlassProminent)
+                    .buttonStyle(.glassProminent)
                 }
             }
             .sheet(isPresented: $showingSearch) {
@@ -64,7 +64,7 @@ struct FavoritesView: View {
             } label: {
                 Label("Add Location", systemImage: "plus")
             }
-            .buttonStyle(.customGlassProminent)
+            .buttonStyle(.glassProminent)
             .controlSize(.large)
         }
     }

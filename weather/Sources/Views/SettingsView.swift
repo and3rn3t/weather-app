@@ -223,7 +223,7 @@ struct SettingsView: View {
                     Button("Done") {
                         dismiss()
                     }
-                    .buttonStyle(.customGlass)
+                    .buttonStyle(.glass)
                 }
             }
             .sheet(isPresented: $showingThemePicker) {

@@ -145,10 +145,8 @@ class WeatherService {
     
     private func getCurrentCachedLocation() -> (latitude: Double, longitude: Double)? {
         // Try to get last location from shared data
-        if let sharedData = SharedDataManager.shared.loadWeatherData() {
-            // SharedWeatherData doesn't store coordinates, so return nil
-            return nil
-        }
+        // SharedWeatherData doesn't store coordinates, so always return nil
+        _ = SharedDataManager.shared.loadWeatherData()
         return nil
     }
     

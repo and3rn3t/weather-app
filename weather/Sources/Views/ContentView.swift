@@ -164,6 +164,7 @@ struct ContentView: View {
                         Image(systemName: "list.bullet")
                             .symbolEffect(.pulse)
                     }
+                    .buttonStyle(.glass)
                 }
                 
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -174,6 +175,7 @@ struct ContentView: View {
                         } label: {
                             Image(systemName: "map")
                         }
+                        .buttonStyle(.glass)
                         
                         // Chart button
                         Button {
@@ -181,6 +183,7 @@ struct ContentView: View {
                         } label: {
                             Image(systemName: "chart.xyaxis.line")
                         }
+                        .buttonStyle(.glass)
                     }
                     
                     // Settings button
@@ -190,6 +193,7 @@ struct ContentView: View {
                         Image(systemName: "gear")
                             .symbolEffect(.pulse)
                     }
+                    .buttonStyle(.glass)
                 }
             }
             .onChange(of: settings.liveActivitiesEnabled) { _, enabled in

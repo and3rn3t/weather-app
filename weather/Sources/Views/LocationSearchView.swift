@@ -74,21 +74,22 @@ struct LocationSearchView: View {
     }
     
     private func selectLocation(_ item: MKMapItem) {
-        let coordinate = item.placemark.coordinate
+        let coordinate = item.location.coordinate
         
-        // Build location name
-        var components: [String] = []
-        if let locality = item.placemark.locality {
-            components.append(locality)
-        }
-        if let administrativeArea = item.placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        if let country = item.placemark.country, components.isEmpty {
-            components.append(country)
+        // Build location name using iOS 26 address APIs
+        var locationName: String
+        
+        if let cityWithContext = item.addressRepresentations?.cityWithContext {
+            // cityWithContext includes "City, State" format
+            locationName = cityWithContext
+        } else if let cityName = item.addressRepresentations?.cityName {
+            locationName = cityName
+        } else if let regionName = item.addressRepresentations?.regionName {
+            locationName = regionName
+        } else {
+            locationName = item.name ?? "Unknown Location"
         }
         
-        let locationName = components.joined(separator: ", ")
         onLocationSelected(coordinate, locationName)
         dismiss()
     }
@@ -112,18 +113,18 @@ struct LocationSearchRow: View {
     }
     
     private var formattedAddress: String? {
-        var components: [String] = []
-        
-        if let locality = mapItem.placemark.locality {
-            components.append(locality)
+        // Use iOS 26 addressRepresentations API
+        // cityWithContext gives "City, State" format, and we can optionally include region (country)
+        if let cityWithContext = mapItem.addressRepresentations?.cityWithContext(.full) {
+            return cityWithContext
+        } else if let cityName = mapItem.addressRepresentations?.cityName {
+            if let regionName = mapItem.addressRepresentations?.regionName {
+                return "\(cityName), \(regionName)"
+            }
+            return cityName
+        } else if let regionName = mapItem.addressRepresentations?.regionName {
+            return regionName
         }
-        if let administrativeArea = mapItem.placemark.administrativeArea {
-            components.append(administrativeArea)
-        }
-        if let country = mapItem.placemark.country {
-            components.append(country)
-        }
-        
-        return components.isEmpty ? nil : components.joined(separator: ", ")
+        return nil
     }
 }
