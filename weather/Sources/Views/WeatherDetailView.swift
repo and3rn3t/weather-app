@@ -25,7 +25,7 @@ struct WeatherDetailView: View {
             weatherBackground
             
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 16) {
                     // Location Header with search button
                     LocationHeader(
                         locationName: locationName,
@@ -36,40 +36,36 @@ struct WeatherDetailView: View {
                     CurrentWeatherCard(current: weatherData.current)
                         .environment(settings)
                     
-                    // Use GlassEffectContainer for grouped cards
-                    GlassEffectContainer(spacing: 30.0) {
-                        VStack(spacing: 20) {
-                            // Weather Recommendations - Smart suggestions
-                            WeatherRecommendationsCard(
-                                current: weatherData.current,
-                                hourly: weatherData.hourly
-                            )
-                            
-                            // Sun & Moon Info
-                            SunMoonCard(
-                                daily: weatherData.daily,
-                                isDay: weatherData.current.isDay == 1,
-                                timezone: weatherData.timezone
-                            )
-                            
-                            // Hourly Forecast with interactive chart
-                            HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
-                                .environment(settings)
-                            
-                            // Daily Forecast
-                            DailyForecastCard(daily: weatherData.daily)
-                                .environment(settings)
-                            
-                            // Air Quality Index
-                            AirQualityCard(airQualityData: airQualityData)
-                            
-                            // Additional Details
-                            WeatherDetailsCard(current: weatherData.current)
-                                .environment(settings)
-                        }
-                    }
+                    // Weather Recommendations - Smart suggestions
+                    WeatherRecommendationsCard(
+                        current: weatherData.current,
+                        hourly: weatherData.hourly
+                    )
+                    
+                    // Sun & Moon Info
+                    SunMoonCard(
+                        daily: weatherData.daily,
+                        isDay: weatherData.current.isDay == 1,
+                        timezone: weatherData.timezone
+                    )
+                    
+                    // Hourly Forecast with interactive chart
+                    HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
+                        .environment(settings)
+                    
+                    // Daily Forecast
+                    DailyForecastCard(daily: weatherData.daily)
+                        .environment(settings)
+                    
+                    // Air Quality Index
+                    AirQualityCard(airQualityData: airQualityData)
+                    
+                    // Additional Details
+                    WeatherDetailsCard(current: weatherData.current)
+                        .environment(settings)
                 }
-                .padding()
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
             }
             .refreshable {
                 await onRefresh()
@@ -957,7 +953,7 @@ struct LocationHeader: View {
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
-        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 16))
+        .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
 }
 
