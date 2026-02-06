@@ -172,7 +172,7 @@ typealias WeatherResult<T> = Result<T, WeatherError>
 
 // MARK: - Retry Configuration
 
-struct RetryConfiguration {
+struct RetryConfiguration: Sendable {
     let maxAttempts: Int
     let initialDelay: TimeInterval
     let maxDelay: TimeInterval
@@ -192,7 +192,7 @@ struct RetryConfiguration {
         multiplier: 1.5
     )
     
-    func delay(for attempt: Int) -> TimeInterval {
+    nonisolated func delay(for attempt: Int) -> TimeInterval {
         let delay = initialDelay * pow(multiplier, Double(attempt - 1))
         return min(delay, maxDelay)
     }

@@ -97,8 +97,8 @@ struct GetWeatherIntent: AppIntent {
             }
             
             let location = mapItem.location
-            // Use address.city for the city name
-            let resolvedName = mapItem.name ?? mapItem.address?.city ?? name
+            // Use addressRepresentations.cityName for the city name (iOS 26)
+            let resolvedName = mapItem.name ?? mapItem.addressRepresentations?.cityName ?? name
             return (location.coordinate.latitude, location.coordinate.longitude, resolvedName)
         } else {
             // Use current location

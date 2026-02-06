@@ -166,7 +166,11 @@ struct AirQualityDataTests {
     @Test func decodesAirQualityData() throws {
         let json = """
         {
+            "latitude": 37.7749,
+            "longitude": -122.4194,
+            "timezone": "America/Los_Angeles",
             "current": {
+                "time": "2026-02-05T12:00",
                 "us_aqi": 45,
                 "pm10": 15.0,
                 "pm2_5": 8.0,
@@ -185,5 +189,7 @@ struct AirQualityDataTests {
         #expect(airQuality.current.usAqi == 45)
         #expect(airQuality.current.pm25 == 8.0)
         #expect(airQuality.current.ozone == 30.0)
+        #expect(airQuality.latitude == 37.7749)
+        #expect(airQuality.timezone == "America/Los_Angeles")
     }
 }
