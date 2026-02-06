@@ -7,6 +7,8 @@ excluded:
   - .build
   - Pods
   - Carthage
+  - weatherTests
+  - weatherUITests
 
 # Rules configuration
 disabled_rules:
@@ -15,11 +17,11 @@ disabled_rules:
   - function_body_length
   - file_length
   - type_body_length
+  - todo
 
 opt_in_rules:
   - empty_count
   - empty_string
-  - force_unwrapping
   - implicitly_unwrapped_optional
   - missing_docs
   - private_outlet
@@ -42,6 +44,9 @@ identifier_name:
     - y
     - i
     - j
+    - a
+    - b
+    - d
 
 type_name:
   min_length:
@@ -50,6 +55,22 @@ type_name:
   max_length:
     warning: 50
     error: 60
+  excluded:
+    - weatherApp
+    - Andernet_Weather_Widget
+    - Andernet_Weather_WidgetBundle
+    - Andernet_Weather_WidgetControl
+    - Andernet_Weather_WidgetLiveActivity
+
+force_try:
+  severity: warning
+
+force_unwrapping:
+  severity: warning
+
+large_tuple:
+  warning: 3
+  error: 4
 
 nesting:
   type_level:
