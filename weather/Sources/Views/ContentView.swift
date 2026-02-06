@@ -60,7 +60,8 @@ struct ContentView: View {
                     Task {
                         await weatherService.fetchWeather(
                             latitude: location.coordinate.latitude,
-                            longitude: location.coordinate.longitude
+                            longitude: location.coordinate.longitude,
+                            locationName: locationManager.locationName
                         )
                     }
                 }
@@ -72,7 +73,8 @@ struct ContentView: View {
                     Task {
                         await weatherService.fetchWeather(
                             latitude: coordinate.latitude,
-                            longitude: coordinate.longitude
+                            longitude: coordinate.longitude,
+                            locationName: locationName
                         )
                     }
                 }
@@ -91,7 +93,8 @@ struct ContentView: View {
                         Task {
                             await weatherService.fetchWeather(
                                 latitude: location.latitude,
-                                longitude: location.longitude
+                                longitude: location.longitude,
+                                locationName: location.name
                             )
                         }
                     }
@@ -141,7 +144,8 @@ struct ContentView: View {
             Task {
                 await weatherService.fetchWeather(
                     latitude: coordinate.latitude,
-                    longitude: coordinate.longitude
+                    longitude: coordinate.longitude,
+                    locationName: selectedLocationName
                 )
             }
         } else if let location = locationManager.location {
@@ -149,7 +153,8 @@ struct ContentView: View {
             Task {
                 await weatherService.fetchWeather(
                     latitude: location.coordinate.latitude,
-                    longitude: location.coordinate.longitude
+                    longitude: location.coordinate.longitude,
+                    locationName: locationManager.locationName
                 )
             }
         } else {
@@ -161,12 +166,14 @@ struct ContentView: View {
         if let coordinate = selectedCoordinate {
             await weatherService.fetchWeather(
                 latitude: coordinate.latitude,
-                longitude: coordinate.longitude
+                longitude: coordinate.longitude,
+                locationName: selectedLocationName
             )
         } else if let location = locationManager.location {
             await weatherService.fetchWeather(
                 latitude: location.coordinate.latitude,
-                longitude: location.coordinate.longitude
+                longitude: location.coordinate.longitude,
+                locationName: locationManager.locationName
             )
         }
     }

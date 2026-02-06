@@ -43,11 +43,14 @@ class WeatherService {
     var airQualityData: AirQualityData?
     var isLoading = false
     var errorMessage: String?
+    var currentLocationName: String?
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
     
-    func fetchWeather(latitude: Double, longitude: Double) async {
+    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil) async {
+        self.currentLocationName = locationName
+        
         await MainActor.run {
             isLoading = true
             errorMessage = nil
@@ -96,6 +99,9 @@ class WeatherService {
                 self.weatherData = weather
                 self.isLoading = false
             }
+            
+            // Save to shared storage for widgets
+            SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
             
             // Fetch air quality data in parallel
             await fetchAirQuality(latitude: latitude, longitude: longitude)

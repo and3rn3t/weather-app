@@ -12,7 +12,6 @@ import SwiftUI
 struct Andernet_Weather_WidgetBundle: WidgetBundle {
     var body: some Widget {
         Andernet_Weather_Widget()
-        Andernet_Weather_WidgetControl()
-        Andernet_Weather_WidgetLiveActivity()
+        LockScreenWeatherWidget()
     }
 }
