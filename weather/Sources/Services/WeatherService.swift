@@ -50,10 +50,40 @@ class WeatherService {
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
     private let retryHandler = RetryHandler()
     
+    // MARK: - Performance Optimizations
+    
+    /// Shared URL session with caching enabled for faster repeated requests
+    private static let cachedSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.urlCache = URLCache(memoryCapacity: 10_000_000, diskCapacity: 50_000_000) // 10MB mem, 50MB disk
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        config.timeoutIntervalForRequest = 15
+        config.timeoutIntervalForResource = 30
+        return URLSession(configuration: config)
+    }()
+    
+    /// Shared decoder - creating decoders is expensive
+    private static let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+    
+    /// Last successful fetch timestamp for debouncing
+    private var lastFetchTime: Date?
+    private let minimumFetchInterval: TimeInterval = 60 // 1 minute minimum between fetches
+    
     // MARK: - Public Methods
     
-    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil) async {
+    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
         self.currentLocationName = locationName
+        
+        // Debounce: Skip fetch if we recently fetched (unless force refresh)
+        if !forceRefresh, let lastFetch = lastFetchTime,
+           Date().timeIntervalSince(lastFetch) < minimumFetchInterval,
+           weatherData != nil {
+            return
+        }
         
         await MainActor.run {
             isLoading = true
@@ -64,6 +94,9 @@ class WeatherService {
         do {
             // Perform fetch with retry logic inline
             let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude)
+            
+            // Update last fetch time on success
+            lastFetchTime = Date()
             
             await MainActor.run {
                 self.weatherData = weather
@@ -134,7 +167,8 @@ class WeatherService {
             throw WeatherError.invalidURL
         }
         
-        let (data, response) = try await URLSession.shared.data(from: url)
+        // Use cached session for better performance
+        let (data, response) = try await Self.cachedSession.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WeatherError.invalidResponse
@@ -145,9 +179,8 @@ class WeatherService {
         }
         
         do {
-            let decoder = JSONDecoder()
-            decoder.dateDecodingStrategy = .iso8601
-            return try decoder.decode(WeatherData.self, from: data)
+            // Use static decoder for better performance
+            return try Self.decoder.decode(WeatherData.self, from: data)
         } catch let decodingError as DecodingError {
             throw WeatherError.decodingError(decodingError.localizedDescription)
         }

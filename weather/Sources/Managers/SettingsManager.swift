@@ -195,6 +195,35 @@ class SettingsManager {
 // MARK: - Formatting Extensions
 
 extension SettingsManager {
+    // MARK: - Cached Formatters (Creating formatters is expensive)
+    
+    private static let temperatureFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 0
+        return formatter
+    }()
+    
+    private static let windSpeedFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 1
+        return formatter
+    }()
+    
+    private static let precipitationFormatter: NumberFormatter = {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .decimal
+        formatter.maximumFractionDigits = 2
+        return formatter
+    }()
+    
+    private static let isoDateFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    
     func formatTemperature(_ value: Double) -> String {
         let convertedValue: Double
         switch temperatureUnit {
@@ -205,40 +234,26 @@ extension SettingsManager {
             convertedValue = value
         }
         
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 0
-        
-        let formatted = formatter.string(from: NSNumber(value: convertedValue)) ?? "\(Int(convertedValue))"
+        let formatted = Self.temperatureFormatter.string(from: NSNumber(value: convertedValue)) ?? "\(Int(convertedValue))"
         return "\(formatted)\(temperatureUnit.symbol)"
     }
     
     func formatWindSpeed(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 1
-        
-        let formatted = formatter.string(from: NSNumber(value: value)) ?? String(format: "%.1f", value)
+        let formatted = Self.windSpeedFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.1f", value)
         return "\(formatted) \(windSpeedUnit.symbol)"
     }
     
     func formatPrecipitation(_ value: Double) -> String {
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .decimal
-        formatter.maximumFractionDigits = 2
-        
-        let formatted = formatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+        let formatted = Self.precipitationFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
         return "\(formatted) \(precipitationUnit.symbol)"
     }
     
     func formatTime(_ dateString: String, timezone: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        guard let date = formatter.date(from: dateString) else {
+        guard let date = Self.isoDateFormatter.date(from: dateString) else {
             return dateString
         }
         
+        // Create display formatter - this one can't be cached due to timezone changes
         let displayFormatter = DateFormatter()
         displayFormatter.timeStyle = show24HourFormat ? .short : .short
         displayFormatter.dateStyle = .none

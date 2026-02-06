@@ -1,0 +1,41 @@
+// Andernet Weather Build Configuration
+// Common optimizations for better build performance and app size
+
+// MARK: - Build Performance
+
+// Enable faster incremental builds
+ENABLE_INCREMENTAL_DISTILL = YES
+
+// Enable dependency-aware builds
+BUILD_LIBRARY_FOR_DISTRIBUTION = NO
+
+// MARK: - Release Optimizations
+
+// Dead code stripping (reduces binary size)
+DEAD_CODE_STRIPPING = YES
+
+// Link-Time Optimization (LTO) for Release builds
+// Uncomment for Release: LLVM_LTO = YES
+
+// Strip debug symbols in Release
+// STRIP_INSTALLED_PRODUCT[config=Release] = YES
+// STRIP_STYLE[config=Release] = non-global
+
+// MARK: - Swift Compiler Optimizations
+
+// Enable aggressive optimization in Release
+// SWIFT_OPTIMIZATION_LEVEL[config=Release] = -O
+// SWIFT_OPTIMIZATION_LEVEL[config=Debug] = -Onone
+
+// Enable whole module optimization (already set in pbxproj for Release)
+// SWIFT_COMPILATION_MODE[config=Release] = wholemodule
+
+// MARK: - Asset Catalog
+
+// Compress assets for smaller binary
+ASSETCATALOG_COMPILER_OPTIMIZATION = space
+
+// MARK: - Code Signing (for CI/CD)
+
+// Use automatic signing by default
+CODE_SIGN_STYLE = Automatic
