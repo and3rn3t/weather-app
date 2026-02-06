@@ -16,6 +16,14 @@ struct HourlyChartView: View {
     
     @State private var selectedChart: ChartType = .temperature
     @State private var selectedDataPoint: HourlyDataPoint?
+    @State private var cachedDataPoints: [HourlyDataPoint] = []
+    
+    // Static date formatter to avoid creating new ones repeatedly
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
+        return formatter
+    }()
     
     var body: some View {
         NavigationStack {
@@ -48,6 +56,12 @@ struct HourlyChartView: View {
             )
             .navigationTitle("Hourly Forecast")
             .navigationBarTitleDisplayMode(.inline)
+            .onAppear {
+                // Pre-compute data points once
+                if cachedDataPoints.isEmpty {
+                    cachedDataPoints = computeHourlyDataPoints()
+                }
+            }
         }
     }
     
@@ -369,17 +383,34 @@ struct HourlyChartView: View {
     // MARK: - Computed Properties
     
     private var hourlyDataPoints: [HourlyDataPoint] {
+        cachedDataPoints.isEmpty ? computeHourlyDataPoints() : cachedDataPoints
+    }
+    
+    private func computeHourlyDataPoints() -> [HourlyDataPoint] {
         let now = Date()
         var points: [HourlyDataPoint] = []
         
-        for (index, timeString) in weatherData.hourly.time.enumerated() {
-            guard let date = ISO8601DateFormatter().date(from: timeString + ":00+00:00") ?? 
-                  DateFormatter.hourlyFormatter.date(from: timeString),
-                  date >= now else { continue }
+        // Limit to 48 hours max to prevent performance issues
+        let maxHours = min(weatherData.hourly.time.count, 48)
+        
+        for index in 0..<maxHours {
+            let timeString = weatherData.hourly.time[index]
+            
+            // Try parsing with ISO8601 format first, then fallback
+            let date: Date?
+            if let d = Self.isoFormatter.date(from: timeString + ":00+00:00") {
+                date = d
+            } else if let d = Self.isoFormatter.date(from: timeString) {
+                date = d
+            } else {
+                date = DateFormatter.hourlyFormatter.date(from: timeString)
+            }
+            
+            guard let parsedDate = date, parsedDate >= now else { continue }
             
             let point = HourlyDataPoint(
                 id: index,
-                date: date,
+                date: parsedDate,
                 temperature: weatherData.hourly.temperature2m[safe: index] ?? 0,
                 precipitationProbability: weatherData.hourly.precipitationProbability?[safe: index] ?? 0,
                 windSpeed: weatherData.hourly.windSpeed10m?[safe: index] ?? 0,
