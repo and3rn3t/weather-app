@@ -573,7 +573,7 @@ struct DailyForecastCard: View {
                 .padding(.horizontal, 20)
             
             VStack(spacing: 12) {
-                ForEach(Array(daily.time.enumerated()), id: \.offset) { index, time in
+                ForEach(Array(daily.time.prefix(7).enumerated()), id: \.offset) { index, time in
                     DailyWeatherRow(
                         date: time,
                         weatherCode: daily.weatherCode[index],
@@ -584,7 +584,7 @@ struct DailyForecastCard: View {
                         windSpeed: daily.windSpeed10mMax[index]
                     )
                     
-                    if index < daily.time.count - 1 {
+                    if index < min(daily.time.count, 7) - 1 {
                         Divider()
                             .padding(.horizontal, 20)
                     }
@@ -612,14 +612,14 @@ struct DailyWeatherRow: View {
             HStack(alignment: .center, spacing: 12) {
                 // Day name
                 Text(formattedDate)
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 60, alignment: .leading)
                     .font(.body.weight(.medium))
                 
                 // Weather icon
                 Image(systemName: WeatherCondition(code: weatherCode).symbolName)
                     .symbolRenderingMode(.multicolor)
                     .font(.title3)
-                    .frame(width: 32)
+                    .frame(width: 36)
                 
                 // Precipitation
                 if precipProbability > 0 {
@@ -630,10 +630,10 @@ struct DailyWeatherRow: View {
                             .font(.caption.weight(.medium))
                     }
                     .foregroundStyle(.blue)
-                    .frame(width: 48, alignment: .leading)
+                    .frame(width: 55, alignment: .leading)
                 } else {
                     Spacer()
-                        .frame(width: 48)
+                        .frame(width: 55)
                 }
                 
                 Spacer()
@@ -643,12 +643,12 @@ struct DailyWeatherRow: View {
                     Text(settings.formatTemperature(low))
                         .foregroundStyle(.secondary)
                         .monospacedDigit()
-                        .frame(width: 40, alignment: .trailing)
+                        .frame(width: 48, alignment: .trailing)
                     
                     Text(settings.formatTemperature(high))
                         .font(.body.weight(.semibold))
                         .monospacedDigit()
-                        .frame(width: 40, alignment: .trailing)
+                        .frame(width: 48, alignment: .trailing)
                 }
             }
             .padding(.horizontal, 20)
@@ -656,7 +656,7 @@ struct DailyWeatherRow: View {
             // Additional info row with modern capsule design
             HStack(spacing: 10) {
                 Spacer()
-                    .frame(width: 50)
+                    .frame(width: 60)
                 
                 HStack(spacing: 4) {
                     Image(systemName: "wind")
