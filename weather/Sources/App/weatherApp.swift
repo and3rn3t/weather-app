@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import AppIntents
 
 @main
 struct weatherApp: App {
@@ -18,6 +19,9 @@ struct weatherApp: App {
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
+        
+        // Register App Shortcuts with Siri
+        WeatherAppShortcuts.updateAppShortcutParameters()
     }
     
     var body: some Scene {

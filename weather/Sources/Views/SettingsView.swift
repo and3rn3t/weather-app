@@ -84,6 +84,17 @@ struct SettingsView: View {
                     Label("Display", systemImage: "eye")
                 }
                 
+                // Live Activities Section
+                Section {
+                    Toggle(isOn: $settings.liveActivitiesEnabled) {
+                        Label("Live Activities", systemImage: "figure.walk.motion")
+                    }
+                } header: {
+                    Label("Lock Screen", systemImage: "lock.iphone")
+                } footer: {
+                    Text("Show live weather updates on your Lock Screen and Dynamic Island.")
+                }
+                
                 // Notifications Section
                 Section {
                     if !notifications.hasPermission {

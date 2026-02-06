@@ -13,5 +13,6 @@ struct Andernet_Weather_WidgetBundle: WidgetBundle {
     var body: some Widget {
         Andernet_Weather_Widget()
         LockScreenWeatherWidget()
+        Andernet_Weather_WidgetLiveActivity()
     }
 }

@@ -98,6 +98,13 @@ class SettingsManager {
         }
     }
     
+    // Live Activities
+    var liveActivitiesEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(liveActivitiesEnabled, forKey: "liveActivitiesEnabled")
+        }
+    }
+    
     // Data
     var autoRefreshInterval: Int {
         didSet {
@@ -160,6 +167,9 @@ class SettingsManager {
         self.showAnimatedBackgrounds = UserDefaults.standard.object(forKey: "showAnimatedBackgrounds") as? Bool ?? true
         self.showWeatherParticles = UserDefaults.standard.object(forKey: "showWeatherParticles") as? Bool ?? true
         
+        // Load Live Activities setting
+        self.liveActivitiesEnabled = UserDefaults.standard.object(forKey: "liveActivitiesEnabled") as? Bool ?? true
+        
         // Load data settings
         self.autoRefreshInterval = UserDefaults.standard.object(forKey: "autoRefreshInterval") as? Int ?? 30
     }
@@ -177,6 +187,7 @@ class SettingsManager {
         show24HourFormat = false
         showAnimatedBackgrounds = true
         showWeatherParticles = true
+        liveActivitiesEnabled = true
         autoRefreshInterval = 30
     }
 }

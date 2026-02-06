@@ -22,6 +22,7 @@ struct ContentView: View {
     
     @State private var settings = SettingsManager()
     @State private var notificationManager = NotificationManager()
+    @State private var liveActivityManager = LiveActivityManager()
     @Environment(\.modelContext) private var modelContext
     @State private var favoritesManager: FavoritesManager?
     
@@ -53,6 +54,11 @@ struct ContentView: View {
                 if favoritesManager == nil {
                     favoritesManager = FavoritesManager(modelContext: modelContext)
                 }
+                
+                // Restore any existing Live Activity
+                if settings.liveActivitiesEnabled {
+                    liveActivityManager.restoreExistingActivity()
+                }
             }
             .onChange(of: locationManager.location) { _, newLocation in
                 // Only use location manager if no manual location selected
@@ -63,6 +69,13 @@ struct ContentView: View {
                             longitude: location.coordinate.longitude,
                             locationName: locationManager.locationName
                         )
+                        // Start Live Activity with new weather data
+                        if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
+                            await liveActivityManager.startActivity(
+                                weatherData: weatherData,
+                                locationName: locationManager.locationName
+                            )
+                        }
                     }
                 }
             }
@@ -76,6 +89,13 @@ struct ContentView: View {
                             longitude: coordinate.longitude,
                             locationName: locationName
                         )
+                        // Update Live Activity with new location weather
+                        if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
+                            await liveActivityManager.startActivity(
+                                weatherData: weatherData,
+                                locationName: locationName
+                            )
+                        }
                     }
                 }
             }
@@ -96,6 +116,13 @@ struct ContentView: View {
                                 longitude: location.longitude,
                                 locationName: location.name
                             )
+                            // Update Live Activity with favorite location weather
+                            if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
+                                await liveActivityManager.startActivity(
+                                    weatherData: weatherData,
+                                    locationName: location.name
+                                )
+                            }
                         }
                     }
                     .environment(favManager)
@@ -117,6 +144,22 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "gear")
                             .symbolEffect(.pulse)
+                    }
+                }
+            }
+            .onChange(of: settings.liveActivitiesEnabled) { _, enabled in
+                Task {
+                    if enabled {
+                        // Start Live Activity when enabled
+                        if let weatherData = weatherService.weatherData {
+                            await liveActivityManager.startActivity(
+                                weatherData: weatherData,
+                                locationName: displayLocationName
+                            )
+                        }
+                    } else {
+                        // End all Live Activities when disabled
+                        await liveActivityManager.endAllActivities()
                     }
                 }
             }
@@ -175,6 +218,11 @@ struct ContentView: View {
                 longitude: location.coordinate.longitude,
                 locationName: locationManager.locationName
             )
+        }
+        
+        // Update Live Activity with new weather data
+        if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
+            await liveActivityManager.updateActivity(weatherData: weatherData)
         }
     }
 }
