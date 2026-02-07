@@ -29,8 +29,10 @@ struct WeatherDetailView: View {
                     // Location Header with search button
                     LocationHeader(
                         locationName: locationName,
+                        weatherData: weatherData,
                         onSearchTapped: onSearchTapped
                     )
+                        .environment(settings)
                     
                     // Current Weather - Prominent card
                     CurrentWeatherCard(current: weatherData.current)
@@ -263,6 +265,10 @@ struct SunMoonCard: View {
     let isDay: Bool
     let timezone: String
     
+    private var moonPhase: MoonPhase {
+        MoonPhase.current()
+    }
+    
     var body: some View {
         VStack(spacing: 16) {
             HStack {
@@ -340,27 +346,41 @@ struct SunMoonCard: View {
                 .accessibilityLabel(sunsetAccessibilityLabel)
             }
             
-            // Day length
-            if let sunrise = daily.sunrise.first,
-               let sunset = daily.sunset.first,
-               let dayLength = calculateDayLength(sunrise: sunrise, sunset: sunset) {
+            // Day length and Moon phase
+            VStack(spacing: 8) {
+                if let sunrise = daily.sunrise.first,
+                   let sunset = daily.sunset.first,
+                   let dayLength = calculateDayLength(sunrise: sunrise, sunset: sunset) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "clock.fill")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
+                        Text("Daylight: \(dayLength)")
+                            .font(.subheadline.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityLabel("Total daylight: \(dayLength)")
+                }
+                
+                // Moon phase
                 HStack(spacing: 6) {
-                    Image(systemName: "clock.fill")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(moonPhase.emoji)
+                        .font(.body)
                         .accessibilityHidden(true)
-                    Text("Daylight: \(dayLength)")
+                    Text("\(moonPhase.name) • \(Int(moonPhase.illumination * 100))% illuminated")
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(.secondary)
                 }
-                .padding(.top, 4)
-                .accessibilityLabel("Total daylight: \(dayLength)")
+                .padding(.top, 2)
+                .accessibilityLabel("Moon phase: \(moonPhase.name), \(Int(moonPhase.illumination * 100)) percent illuminated")
             }
+            .padding(.top, 4)
         }
         .padding(20)
         .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("Sun information")
+        .accessibilityLabel("Sun and Moon information")
     }
     
     private var sunriseAccessibilityLabel: String {
@@ -424,6 +444,7 @@ struct HourlyForecastCard: View {
     let hourly: HourlyWeather
     let timezone: String
     @State private var selectedHour: Int?
+    @State private var showUVIndex = false
     @Environment(SettingsManager.self) var settings
     
     var body: some View {
@@ -434,8 +455,28 @@ struct HourlyForecastCard: View {
                 
                 Spacer()
                 
+                // Toggle between temperature and UV index
+                if hourly.uvIndex != nil {
+                    Button {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            showUVIndex.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: showUVIndex ? "thermometer" : "sun.max.fill")
+                                .font(.caption)
+                            Text(showUVIndex ? "Temp" : "UV")
+                                .font(.caption.weight(.medium))
+                        }
+                        .foregroundStyle(.blue)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(Color.blue.opacity(0.15), in: Capsule())
+                    }
+                }
+                
                 // Temperature trend indicator
-                if let trend = temperatureTrend {
+                if !showUVIndex, let trend = temperatureTrend {
                     HStack(spacing: 4) {
                         Image(systemName: trend.icon)
                             .font(.caption)
@@ -450,14 +491,24 @@ struct HourlyForecastCard: View {
             }
             .padding(.horizontal, 20)
             
-            // Interactive Temperature Chart
-            TemperatureChart(
-                hourly: hourly,
-                timezone: timezone,
-                selectedHour: $selectedHour
-            )
-            .frame(height: 200)
-            .padding(.horizontal, 16)
+            // Interactive Chart
+            if showUVIndex {
+                UVIndexChart(
+                    hourly: hourly,
+                    timezone: timezone,
+                    selectedHour: $selectedHour
+                )
+                .frame(height: 200)
+                .padding(.horizontal, 16)
+            } else {
+                TemperatureChart(
+                    hourly: hourly,
+                    timezone: timezone,
+                    selectedHour: $selectedHour
+                )
+                .frame(height: 200)
+                .padding(.horizontal, 16)
+            }
             
             Divider()
                 .padding(.horizontal, 20)
@@ -465,19 +516,37 @@ struct HourlyForecastCard: View {
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 24) {
                     ForEach(Array(hourly.time.prefix(24).enumerated()), id: \.offset) { index, time in
-                        HourlyWeatherItem(
-                            time: time,
-                            temperature: hourly.temperature2m[index],
-                            weatherCode: hourly.weatherCode[index],
-                            timezone: timezone,
-                            isSelected: selectedHour == index
-                        )
-                        .onTapGesture {
-                            let generator = UIImpactFeedbackGenerator(style: .light)
-                            generator.impactOccurred()
-                            
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                selectedHour = selectedHour == index ? nil : index
+                        if showUVIndex, let uvValues = hourly.uvIndex {
+                            HourlyUVItem(
+                                time: time,
+                                uvIndex: uvValues[index],
+                                weatherCode: hourly.weatherCode[index],
+                                timezone: timezone,
+                                isSelected: selectedHour == index
+                            )
+                            .onTapGesture {
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedHour = selectedHour == index ? nil : index
+                                }
+                            }
+                        } else {
+                            HourlyWeatherItem(
+                                time: time,
+                                temperature: hourly.temperature2m[index],
+                                weatherCode: hourly.weatherCode[index],
+                                timezone: timezone,
+                                isSelected: selectedHour == index
+                            )
+                            .onTapGesture {
+                                let generator = UIImpactFeedbackGenerator(style: .light)
+                                generator.impactOccurred()
+                                
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    selectedHour = selectedHour == index ? nil : index
+                                }
                             }
                         }
                     }
@@ -559,17 +628,207 @@ struct HourlyWeatherItem: View {
     }
 }
 
+struct HourlyUVItem: View {
+    let time: String
+    let uvIndex: Double
+    let weatherCode: Int
+    let timezone: String
+    var isSelected: Bool = false
+    
+    var body: some View {
+        VStack(spacing: 8) {
+            Text(formattedTime)
+                .font(.caption.weight(isSelected ? .bold : .medium))
+                .foregroundStyle(isSelected ? .primary : .secondary)
+            
+            Image(systemName: "sun.max.fill")
+                .font(.title2)
+                .foregroundStyle(uvColor.gradient)
+                .frame(height: 28)
+                .scaleEffect(isSelected ? 1.2 : 1.0)
+                .symbolEffect(.bounce, value: isSelected)
+            
+            Text(String(format: "%.1f", uvIndex))
+                .font(.body.weight(isSelected ? .bold : .semibold))
+                .monospacedDigit()
+                .foregroundStyle(isSelected ? .primary : .secondary)
+            
+            Text(uvLevel)
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(uvColor)
+        }
+        .frame(width: 60)
+        .padding(.vertical, 8)
+        .padding(.horizontal, 4)
+        .background(
+            isSelected ? uvColor.opacity(0.15) : Color.clear,
+            in: RoundedRectangle(cornerRadius: 12)
+        )
+        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
+    }
+    
+    private var formattedTime: String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: time) else { return "" }
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "ha"
+        
+        if let timeZone = TimeZone(identifier: timezone) {
+            timeFormatter.timeZone = timeZone
+        }
+        
+        return timeFormatter.string(from: date)
+    }
+    
+    private var uvColor: Color {
+        switch uvIndex {
+        case 0..<3: return .green
+        case 3..<6: return .yellow
+        case 6..<8: return .orange
+        case 8..<11: return .red
+        default: return .purple
+        }
+    }
+    
+    private var uvLevel: String {
+        switch uvIndex {
+        case 0..<3: return "Low"
+        case 3..<6: return "Moderate"
+        case 6..<8: return "High"
+        case 8..<11: return "Very High"
+        default: return "Extreme"
+        }
+    }
+}
+
+struct UVIndexChart: View {
+    let hourly: HourlyWeather
+    let timezone: String
+    @Binding var selectedHour: Int?
+    
+    var body: some View {
+        Chart {
+            ForEach(Array(hourly.time.prefix(24).enumerated()), id: \.offset) { index, time in
+                if let uvValues = hourly.uvIndex {
+                    BarMark(
+                        x: .value("Time", formattedTime(time)),
+                        y: .value("UV Index", uvValues[index])
+                    )
+                    .foregroundStyle(uvGradient(for: uvValues[index]))
+                    .opacity(selectedHour == nil || selectedHour == index ? 1.0 : 0.3)
+                    .annotation(position: .top) {
+                        if selectedHour == index {
+                            VStack(spacing: 2) {
+                                Text(String(format: "%.1f", uvValues[index]))
+                                    .font(.caption.bold())
+                                    .foregroundStyle(uvColor(for: uvValues[index]))
+                                Text(uvLevel(for: uvValues[index]))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 4)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 8))
+                        }
+                    }
+                }
+            }
+        }
+        .chartYAxis {
+            AxisMarks(position: .leading) { value in
+                AxisValueLabel()
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .chartXAxis {
+            AxisMarks(values: .stride(by: 3)) { value in
+                AxisValueLabel()
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .chartYScale(domain: 0...12)
+    }
+    
+    private func formattedTime(_ time: String) -> String {
+        let formatter = ISO8601DateFormatter()
+        guard let date = formatter.date(from: time) else { return "" }
+        
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "ha"
+        
+        if let timeZone = TimeZone(identifier: timezone) {
+            timeFormatter.timeZone = timeZone
+        }
+        
+        return timeFormatter.string(from: date)
+    }
+    
+    private func uvColor(for uv: Double) -> Color {
+        switch uv {
+        case 0..<3: return .green
+        case 3..<6: return .yellow
+        case 6..<8: return .orange
+        case 8..<11: return .red
+        default: return .purple
+        }
+    }
+    
+    private func uvGradient(for uv: Double) -> LinearGradient {
+        LinearGradient(
+            colors: [uvColor(for: uv), uvColor(for: uv).opacity(0.6)],
+            startPoint: .top,
+            endPoint: .bottom
+        )
+    }
+    
+    private func uvLevel(for uv: Double) -> String {
+        switch uv {
+        case 0..<3: return "Low"
+        case 3..<6: return "Moderate"
+        case 6..<8: return "High"
+        case 8..<11: return "Very High"
+        default: return "Extreme"
+        }
+    }
+}
+
 struct DailyForecastCard: View {
     let daily: DailyWeather
+    @State private var showExtendedForecast = false
+    
+    var displayedDays: Int {
+        showExtendedForecast ? min(daily.time.count, 14) : 7
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("7-Day Forecast")
-                .font(.headline.weight(.semibold))
-                .padding(.horizontal, 20)
+            HStack {
+                Text("14-Day Forecast")
+                    .font(.headline.weight(.semibold))
+                
+                Spacer()
+                
+                Button {
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        showExtendedForecast.toggle()
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(showExtendedForecast ? "Show Less" : "Show All")
+                            .font(.subheadline.weight(.medium))
+                        Image(systemName: showExtendedForecast ? "chevron.up" : "chevron.down")
+                            .font(.caption.weight(.semibold))
+                    }
+                    .foregroundStyle(.blue)
+                }
+            }
+            .padding(.horizontal, 20)
             
             VStack(spacing: 12) {
-                ForEach(Array(daily.time.prefix(7).enumerated()), id: \.offset) { index, time in
+                ForEach(Array(daily.time.prefix(displayedDays).enumerated()), id: \.offset) { index, time in
                     DailyWeatherRow(
                         date: time,
                         weatherCode: daily.weatherCode[index],
@@ -580,7 +839,7 @@ struct DailyForecastCard: View {
                         windSpeed: daily.windSpeed10mMax[index]
                     )
                     
-                    if index < min(daily.time.count, 7) - 1 {
+                    if index < displayedDays - 1 {
                         Divider()
                             .padding(.horizontal, 20)
                     }
@@ -902,7 +1161,31 @@ struct WeatherDetailItem: View {
 }
 struct LocationHeader: View {
     let locationName: String?
+    let weatherData: WeatherData
     let onSearchTapped: () -> Void
+    @Environment(SettingsManager.self) var settings
+    
+    private var shareText: String {
+        let location = locationName ?? "Current Location"
+        let condition = WeatherCondition(code: weatherData.current.weatherCode).description
+        let temp = settings.formatTemperature(weatherData.current.temperature2m)
+        let feelsLike = settings.formatTemperature(weatherData.current.apparentTemperature)
+        
+        var text = """
+        📍 \(location)
+        🌡️ \(temp) (Feels like \(feelsLike))
+        ☁️ \(condition)
+        💨 Wind: \(Int(weatherData.current.windSpeed10m)) mph
+        💧 Humidity: \(weatherData.current.relativeHumidity2m)%
+        """
+        
+        if let aqi = weatherData.current.uvIndex {
+            text += "\n☀️ UV Index: \(String(format: "%.1f", aqi))"
+        }
+        
+        text += "\n\nShared from Andernet Weather"
+        return text
+    }
     
     var body: some View {
         HStack(spacing: 12) {
@@ -934,22 +1217,35 @@ struct LocationHeader: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            // Search button
-            Button(action: {
-                // Haptic feedback
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+            HStack(spacing: 8) {
+                // Share button
+                ShareLink(item: shareText) {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.blue.gradient)
+                        .frame(width: 44, height: 44)
+                        .background(.secondary.opacity(0.15), in: Circle())
+                }
+                .buttonStyle(.plain)
                 
-                onSearchTapped()
-            }) {
-                Image(systemName: "magnifyingglass")
-                    .font(.title3)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.blue.gradient)
-                    .frame(width: 44, height: 44)
-                    .background(.secondary.opacity(0.15), in: Circle())
+                // Search button
+                Button(action: {
+                    // Haptic feedback
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
+                    
+                    onSearchTapped()
+                }) {
+                    Image(systemName: "magnifyingglass")
+                        .font(.title3)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.blue.gradient)
+                        .frame(width: 44, height: 44)
+                        .background(.secondary.opacity(0.15), in: Circle())
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
         }
         .padding(.vertical, 12)
         .padding(.horizontal, 20)
@@ -1283,6 +1579,29 @@ struct AirQualityCard: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.top, 4)
+                
+                // Health Recommendations
+                VStack(alignment: .leading, spacing: 8) {
+                    Divider()
+                        .padding(.vertical, 4)
+                    
+                    Text("Health Recommendations")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                    
+                    ForEach(healthRecommendations(for: aqi), id: \.self) { recommendation in
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: recommendation.icon)
+                                .font(.caption)
+                                .foregroundStyle(aqiCategory(for: aqi).color)
+                                .frame(width: 16)
+                            Text(recommendation.text)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
+                }
             } else {
                 HStack {
                     Spacer()
@@ -1319,6 +1638,40 @@ struct AirQualityCard: View {
             return ("Unhealthy", .red, "Everyone may begin to experience health effects.")
         default:
             return ("Very Unhealthy", .purple, "Health alert: everyone may experience serious effects.")
+        }
+    }
+    
+    private func healthRecommendations(for aqi: Int) -> [(icon: String, text: String)] {
+        switch aqi {
+        case 0..<51:
+            return [
+                ("figure.run", "Perfect for outdoor activities and exercise"),
+                ("lungs.fill", "Air quality is ideal for everyone")
+            ]
+        case 51..<101:
+            return [
+                ("figure.walk", "Outdoor activities are generally safe"),
+                ("exclamationmark.triangle", "Unusually sensitive people should consider reducing prolonged outdoor exertion")
+            ]
+        case 101..<151:
+            return [
+                ("figure.walk", "Sensitive groups should limit prolonged outdoor activities"),
+                ("allergyshot", "People with respiratory conditions should take extra precautions"),
+                ("wind", "Consider indoor activities if you're sensitive to air pollution")
+            ]
+        case 151..<201:
+            return [
+                ("exclamationmark.triangle.fill", "Everyone should reduce prolonged outdoor exertion"),
+                ("allergyshot.fill", "Sensitive groups should avoid outdoor activities"),
+                ("house.fill", "Consider staying indoors and using air purifiers")
+            ]
+        default:
+            return [
+                ("exclamationmark.octagon.fill", "Avoid all outdoor physical activities"),
+                ("house.fill", "Stay indoors and keep windows closed"),
+                ("allergyshot.fill", "Sensitive groups should remain indoors"),
+                ("cross.circle.fill", "Health alert: serious health effects for everyone")
+            ]
         }
     }
 }

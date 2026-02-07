@@ -17,6 +17,7 @@ struct ContentView: View {
     @State private var showingEffectsShowcase = false
     @State private var showingSettings = false
     @State private var showingFavorites = false
+    @State private var showingComparison = false
     @State private var showingMap = false
     @State private var showingHourlyChart = false
     @State private var showingOnboarding = !OnboardingChecker.hasCompletedOnboarding
@@ -139,6 +140,10 @@ struct ContentView: View {
                     .environment(favManager)
                 }
             }
+            .sheet(isPresented: $showingComparison) {
+                WeatherComparisonView()
+                    .environment(settings)
+            }
             .sheet(isPresented: $showingMap) {
                 if let weatherData = weatherService.weatherData {
                     WeatherMapView(
@@ -171,6 +176,17 @@ struct ContentView: View {
                 }
                 
                 ToolbarItemGroup(placement: .topBarTrailing) {
+                    // Comparison button
+                    if weatherService.weatherData != nil {
+                        Button {
+                            showingComparison = true
+                        } label: {
+                            Image(systemName: "square.grid.2x2")
+                        }
+                        .buttonStyle(.glass)
+                        .help("Compare weather across locations")
+                    }
+                    
                     // Map button
                     if weatherService.weatherData != nil {
                         Button {
