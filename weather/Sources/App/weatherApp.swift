@@ -10,7 +10,7 @@ import SwiftData
 import AppIntents
 
 @main
-struct weatherApp: App {
+struct WeatherApp: App {
     let modelContainer: ModelContainer
     @State private var themeManager = ThemeManager()
     

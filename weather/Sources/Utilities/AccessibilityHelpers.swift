@@ -33,7 +33,7 @@ enum WeatherAccessibility {
     // MARK: - Weather Condition Labels
     
     static func conditionLabel(code: Int) -> String {
-        let condition = WeatherConditionAccessibility(code: code)
+        let condition = WeatherCondition(code: code)
         return "Weather condition: \(condition.fullDescription)"
     }
     
@@ -174,7 +174,7 @@ enum WeatherAccessibility {
     // MARK: - Forecast Summary
     
     static func dailyForecastLabel(day: String, high: Double, low: Double, code: Int) -> String {
-        let condition = WeatherConditionAccessibility(code: code)
+        let condition = WeatherCondition(code: code)
         let dayName = formatDayForSpeech(day)
         return "\(dayName): \(condition.fullDescription), high \(Int(high)), low \(Int(low))"
     }
@@ -199,28 +199,10 @@ enum WeatherAccessibility {
     }
 }
 
-// MARK: - Weather Condition for Accessibility
+// MARK: - Weather Condition Accessibility Extension
 
-private enum WeatherConditionAccessibility {
-    case clearSky, partlyCloudy, cloudy, foggy, drizzle, rain, heavyRain
-    case snow, heavySnow, thunderstorm, unknown
-    
-    init(code: Int) {
-        switch code {
-        case 0: self = .clearSky
-        case 1, 2: self = .partlyCloudy
-        case 3: self = .cloudy
-        case 45, 48: self = .foggy
-        case 51, 53, 55: self = .drizzle
-        case 61, 63: self = .rain
-        case 65, 80, 81, 82: self = .heavyRain
-        case 71, 73: self = .snow
-        case 75, 77, 85, 86: self = .heavySnow
-        case 95, 96, 99: self = .thunderstorm
-        default: self = .unknown
-        }
-    }
-    
+extension WeatherCondition {
+    /// Detailed description for accessibility/VoiceOver
     var fullDescription: String {
         switch self {
         case .clearSky: return "clear skies"
@@ -229,9 +211,7 @@ private enum WeatherConditionAccessibility {
         case .foggy: return "foggy with reduced visibility"
         case .drizzle: return "light drizzle"
         case .rain: return "rain"
-        case .heavyRain: return "heavy rain"
         case .snow: return "snow"
-        case .heavySnow: return "heavy snow"
         case .thunderstorm: return "thunderstorm"
         case .unknown: return "unknown conditions"
         }

@@ -104,8 +104,13 @@ struct WeatherDetailView: View {
                 .opacity(0.3)
             }
             
-            // Weather particles - temporarily disabled until file is added
-            // TODO: Add back WeatherParticleContainer when WeatherParticleEffects.swift is in target
+            // Weather particle effects
+            if settings.showWeatherParticles {
+                WeatherParticleContainer(
+                    weatherCode: weatherData.current.weatherCode,
+                    isDay: weatherData.current.isDay == 1
+                )
+            }
         }
         .ignoresSafeArea()
     }
@@ -229,9 +234,9 @@ struct CurrentWeatherCard: View {
         }
     }
     
-    // Temperature gradient based on actual temp
+    // Temperature gradient based on actual temp (always in Fahrenheit from API)
     private var temperatureGradient: LinearGradient {
-        let temp = current.temperature2m
+        let temp = current.temperature2m // Always Fahrenheit from API
         let colors: [Color]
         
         switch temp {
@@ -303,7 +308,7 @@ struct SunMoonCard: View {
                         .foregroundStyle(.secondary)
                     
                     if let sunrise = daily.sunrise.first {
-                        Text(formatTime(sunrise, timezone: timezone))
+                        Text(SettingsManager.formatSunTime(sunrise, timezone: timezone))
                             .font(.title3.weight(.semibold))
                             .monospacedDigit()
                     } else {
@@ -334,7 +339,7 @@ struct SunMoonCard: View {
                         .foregroundStyle(.secondary)
                     
                     if let sunset = daily.sunset.first {
-                        Text(formatTime(sunset, timezone: timezone))
+                        Text(SettingsManager.formatSunTime(sunset, timezone: timezone))
                             .font(.title3.weight(.semibold))
                             .monospacedDigit()
                     } else {
@@ -406,33 +411,10 @@ struct SunMoonCard: View {
         return timeZone.abbreviation() ?? timezone
     }
     
-    private func formatTime(_ isoString: String, timezone: String) -> String {
-        // OpenMeteo returns sunrise/sunset in simple format: "2026-02-04T07:10"
-        // This is in the location's local time (already adjusted)
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
-        
-        // Important: Set the timezone to match the location
-        if let timeZone = TimeZone(identifier: timezone) {
-            dateFormatter.timeZone = timeZone
-        }
-        
-        guard let date = dateFormatter.date(from: isoString) else {
-            return "N/A"
-        }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "h:mm a"
-        timeFormatter.timeZone = dateFormatter.timeZone // Use same timezone
-        
-        return timeFormatter.string(from: date)
-    }
-    
     private func calculateDayLength(sunrise: String, sunset: String) -> String? {
-        let formatter = ISO8601DateFormatter()
-        guard let sunriseDate = formatter.date(from: sunrise),
-              let sunsetDate = formatter.date(from: sunset) else { return nil }
+        let parser = SettingsManager.isoParser
+        guard let sunriseDate = parser.date(from: sunrise),
+              let sunsetDate = parser.date(from: sunset) else { return nil }
         
         let interval = sunsetDate.timeIntervalSince(sunriseDate)
         let hours = Int(interval / 3600)
@@ -460,6 +442,8 @@ struct HourlyForecastCard: View {
                 // Toggle between temperature and UV index
                 if hourly.uvIndex != nil {
                     Button {
+                        let generator = UIImpactFeedbackGenerator(style: .light)
+                        generator.impactOccurred()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             showUVIndex.toggle()
                         }
@@ -615,18 +599,7 @@ struct HourlyWeatherItem: View {
     }
     
     private var formattedTime: String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: time) else { return "" }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        
-        // Set the timezone to the location's timezone
-        if let timeZone = TimeZone(identifier: timezone) {
-            timeFormatter.timeZone = timeZone
-        }
-        
-        return timeFormatter.string(from: date)
+        SettingsManager.formatHour(time, timezone: timezone)
     }
 }
 
@@ -670,17 +643,7 @@ struct HourlyUVItem: View {
     }
     
     private var formattedTime: String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: time) else { return "" }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        
-        if let timeZone = TimeZone(identifier: timezone) {
-            timeFormatter.timeZone = timeZone
-        }
-        
-        return timeFormatter.string(from: date)
+        SettingsManager.formatHour(time, timezone: timezone)
     }
     
     private var uvColor: Color {
@@ -755,17 +718,7 @@ struct UVIndexChart: View {
     }
     
     private func formattedTime(_ time: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: time) else { return "" }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        
-        if let timeZone = TimeZone(identifier: timezone) {
-            timeFormatter.timeZone = timeZone
-        }
-        
-        return timeFormatter.string(from: date)
+        SettingsManager.formatHour(time, timezone: timezone)
     }
     
     private func uvColor(for uv: Double) -> Color {
@@ -814,6 +767,8 @@ struct DailyForecastCard: View {
                 Spacer()
                 
                 Button {
+                    let generator = UIImpactFeedbackGenerator(style: .light)
+                    generator.impactOccurred()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         showExtendedForecast.toggle()
                     }
@@ -918,7 +873,7 @@ struct DailyWeatherRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "wind")
                         .font(.caption2)
-                    Text("\(Int(windSpeed)) mph")
+                    Text(settings.formatWindSpeed(windSpeed))
                         .font(.caption.weight(.medium))
                 }
                 .padding(.horizontal, 8)
@@ -942,16 +897,12 @@ struct DailyWeatherRow: View {
             .padding(.horizontal, 20)
         }
         .padding(.vertical, 4)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(WeatherAccessibility.dailyForecastLabel(day: date, high: high, low: low, code: weatherCode) + ". " + WeatherAccessibility.precipitationProbabilityLabel(precipProbability))
     }
     
     private var formattedDate: String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate]
-        guard let date = formatter.date(from: date) else { return "" }
-        
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "EEE"
-        return dateFormatter.string(from: date)
+        SettingsManager.formatDayName(date)
     }
     
     private var uvColor: Color {
@@ -967,6 +918,7 @@ struct DailyWeatherRow: View {
 
 struct WeatherDetailsCard: View {
     let current: CurrentWeather
+    @Environment(SettingsManager.self) private var settings
     
     var body: some View {
         VStack(spacing: 20) {
@@ -978,8 +930,8 @@ struct WeatherDetailsCard: View {
             HStack(spacing: 0) {
                 WeatherDetailItem(
                     title: "Wind Speed",
-                    value: "\(Int(current.windSpeed10m))",
-                    unit: "mph",
+                    value: "\(Int(settings.convertedWindSpeed(current.windSpeed10m)))",
+                    unit: settings.windSpeedUnit.symbol,
                     subtitle: windDirection,
                     icon: "wind",
                     color: .cyan
@@ -1003,12 +955,14 @@ struct WeatherDetailsCard: View {
                 
                 WeatherDetailItem(
                     title: "Gusts",
-                    value: "\(Int(current.windGusts10m))",
-                    unit: "mph",
+                    value: "\(Int(settings.convertedWindSpeed(current.windGusts10m)))",
+                    unit: settings.windSpeedUnit.symbol,
                     icon: "tornado",
                     color: .cyan
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(WeatherAccessibility.windLabel(speed: current.windSpeed10m, direction: Int(current.windDirection10m), unit: settings.windSpeedUnit) + ". " + WeatherAccessibility.humidityLabel(current.relativeHumidity2m))
             
             Divider()
             
@@ -1046,6 +1000,8 @@ struct WeatherDetailsCard: View {
                     color: .orange
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(WeatherAccessibility.uvIndexLabel(current.uvIndex) + ". " + WeatherAccessibility.visibilityLabel(current.visibility) + ". " + WeatherAccessibility.pressureLabel(current.pressure))
             
             Divider()
             
@@ -1065,8 +1021,7 @@ struct WeatherDetailsCard: View {
                 
                 WeatherDetailItem(
                     title: "Dew Point",
-                    value: "\(Int(current.dewPoint2m))",
-                    unit: "°",
+                    value: settings.formatTemperature(current.dewPoint2m),
                     icon: "drop.fill",
                     color: .teal
                 )
@@ -1077,12 +1032,13 @@ struct WeatherDetailsCard: View {
                 
                 WeatherDetailItem(
                     title: "Precip",
-                    value: String(format: "%.2f", current.precipitation),
-                    unit: "in",
+                    value: settings.formatPrecipitation(current.precipitation),
                     icon: "cloud.rain.fill",
                     color: .blue
                 )
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Cloud cover \(current.cloudCover) percent. Dew point \(settings.formatTemperature(current.dewPoint2m)). " + WeatherAccessibility.precipitationAmountLabel(current.precipitation))
         }
         .padding(20)
         .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
@@ -1173,11 +1129,11 @@ struct LocationHeader: View {
         let temp = settings.formatTemperature(weatherData.current.temperature2m)
         let feelsLike = settings.formatTemperature(weatherData.current.apparentTemperature)
         
-        var text = """
+        let text = """
         📍 \(location)
         🌡️ \(temp) (Feels like \(feelsLike))
         ☁️ \(condition)
-        💨 Wind: \(Int(weatherData.current.windSpeed10m)) mph
+        💨 Wind: \(settings.formatWindSpeed(weatherData.current.windSpeed10m))
         💧 Humidity: \(weatherData.current.relativeHumidity2m)%
         ☀️ UV Index: \(String(format: "%.1f", weatherData.current.uvIndex))
         
@@ -1356,17 +1312,7 @@ struct TemperatureChart: View {
     }
     
     private func formatChartTime(_ isoString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        guard let date = formatter.date(from: isoString) else { return "" }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.dateFormat = "ha"
-        
-        if let timeZone = TimeZone(identifier: timezone) {
-            timeFormatter.timeZone = timeZone
-        }
-        
-        return timeFormatter.string(from: date)
+        SettingsManager.formatHour(isoString, timezone: timezone)
     }
 }
 
@@ -1388,6 +1334,8 @@ struct WeatherRecommendationsCard: View {
         }
         .padding(20)
         .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Weather Recommendations")
     }
     
     private var recommendations: [Recommendation] {

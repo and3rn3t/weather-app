@@ -7,12 +7,14 @@
 
 import SwiftUI
 import MapKit
+import OSLog
 
 struct LocationSearchView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var searchText = ""
     @State private var searchResults: [MKMapItem] = []
     @State private var isSearching = false
+    @State private var searchTask: Task<Void, Never>?
     
     let onLocationSelected: (CLLocationCoordinate2D, String) -> Void
     
@@ -43,7 +45,13 @@ struct LocationSearchView: View {
             }
             .searchable(text: $searchText, prompt: "City, state, or country")
             .onChange(of: searchText) { _, newValue in
-                Task {
+                // Cancel previous search task
+                searchTask?.cancel()
+                
+                // Debounce: wait 300ms before searching
+                searchTask = Task {
+                    try? await Task.sleep(for: .milliseconds(300))
+                    guard !Task.isCancelled else { return }
                     await searchLocations(query: newValue)
                 }
             }
@@ -68,7 +76,7 @@ struct LocationSearchView: View {
             let response = try await search.start()
             searchResults = response.mapItems
         } catch {
-            print("Search error: \(error)")
+            Logger.search.error("Location search failed: \(error.localizedDescription)")
             searchResults = []
         }
     }

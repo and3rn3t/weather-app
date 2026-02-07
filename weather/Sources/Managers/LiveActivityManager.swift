@@ -8,6 +8,7 @@
 import Foundation
 import ActivityKit
 import SwiftUI
+import OSLog
 
 // MARK: - Weather Activity Attributes (shared with widget extension)
 
@@ -38,7 +39,7 @@ class LiveActivityManager {
     func startActivity(weatherData: WeatherData, locationName: String?) async {
         // Check if Live Activities are supported
         guard ActivityAuthorizationInfo().areActivitiesEnabled else {
-            print("Live Activities are not enabled")
+            Logger.liveActivity.info("Live Activities are not enabled")
             return
         }
         
@@ -70,16 +71,16 @@ class LiveActivityManager {
                 content: activityContent,
                 pushType: nil
             )
-            print("Started Live Activity: \(currentActivity?.id ?? "unknown")")
+            Logger.liveActivity.info("Started Live Activity: \(self.currentActivity?.id ?? "unknown")")
         } catch {
-            print("Failed to start Live Activity: \(error.localizedDescription)")
+            Logger.liveActivity.error("Failed to start Live Activity: \(error.localizedDescription)")
         }
     }
     
     /// Update the current Live Activity with new weather data
     func updateActivity(weatherData: WeatherData) async {
         guard let activity = currentActivity else {
-            print("No active Live Activity to update")
+            Logger.liveActivity.debug("No active Live Activity to update")
             return
         }
         
@@ -99,7 +100,7 @@ class LiveActivityManager {
         )
         
         await activity.update(activityContent)
-        print("Updated Live Activity")
+        Logger.liveActivity.debug("Updated Live Activity")
     }
     
     /// End the current Live Activity
@@ -108,7 +109,7 @@ class LiveActivityManager {
         
         await activity.end(nil, dismissalPolicy: .immediate)
         currentActivity = nil
-        print("Ended Live Activity")
+        Logger.liveActivity.info("Ended Live Activity")
     }
     
     /// End all active weather activities (cleanup)
@@ -123,7 +124,7 @@ class LiveActivityManager {
     func restoreExistingActivity() {
         if let existingActivity = Activity<WeatherActivityAttributes>.activities.first {
             currentActivity = existingActivity
-            print("Restored existing Live Activity: \(existingActivity.id)")
+            Logger.liveActivity.info("Restored existing Live Activity: \(existingActivity.id)")
         }
     }
 }

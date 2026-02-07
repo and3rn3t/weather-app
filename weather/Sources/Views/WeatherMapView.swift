@@ -7,6 +7,7 @@
 
 import SwiftUI
 import MapKit
+import OSLog
 
 // MARK: - Weather Map View
 
@@ -31,8 +32,8 @@ struct WeatherMapView: View {
     @State private var showingHints = false
     @State private var mapViewRef: MKMapView?
     
-    // Timer for animation
-    @State private var animationTimer: Timer?
+    // Task for animation
+    @State private var animationTask: Task<Void, Never>?
     
     init(weatherData: WeatherData?, locationName: String, latitude: Double, longitude: Double) {
         self.weatherData = weatherData
@@ -50,14 +51,18 @@ struct WeatherMapView: View {
         showForecast ? nowcastFrames.count : radarFrames.count
     }
     
+    private static let mapTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+    
     private var currentFrameTime: String {
         let frames = showForecast ? nowcastFrames : radarFrames
         guard !frames.isEmpty, currentFrameIndex < frames.count else { return "" }
         let timestamp = frames[currentFrameIndex].time
         let date = Date(timeIntervalSince1970: TimeInterval(timestamp))
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        return formatter.string(from: date)
+        return Self.mapTimeFormatter.string(from: date)
     }
     
     var body: some View {
@@ -327,10 +332,14 @@ struct WeatherMapView: View {
     
     private func startPlayback() {
         isPlaying = true
-        animationTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [self] _ in
-            Task { @MainActor in
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    currentFrameIndex = (currentFrameIndex + 1) % max(1, totalFrames)
+        animationTask = Task {
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled else { break }
+                await MainActor.run {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        currentFrameIndex = (currentFrameIndex + 1) % max(1, totalFrames)
+                    }
                 }
             }
         }
@@ -338,8 +347,8 @@ struct WeatherMapView: View {
     
     private func stopPlayback() {
         isPlaying = false
-        animationTimer?.invalidate()
-        animationTimer = nil
+        animationTask?.cancel()
+        animationTask = nil
     }
     
     // MARK: - Data Loading
@@ -366,7 +375,7 @@ struct WeatherMapView: View {
                 isLoadingRadar = false
             }
         } catch {
-            print("Failed to load radar data: \(error)")
+            Logger.weatherMap.error("Failed to load radar data: \(error.localizedDescription)")
             await MainActor.run {
                 isLoadingRadar = false
             }

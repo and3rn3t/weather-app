@@ -9,7 +9,6 @@ import Foundation
 import SwiftUI
 import SwiftData
 import CoreLocation
-import UserNotifications
 
 // MARK: - Saved Location Model (SwiftData)
 

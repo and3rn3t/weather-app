@@ -144,6 +144,68 @@ struct SettingsManagerTests {
         #expect(settings.showFeelsLike == true)
         #expect(settings.autoRefreshInterval == 30)
     }
+    
+    @Test func windSpeedFormatting() {
+        let settings = SettingsManager()
+        
+        // mph - no conversion (API returns mph)
+        settings.windSpeedUnit = .mph
+        let mphResult = settings.formatWindSpeed(10.0)
+        #expect(mphResult.contains("10") && mphResult.contains("mph"))
+        
+        // km/h - multiply by 1.60934
+        settings.windSpeedUnit = .kmh
+        let kmhResult = settings.formatWindSpeed(10.0)
+        #expect(kmhResult.contains("16") && kmhResult.contains("km/h")) // 10 * 1.60934 ≈ 16.1
+        
+        // m/s - multiply by 0.44704
+        settings.windSpeedUnit = .ms
+        let msResult = settings.formatWindSpeed(10.0)
+        #expect(msResult.contains("4") && msResult.contains("m/s")) // 10 * 0.44704 ≈ 4.5
+        
+        // knots - multiply by 0.868976
+        settings.windSpeedUnit = .knots
+        let ktsResult = settings.formatWindSpeed(10.0)
+        #expect(ktsResult.contains("8") && ktsResult.contains("kts")) // 10 * 0.868976 ≈ 8.7
+    }
+    
+    @Test func convertedWindSpeed() {
+        let settings = SettingsManager()
+        
+        settings.windSpeedUnit = .mph
+        #expect(settings.convertedWindSpeed(10.0) == 10.0)
+        
+        settings.windSpeedUnit = .kmh
+        let kmh = settings.convertedWindSpeed(10.0)
+        #expect(abs(kmh - 16.0934) < 0.01)
+    }
+    
+    @Test func convertedTemperature() {
+        let settings = SettingsManager()
+        
+        // Fahrenheit — no conversion
+        settings.temperatureUnit = .fahrenheit
+        #expect(settings.convertedTemperature(72.0) == 72.0)
+        
+        // Celsius — converts from Fahrenheit
+        settings.temperatureUnit = .celsius
+        let celsius = settings.convertedTemperature(72.0)
+        #expect(abs(celsius - 22.2) < 0.2) // (72-32) * 5/9 ≈ 22.22
+    }
+    
+    @Test func precipitationFormatting() {
+        let settings = SettingsManager()
+        
+        // Inches — no conversion
+        settings.precipitationUnit = .inches
+        let inchResult = settings.formatPrecipitation(0.5)
+        #expect(inchResult == "0.5 in")
+        
+        // Millimeters — multiply by 25.4
+        settings.precipitationUnit = .millimeters
+        let mmResult = settings.formatPrecipitation(0.5)
+        #expect(mmResult == "12.7 mm") // 0.5 * 25.4 = 12.7
+    }
 }
 
 // MARK: - Shared Weather Data Tests
@@ -187,22 +249,22 @@ struct SharedWeatherDataTests {
     }
 }
 
-// MARK: - Weather Condition Tests (Snippet View)
+// MARK: - Weather Condition Tests
 
 @MainActor
-struct WeatherConditionSnippetTests {
+struct WeatherConditionTests {
     
     @Test func clearSkyCode() {
-        let condition = WeatherConditionSnippet(code: 0)
+        let condition = WeatherCondition(code: 0)
         #expect(condition == .clearSky)
         #expect(condition.symbolName == "sun.max.fill")
-        #expect(condition.description == "Clear")
+        #expect(condition.description == "Clear Sky")
     }
     
     @Test func rainCodes() {
         let codes = [61, 63, 65, 80, 81, 82]
         for code in codes {
-            let condition = WeatherConditionSnippet(code: code)
+            let condition = WeatherCondition(code: code)
             #expect(condition == .rain, "Code \(code) should be rain")
         }
     }
@@ -210,7 +272,7 @@ struct WeatherConditionSnippetTests {
     @Test func snowCodes() {
         let codes = [71, 73, 75, 77, 85, 86]
         for code in codes {
-            let condition = WeatherConditionSnippet(code: code)
+            let condition = WeatherCondition(code: code)
             #expect(condition == .snow, "Code \(code) should be snow")
         }
     }
@@ -218,14 +280,32 @@ struct WeatherConditionSnippetTests {
     @Test func thunderstormCodes() {
         let codes = [95, 96, 99]
         for code in codes {
-            let condition = WeatherConditionSnippet(code: code)
+            let condition = WeatherCondition(code: code)
             #expect(condition == .thunderstorm, "Code \(code) should be thunderstorm")
         }
     }
     
     @Test func unknownCode() {
-        let condition = WeatherConditionSnippet(code: 999)
+        let condition = WeatherCondition(code: 999)
         #expect(condition == .unknown)
+    }
+    
+    @Test func fullDescriptionForAccessibility() {
+        #expect(WeatherCondition.clearSky.fullDescription == "clear skies")
+        #expect(WeatherCondition.thunderstorm.fullDescription == "thunderstorm")
+        #expect(WeatherCondition.foggy.fullDescription == "foggy with reduced visibility")
+    }
+    
+    @Test func allConditionsHaveSymbols() {
+        let conditions: [WeatherCondition] = [
+            .clearSky, .partlyCloudy, .cloudy, .foggy,
+            .drizzle, .rain, .snow, .thunderstorm, .unknown
+        ]
+        for condition in conditions {
+            #expect(!condition.symbolName.isEmpty, "\(condition) should have a symbol name")
+            #expect(!condition.description.isEmpty, "\(condition) should have a description")
+            #expect(!condition.fullDescription.isEmpty, "\(condition) should have a full description")
+        }
     }
 }
 
@@ -277,5 +357,77 @@ struct WindSpeedUnitTests {
         #expect(WindSpeedUnit.kmh.symbol == "km/h")
         #expect(WindSpeedUnit.ms.symbol == "m/s")
         #expect(WindSpeedUnit.knots.symbol == "kts")
+    }
+}
+
+// MARK: - Accessibility Helper Tests
+
+@MainActor
+struct AccessibilityHelperTests {
+    
+    @Test func windLabel() {
+        let label = WeatherAccessibility.windLabel(speed: 15.0, direction: 180)
+        #expect(label.contains("15"))
+        #expect(label.contains("south") || label.contains("South"))
+    }
+    
+    @Test func humidityLabel() {
+        let label = WeatherAccessibility.humidityLabel(75)
+        #expect(label.contains("75"))
+        #expect(label.contains("humid") || label.contains("Humid"))
+    }
+    
+    @Test func uvIndexLabel() {
+        let lowUV = WeatherAccessibility.uvIndexLabel(2.0)
+        #expect(lowUV.contains("2"))
+        
+        let highUV = WeatherAccessibility.uvIndexLabel(9.0)
+        #expect(highUV.contains("9"))
+    }
+    
+    @Test func conditionLabel() {
+        let label = WeatherAccessibility.conditionLabel(code: 0)
+        #expect(label.contains("clear"))
+    }
+    
+    @Test func dailyForecastLabel() {
+        let label = WeatherAccessibility.dailyForecastLabel(
+            day: "2026-02-05", high: 75.0, low: 55.0, code: 0
+        )
+        #expect(label.contains("75"))
+        #expect(label.contains("55"))
+        #expect(label.contains("clear"))
+    }
+}
+
+// MARK: - Moon Phase Tests
+
+@MainActor
+struct MoonPhaseTests {
+    
+    @Test func phaseNames() {
+        // All phases should have a name, icon, and illumination
+        let date = Date()
+        let phase = MoonPhase.calculate(for: date)
+        
+        #expect(!phase.name.isEmpty)
+        #expect(!phase.emoji.isEmpty)
+        #expect(phase.illumination >= 0 && phase.illumination <= 1.0)
+    }
+    
+    @Test func phaseCalculationConsistency() {
+        // Same date should always produce the same phase
+        var components = DateComponents()
+        components.year = 2026
+        components.month = 6
+        components.day = 15
+        let date = Calendar.current.date(from: components)!
+        
+        let phase1 = MoonPhase.calculate(for: date)
+        let phase2 = MoonPhase.calculate(for: date)
+        
+        #expect(phase1.name == phase2.name)
+        #expect(phase1.illumination == phase2.illumination)
+        #expect(phase1.emoji == phase2.emoji)
     }
 }

@@ -7,6 +7,7 @@
 
 import Foundation
 import CoreLocation
+import OSLog
 
 // MARK: - Weather Alert (additional model not in WeatherModels)
 
@@ -48,7 +49,6 @@ class WeatherService {
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
-    private let retryHandler = RetryHandler()
     
     // MARK: - Performance Optimizations
     
@@ -110,9 +110,25 @@ class WeatherService {
             await fetchAirQuality(latitude: latitude, longitude: longitude)
             
         } catch let error as WeatherError {
-            await handleError(error)
+            // Try offline fallback before showing error
+            if SharedDataManager.shared.loadWeatherData() != nil {
+                await MainActor.run {
+                    // Show cached data with error message as warning
+                    self.isLoading = false
+                    self.errorMessage = "Showing cached data. " + (error.recoverySuggestion ?? "")
+                }
+            } else {
+                await handleError(error)
+            }
         } catch let urlError as URLError {
-            await handleError(.from(urlError))
+            if SharedDataManager.shared.loadWeatherData() != nil {
+                await MainActor.run {
+                    self.isLoading = false
+                    self.errorMessage = "Showing cached data. Check your connection."
+                }
+            } else {
+                await handleError(.from(urlError))
+            }
         } catch {
             await handleError(.unknown(error.localizedDescription))
         }
@@ -194,13 +210,6 @@ class WeatherService {
         }
     }
     
-    private func getCurrentCachedLocation() -> (latitude: Double, longitude: Double)? {
-        // Try to get last location from shared data
-        // SharedWeatherData doesn't store coordinates, so always return nil
-        _ = SharedDataManager.shared.loadWeatherData()
-        return nil
-    }
-    
     func fetchAirQuality(latitude: Double, longitude: Double) async {
         var components = URLComponents(string: airQualityURL)
         components?.queryItems = [
@@ -213,22 +222,21 @@ class WeatherService {
         guard let url = components?.url else { return }
         
         do {
-            let (data, response) = try await URLSession.shared.data(from: url)
+            let (data, response) = try await Self.cachedSession.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
                 return
             }
             
-            let decoder = JSONDecoder()
-            let airQuality = try decoder.decode(AirQualityData.self, from: data)
+            let airQuality = try Self.decoder.decode(AirQualityData.self, from: data)
             
             await MainActor.run {
                 self.airQualityData = airQuality
             }
         } catch {
-            // Silently fail - air quality is optional
-            print("Failed to fetch air quality: \(error.localizedDescription)")
+            // Air quality is optional
+            Logger.weatherService.warning("Failed to fetch air quality: \(error.localizedDescription)")
         }
     }
     

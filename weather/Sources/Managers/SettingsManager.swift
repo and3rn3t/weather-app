@@ -224,6 +224,60 @@ extension SettingsManager {
         return formatter
     }()
     
+    // MARK: - Cached Date Formatters for Views
+    
+    /// ISO8601 parser for hourly time strings (no fractional seconds)
+    static let isoParser: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
+        return formatter
+    }()
+    
+    /// ISO8601 parser for full date only
+    static let isoDateOnlyParser: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate]
+        return formatter
+    }()
+    
+    /// Simple date parser for "yyyy-MM-dd'T'HH:mm" format (sunrise/sunset)
+    private static let simpleDateParser: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    /// Day name formatter (e.g., "Mon")
+    static let dayNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE"
+        return formatter
+    }()
+    
+    /// Hour formatter (e.g., "3PM")
+    private static let hourFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "ha"
+        return formatter
+    }()
+    
+    /// Time formatter 12h (e.g., "7:10 AM")
+    private static let time12Formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
+        return formatter
+    }()
+    
+    /// Time formatter 24h (e.g., "19:10")
+    private static let time24Formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        return formatter
+    }()
+    
+    // MARK: - Formatting
+    
     func formatTemperature(_ value: Double) -> String {
         let convertedValue: Double
         switch temperatureUnit {
@@ -238,13 +292,55 @@ extension SettingsManager {
         return "\(formatted)\(temperatureUnit.symbol)"
     }
     
+    /// Convert temperature value only (no symbol), for threshold comparisons
+    func convertedTemperature(_ fahrenheitValue: Double) -> Double {
+        switch temperatureUnit {
+        case .celsius:
+            return (fahrenheitValue - 32) * 5 / 9
+        case .fahrenheit:
+            return fahrenheitValue
+        }
+    }
+    
     func formatWindSpeed(_ value: Double) -> String {
-        let formatted = Self.windSpeedFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.1f", value)
+        // API returns mph, convert to user's preferred unit
+        let convertedValue: Double
+        switch windSpeedUnit {
+        case .mph:
+            convertedValue = value
+        case .kmh:
+            convertedValue = value * 1.60934
+        case .ms:
+            convertedValue = value * 0.44704
+        case .knots:
+            convertedValue = value * 0.868976
+        }
+        
+        let formatted = Self.windSpeedFormatter.string(from: NSNumber(value: convertedValue)) ?? String(format: "%.1f", convertedValue)
         return "\(formatted) \(windSpeedUnit.symbol)"
     }
     
+    /// Format wind speed value only (no symbol)
+    func convertedWindSpeed(_ mphValue: Double) -> Double {
+        switch windSpeedUnit {
+        case .mph: return mphValue
+        case .kmh: return mphValue * 1.60934
+        case .ms: return mphValue * 0.44704
+        case .knots: return mphValue * 0.868976
+        }
+    }
+    
     func formatPrecipitation(_ value: Double) -> String {
-        let formatted = Self.precipitationFormatter.string(from: NSNumber(value: value)) ?? String(format: "%.2f", value)
+        // API returns inches, convert to user's preferred unit
+        let convertedValue: Double
+        switch precipitationUnit {
+        case .inches:
+            convertedValue = value
+        case .millimeters:
+            convertedValue = value * 25.4
+        }
+        
+        let formatted = Self.precipitationFormatter.string(from: NSNumber(value: convertedValue)) ?? String(format: "%.2f", convertedValue)
         return "\(formatted) \(precipitationUnit.symbol)"
     }
     
@@ -253,18 +349,40 @@ extension SettingsManager {
             return dateString
         }
         
-        // Create display formatter - this one can't be cached due to timezone changes
-        let displayFormatter = DateFormatter()
-        displayFormatter.timeStyle = show24HourFormat ? .short : .short
-        displayFormatter.dateStyle = .none
-        displayFormatter.timeZone = TimeZone(identifier: timezone)
+        let formatter = show24HourFormat ? Self.time24Formatter : Self.time12Formatter
+        formatter.timeZone = TimeZone(identifier: timezone)
         
-        if !show24HourFormat {
-            displayFormatter.dateFormat = "h:mm a"
-        } else {
-            displayFormatter.dateFormat = "HH:mm"
+        return formatter.string(from: date)
+    }
+    
+    /// Format a sunrise/sunset time string ("yyyy-MM-dd'T'HH:mm" format)
+    static func formatSunTime(_ isoString: String, timezone: String) -> String {
+        let parser = Self.simpleDateParser
+        if let timeZone = TimeZone(identifier: timezone) {
+            parser.timeZone = timeZone
         }
+        guard let date = parser.date(from: isoString) else { return "N/A" }
         
-        return displayFormatter.string(from: date)
+        let formatter = Self.time12Formatter
+        formatter.timeZone = parser.timeZone
+        return formatter.string(from: date)
+    }
+    
+    /// Format an ISO time string to hour format (e.g., "3PM")
+    static func formatHour(_ isoString: String, timezone: String? = nil) -> String {
+        guard let date = isoParser.date(from: isoString) else { return "" }
+        
+        let formatter = Self.hourFormatter
+        if let tz = timezone, let timeZone = TimeZone(identifier: tz) {
+            formatter.timeZone = timeZone
+        }
+        return formatter.string(from: date)
+    }
+    
+    /// Format a date string to day abbreviation (e.g., "Mon")
+    static func formatDayName(_ dateString: String) -> String {
+        let parser = Self.isoDateOnlyParser
+        guard let date = parser.date(from: dateString) else { return "" }
+        return Self.dayNameFormatter.string(from: date)
     }
 }

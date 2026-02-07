@@ -9,6 +9,7 @@
 //
 
 import Foundation
+import OSLog
 
 // MARK: - App Group Identifier
 
@@ -60,7 +61,7 @@ class SharedDataManager {
     /// Save weather data to the shared container
     func saveWeatherData(_ weatherData: WeatherData, locationName: String?) {
         guard let sharedDefaults = AppGroup.sharedDefaults else {
-            print("Failed to access shared UserDefaults")
+            Logger.sharedData.error("Failed to access shared UserDefaults")
             return
         }
         
@@ -97,7 +98,7 @@ class SharedDataManager {
             // Tell widgets to refresh
             WidgetCenterHelper.reloadAllTimelines()
         } catch {
-            print("Failed to encode weather data: \(error)")
+            Logger.sharedData.error("Failed to encode weather data: \(error.localizedDescription)")
         }
     }
     
@@ -111,7 +112,7 @@ class SharedDataManager {
         do {
             return try JSONDecoder().decode(SharedWeatherData.self, from: data)
         } catch {
-            print("Failed to decode weather data: \(error)")
+            Logger.sharedData.error("Failed to decode weather data: \(error.localizedDescription)")
             return nil
         }
     }

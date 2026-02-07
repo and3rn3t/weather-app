@@ -240,7 +240,6 @@ struct CloudView: View {
 
 struct LightningEffect: View {
     @State private var showLightning = false
-    @State private var flashCount = 0
     
     var body: some View {
         Rectangle()
@@ -248,47 +247,38 @@ struct LightningEffect: View {
             .opacity(showLightning ? 0.6 : 0)
             .ignoresSafeArea()
             .allowsHitTesting(false)
-            .onAppear {
-                scheduleLightning()
+            .task {
+                await lightningLoop()
             }
     }
     
-    private func scheduleLightning() {
-        // Random interval between 3-10 seconds
-        let delay = Double.random(in: 3...10)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            flash()
-        }
-    }
-    
-    private func flash() {
-        // Quick flash
-        withAnimation(.linear(duration: 0.1)) {
-            showLightning = true
-        }
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+    private func lightningLoop() async {
+        while !Task.isCancelled {
+            // Random interval between 3-10 seconds
+            let delay = Double.random(in: 3...10)
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { break }
+            
+            // Quick flash
+            withAnimation(.linear(duration: 0.1)) {
+                showLightning = true
+            }
+            try? await Task.sleep(for: .milliseconds(100))
             withAnimation(.linear(duration: 0.1)) {
                 showLightning = false
             }
             
             // Random chance for double flash
             if Bool.random() {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                    withAnimation(.linear(duration: 0.05)) {
-                        showLightning = true
-                    }
-                    
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        withAnimation(.linear(duration: 0.05)) {
-                            showLightning = false
-                        }
-                        scheduleLightning()
-                    }
+                try? await Task.sleep(for: .milliseconds(300))
+                guard !Task.isCancelled else { break }
+                withAnimation(.linear(duration: 0.05)) {
+                    showLightning = true
                 }
-            } else {
-                scheduleLightning()
+                try? await Task.sleep(for: .milliseconds(50))
+                withAnimation(.linear(duration: 0.05)) {
+                    showLightning = false
+                }
             }
         }
     }

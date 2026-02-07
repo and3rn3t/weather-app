@@ -7,7 +7,6 @@
 
 import SwiftUI
 import CoreLocation
-import Combine
 import SwiftData
 
 struct ContentView: View {
@@ -23,6 +22,7 @@ struct ContentView: View {
     @State private var showingOnboarding = !OnboardingChecker.hasCompletedOnboarding
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
+    @State private var autoRefreshTask: Task<Void, Never>?
     
     @State private var settings = SettingsManager()
     @State private var notificationManager = NotificationManager()
@@ -71,6 +71,9 @@ struct ContentView: View {
                 if settings.liveActivitiesEnabled {
                     liveActivityManager.restoreExistingActivity()
                 }
+                
+                // Start auto-refresh timer
+                startAutoRefreshTimer()
             }
             .onChange(of: locationManager.location) { _, newLocation in
                 // Only use location manager if no manual location selected
@@ -143,6 +146,8 @@ struct ContentView: View {
             .sheet(isPresented: $showingComparison) {
                 WeatherComparisonView()
                     .environment(settings)
+                    .environment(locationManager)
+                    .environment(weatherService)
             }
             .sheet(isPresented: $showingMap) {
                 if let weatherData = weatherService.weatherData {
@@ -300,6 +305,18 @@ struct ContentView: View {
         // Update Live Activity with new weather data
         if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
             await liveActivityManager.updateActivity(weatherData: weatherData)
+        }
+    }
+    
+    private func startAutoRefreshTimer() {
+        autoRefreshTask?.cancel()
+        autoRefreshTask = Task {
+            while !Task.isCancelled {
+                let interval = TimeInterval(settings.autoRefreshInterval * 60)
+                try? await Task.sleep(for: .seconds(interval))
+                guard !Task.isCancelled else { break }
+                await refreshWeather()
+            }
         }
     }
 }
@@ -488,6 +505,7 @@ struct WelcomeView: View {
     let requestLocationAction: () -> Void
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @State private var isAnimating = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     private var needsLocationPermission: Bool {
         authorizationStatus == .notDetermined || 
@@ -582,6 +600,7 @@ struct WelcomeView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
+            guard !reduceMotion else { return }
             withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
                 isAnimating = true
             }

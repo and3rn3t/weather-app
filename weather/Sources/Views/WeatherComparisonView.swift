@@ -10,8 +10,6 @@ import SwiftData
 
 struct WeatherComparisonView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(LocationManager.self) private var locationManager
-    @Environment(WeatherService.self) private var weatherService
     @Environment(SettingsManager.self) private var settings
     @Query private var favorites: [SavedLocation]
     
@@ -139,20 +137,37 @@ struct WeatherComparisonView: View {
     private func loadWeatherForAllFavorites() async {
         isLoading = true
         
-        for favorite in favorites {
-            // Create a temporary weather service instance for each location
-            let service = WeatherService()
-            await service.fetchWeather(
-                latitude: favorite.latitude,
-                longitude: favorite.longitude,
-                locationName: favorite.name
-            )
-            
-            if let weatherData = service.weatherData {
-                locationWeatherData[favorite.id.uuidString] = weatherData
+        // Fetch all locations in parallel using TaskGroup
+        let results = await withTaskGroup(of: (String, WeatherData?).self, returning: [String: WeatherData].self) { group in
+            for favorite in favorites {
+                // Extract values on main actor before entering concurrent context
+                let lat = favorite.latitude
+                let lon = favorite.longitude
+                let name = favorite.name
+                let id = favorite.id.uuidString
+                
+                group.addTask {
+                    let service = await MainActor.run { WeatherService() }
+                    await service.fetchWeather(
+                        latitude: lat,
+                        longitude: lon,
+                        locationName: name
+                    )
+                    let data = await MainActor.run { service.weatherData }
+                    return (id, data)
+                }
             }
+            
+            var collected: [String: WeatherData] = [:]
+            for await (id, data) in group {
+                if let data = data {
+                    collected[id] = data
+                }
+            }
+            return collected
         }
         
+        locationWeatherData = results
         isLoading = false
     }
     
@@ -278,7 +293,7 @@ struct ComparisonCard: View {
             // Details Grid
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 DetailItem(icon: "drop.fill", label: "Humidity", value: "\(weather.current.relativeHumidity2m)%", color: .blue)
-                DetailItem(icon: "wind", label: "Wind", value: "\(Int(weather.current.windSpeed10m)) mph", color: .gray)
+                DetailItem(icon: "wind", label: "Wind", value: settings.formatWindSpeed(weather.current.windSpeed10m), color: .gray)
                 DetailItem(icon: "eye.fill", label: "Visibility", value: String(format: "%.1f mi", weather.current.visibility / 1609.34), color: .cyan)
                 DetailItem(icon: "barometer", label: "Pressure", value: String(format: "%.0f mb", weather.current.pressure), color: .purple)
             }

@@ -9,6 +9,7 @@ import Foundation
 import CoreLocation
 import Contacts
 @preconcurrency import MapKit
+import OSLog
 
 @Observable
 class LocationManager: NSObject, CLLocationManagerDelegate {
@@ -83,7 +84,7 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
                 locationName = formatLocationName(from: mapItem)
             }
         } catch {
-            print("Geocoding error: \(error.localizedDescription)")
+            Logger.location.warning("Reverse geocoding failed: \(error.localizedDescription)")
         }
     }
     

@@ -60,7 +60,7 @@ struct GetWeatherIntent: AppIntent {
                 dialog: IntentDialog(stringLiteral: dialog),
                 view: WeatherSnippetView(
                     temperature: temp,
-                    condition: WeatherConditionSnippet(code: conditionCode),
+                    condition: WeatherCondition(code: conditionCode),
                     locationName: resolvedName ?? "Current Location",
                     high: high,
                     low: low

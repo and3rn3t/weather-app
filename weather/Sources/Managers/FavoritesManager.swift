@@ -9,6 +9,7 @@ import Foundation
 import CoreLocation
 import SwiftData
 import SwiftUI
+import OSLog
 
 // MARK: - Favorites Manager
 
@@ -34,7 +35,7 @@ class FavoritesManager {
         do {
             savedLocations = try modelContext.fetch(descriptor)
         } catch {
-            print("Failed to fetch saved locations: \(error)")
+            Logger.favorites.error("Failed to fetch saved locations: \(error.localizedDescription)")
             savedLocations = []
         }
     }
@@ -61,7 +62,7 @@ class FavoritesManager {
             try modelContext.save()
             loadSavedLocations()
         } catch {
-            print("Failed to save location: \(error)")
+            Logger.favorites.error("Failed to save location: \(error.localizedDescription)")
         }
     }
     
@@ -72,7 +73,7 @@ class FavoritesManager {
             try modelContext.save()
             loadSavedLocations()
         } catch {
-            print("Failed to delete location: \(error)")
+            Logger.favorites.error("Failed to delete location: \(error.localizedDescription)")
         }
     }
     
@@ -87,7 +88,7 @@ class FavoritesManager {
         do {
             try modelContext.save()
         } catch {
-            print("Failed to reorder locations: \(error)")
+            Logger.favorites.error("Failed to reorder locations: \(error.localizedDescription)")
         }
     }
     
