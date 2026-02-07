@@ -4,7 +4,7 @@
 <dict>
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.dev.andernet.weather</string>
+		<string>group.dev.andernet.atmoview</string>
 	</array>
 </dict>
 </plist>

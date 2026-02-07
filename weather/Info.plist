@@ -2,7 +2,30 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<!-- Launch Screen Configuration -->
+	<key>CFBundleDisplayName</key>
+	<string>Andernet WeatherLens Deluxe</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>dev.andernet.atmoview</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>andernetweather</string>
+			</array>
+		</dict>
+	</array>
+	<key>CSSearchableIndex</key>
+	<true/>
+	<key>NSWidgetWantsLocation</key>
+	<true/>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+		<string>location</string>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict>
 		<key>UIColorName</key>
@@ -12,53 +35,9 @@
 		<key>UIImageRespectsSafeAreaInsets</key>
 		<true/>
 	</dict>
-	
-	<!-- Status Bar -->
-	<key>UIStatusBarStyle</key>
-	<string>UIStatusBarStyleLightContent</string>
-	<key>UIViewControllerBasedStatusBarAppearance</key>
-	<true/>
-	
-	<!-- Background Modes -->
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-		<string>location</string>
-	</array>
-	
-	<!-- Siri Integration -->
-	<key>NSSiriUsageDescription</key>
-	<string>Siri can help you quickly check the weather and forecasts.</string>
-	
-	<!-- App Capabilities -->
-	<key>NSSupportsLiveActivities</key>
-	<true/>
-	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
-	<true/>
-	
-	<!-- URL Schemes for Deep Linking -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>dev.andernet.weather</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>andernetweather</string>
-			</array>
-		</dict>
-	</array>
-	
-	<!-- Spotlight Indexing -->
-	<key>CSSearchableIndex</key>
-	<true/>
-	
-	<!-- Widget Configuration -->
-	<key>NSWidgetWantsLocation</key>
-	<true/>
-	
-	<!-- Preferred Content Size Category -->
 	<key>UIPreferredDefaultContentSizeCategory</key>
 	<string>UICTContentSizeCategoryM</string>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
 </dict>
 </plist>

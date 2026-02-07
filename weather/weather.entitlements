@@ -4,20 +4,12 @@
 <dict>
 	<!-- Push Notifications -->
 	<key>aps-environment</key>
-	<string>development</string>
-	
-	<!-- iCloud -->
-	<key>com.apple.developer.icloud-container-identifiers</key>
-	<array/>
-	<key>com.apple.developer.icloud-services</key>
-	<array>
-		<string>CloudKit</string>
-	</array>
+	<string>production</string>
 	
 	<!-- App Groups for Widget/Extension Data Sharing -->
 	<key>com.apple.security.application-groups</key>
 	<array>
-		<string>group.dev.andernet.weather</string>
+		<string>group.dev.andernet.atmoview</string>
 	</array>
 	
 	<!-- Siri and Shortcuts -->
