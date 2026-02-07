@@ -112,46 +112,54 @@ class SettingsManager {
         }
     }
     
+    // Shared decoder for init - avoids creating 3 separate decoders
+    private static let settingsDecoder = JSONDecoder()
+    
     init() {
+        // MARK: - Performance: Single snapshot of UserDefaults
+        // Read all defaults once instead of 15+ individual lookups
+        let defaults = UserDefaults.standard.dictionaryRepresentation()
+        let decoder = Self.settingsDecoder
+        
         // Load temperature unit
-        if let data = UserDefaults.standard.data(forKey: "temperatureUnit"),
-           let unit = try? JSONDecoder().decode(TemperatureUnit.self, from: data) {
+        if let data = defaults["temperatureUnit"] as? Data,
+           let unit = try? decoder.decode(TemperatureUnit.self, from: data) {
             self.temperatureUnit = unit
         } else {
             self.temperatureUnit = .fahrenheit
         }
         
         // Load wind speed unit
-        if let data = UserDefaults.standard.data(forKey: "windSpeedUnit"),
-           let unit = try? JSONDecoder().decode(WindSpeedUnit.self, from: data) {
+        if let data = defaults["windSpeedUnit"] as? Data,
+           let unit = try? decoder.decode(WindSpeedUnit.self, from: data) {
             self.windSpeedUnit = unit
         } else {
             self.windSpeedUnit = .mph
         }
         
         // Load precipitation unit
-        if let data = UserDefaults.standard.data(forKey: "precipitationUnit"),
-           let unit = try? JSONDecoder().decode(PrecipitationUnit.self, from: data) {
+        if let data = defaults["precipitationUnit"] as? Data,
+           let unit = try? decoder.decode(PrecipitationUnit.self, from: data) {
             self.precipitationUnit = unit
         } else {
             self.precipitationUnit = .inches
         }
         
         // Load appearance settings
-        self.useSystemAppearance = UserDefaults.standard.object(forKey: "useSystemAppearance") as? Bool ?? true
+        self.useSystemAppearance = defaults["useSystemAppearance"] as? Bool ?? true
         
-        if let schemeString = UserDefaults.standard.string(forKey: "preferredColorScheme") {
+        if let schemeString = defaults["preferredColorScheme"] as? String {
             self.preferredColorScheme = schemeString == "dark" ? .dark : .light
         } else {
             self.preferredColorScheme = nil
         }
         
         // Load notification settings
-        self.dailyForecastEnabled = UserDefaults.standard.object(forKey: "dailyForecastEnabled") as? Bool ?? false
-        self.severeWeatherAlertsEnabled = UserDefaults.standard.object(forKey: "severeWeatherAlertsEnabled") as? Bool ?? true
-        self.rainAlertsEnabled = UserDefaults.standard.object(forKey: "rainAlertsEnabled") as? Bool ?? false
+        self.dailyForecastEnabled = defaults["dailyForecastEnabled"] as? Bool ?? false
+        self.severeWeatherAlertsEnabled = defaults["severeWeatherAlertsEnabled"] as? Bool ?? true
+        self.rainAlertsEnabled = defaults["rainAlertsEnabled"] as? Bool ?? false
         
-        if let time = UserDefaults.standard.object(forKey: "notificationTime") as? Date {
+        if let time = defaults["notificationTime"] as? Date {
             self.notificationTime = time
         } else {
             // Default to 8:00 AM
@@ -162,16 +170,16 @@ class SettingsManager {
         }
         
         // Load display options
-        self.showFeelsLike = UserDefaults.standard.object(forKey: "showFeelsLike") as? Bool ?? true
-        self.show24HourFormat = UserDefaults.standard.object(forKey: "show24HourFormat") as? Bool ?? false
-        self.showAnimatedBackgrounds = UserDefaults.standard.object(forKey: "showAnimatedBackgrounds") as? Bool ?? true
-        self.showWeatherParticles = UserDefaults.standard.object(forKey: "showWeatherParticles") as? Bool ?? true
+        self.showFeelsLike = defaults["showFeelsLike"] as? Bool ?? true
+        self.show24HourFormat = defaults["show24HourFormat"] as? Bool ?? false
+        self.showAnimatedBackgrounds = defaults["showAnimatedBackgrounds"] as? Bool ?? true
+        self.showWeatherParticles = defaults["showWeatherParticles"] as? Bool ?? true
         
         // Load Live Activities setting
-        self.liveActivitiesEnabled = UserDefaults.standard.object(forKey: "liveActivitiesEnabled") as? Bool ?? true
+        self.liveActivitiesEnabled = defaults["liveActivitiesEnabled"] as? Bool ?? true
         
         // Load data settings
-        self.autoRefreshInterval = UserDefaults.standard.object(forKey: "autoRefreshInterval") as? Int ?? 30
+        self.autoRefreshInterval = defaults["autoRefreshInterval"] as? Int ?? 30
     }
     
     func resetToDefaults() {

@@ -25,8 +25,8 @@ struct ContentView: View {
     @State private var autoRefreshTask: Task<Void, Never>?
     
     @State private var settings = SettingsManager()
-    @State private var notificationManager = NotificationManager()
-    @State private var liveActivityManager = LiveActivityManager()
+    @State private var notificationManager: NotificationManager?
+    @State private var liveActivityManager: LiveActivityManager?
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
@@ -67,12 +67,14 @@ struct ContentView: View {
                     favoritesManager = FavoritesManager(modelContext: modelContext)
                 }
                 
-                // Restore any existing Live Activity
+                // Restore any existing Live Activity (deferred, only if enabled)
                 if settings.liveActivitiesEnabled {
-                    liveActivityManager.restoreExistingActivity()
+                    let lam = ensureLiveActivityManager()
+                    lam.restoreExistingActivity()
                 }
                 
-                // Start auto-refresh timer
+                // Start auto-refresh timer (deferred slightly to not compete with first render)
+                try? await Task.sleep(for: .milliseconds(500))
                 startAutoRefreshTimer()
             }
             .onChange(of: locationManager.location) { _, newLocation in
@@ -86,7 +88,7 @@ struct ContentView: View {
                         )
                         // Start Live Activity with new weather data
                         if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
-                            await liveActivityManager.startActivity(
+                            await ensureLiveActivityManager().startActivity(
                                 weatherData: weatherData,
                                 locationName: locationManager.locationName
                             )
@@ -106,7 +108,7 @@ struct ContentView: View {
                         )
                         // Update Live Activity with new location weather
                         if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
-                            await liveActivityManager.startActivity(
+                            await ensureLiveActivityManager().startActivity(
                                 weatherData: weatherData,
                                 locationName: locationName
                             )
@@ -118,7 +120,7 @@ struct ContentView: View {
                 VisualEffectsShowcase()
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView(settings: settings, notifications: notificationManager)
+                SettingsView(settings: settings, notifications: ensureNotificationManager())
             }
             .sheet(isPresented: $showingFavorites) {
                 if let favManager = favoritesManager {
@@ -133,7 +135,7 @@ struct ContentView: View {
                             )
                             // Update Live Activity with favorite location weather
                             if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
-                                await liveActivityManager.startActivity(
+                                await ensureLiveActivityManager().startActivity(
                                     weatherData: weatherData,
                                     locationName: location.name
                                 )
@@ -175,7 +177,6 @@ struct ContentView: View {
                         showingFavorites = true
                     } label: {
                         Image(systemName: "list.bullet")
-                            .symbolEffect(.pulse)
                     }
                     .buttonStyle(.glass)
                 }
@@ -215,7 +216,6 @@ struct ContentView: View {
                         showingSettings = true
                     } label: {
                         Image(systemName: "gear")
-                            .symbolEffect(.pulse)
                     }
                     .buttonStyle(.glass)
                     .accessibilityIdentifier("settingsButton")
@@ -226,14 +226,14 @@ struct ContentView: View {
                     if enabled {
                         // Start Live Activity when enabled
                         if let weatherData = weatherService.weatherData {
-                            await liveActivityManager.startActivity(
+                            await ensureLiveActivityManager().startActivity(
                                 weatherData: weatherData,
                                 locationName: displayLocationName
                             )
                         }
                     } else {
                         // End all Live Activities when disabled
-                        await liveActivityManager.endAllActivities()
+                        await ensureLiveActivityManager().endAllActivities()
                     }
                 }
             }
@@ -304,8 +304,32 @@ struct ContentView: View {
         
         // Update Live Activity with new weather data
         if settings.liveActivitiesEnabled, let weatherData = weatherService.weatherData {
-            await liveActivityManager.updateActivity(weatherData: weatherData)
+            await ensureLiveActivityManager().updateActivity(weatherData: weatherData)
         }
+    }
+    
+    // MARK: - Lazy Manager Helpers
+    
+    /// Lazily create NotificationManager only when settings sheet opens
+    private func ensureNotificationManager() -> NotificationManager {
+        if let existing = notificationManager {
+            return existing
+        }
+        let manager = NotificationManager()
+        manager.checkAuthorizationStatus()
+        notificationManager = manager
+        return manager
+    }
+    
+    /// Lazily create LiveActivityManager only when Live Activities are needed
+    @discardableResult
+    private func ensureLiveActivityManager() -> LiveActivityManager {
+        if let existing = liveActivityManager {
+            return existing
+        }
+        let manager = LiveActivityManager()
+        liveActivityManager = manager
+        return manager
     }
     
     private func startAutoRefreshTimer() {
@@ -533,8 +557,8 @@ struct WelcomeView: View {
             .ignoresSafeArea()
             .opacity(0.5)
             
-            // Floating weather particles
-            FloatingSparkles(count: 20)
+            // Floating weather particles (reduced for startup performance)
+            FloatingSparkles(count: 8)
             
             VStack(spacing: 40) {
                 Spacer()

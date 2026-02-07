@@ -18,7 +18,7 @@ class NotificationManager: NSObject {
     
     override init() {
         super.init()
-        checkAuthorizationStatus()
+        // Note: checkAuthorizationStatus() deferred to first use for faster app startup
     }
     
     // MARK: - Authorization

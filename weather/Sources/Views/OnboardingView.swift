@@ -266,9 +266,9 @@ struct AnimatedGradientBackground: View {
             }
         }
         .overlay {
-            // Floating particles effect
+            // Floating particles effect (reduced count for startup performance)
             GeometryReader { geometry in
-                ForEach(0..<20, id: \.self) { index in
+                ForEach(0..<8, id: \.self) { index in
                     FloatingParticle(index: index, bounds: geometry.size)
                 }
             }

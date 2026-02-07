@@ -92,7 +92,8 @@ class WeatherService {
         }
         
         do {
-            // Perform fetch with retry logic inline
+            // Perform weather fetch; kick off air quality in parallel (fire-and-forget)
+            async let airQualityTask: Void = fetchAirQuality(latitude: latitude, longitude: longitude)
             let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude)
             
             // Update last fetch time on success
@@ -106,8 +107,8 @@ class WeatherService {
             // Save to shared storage for widgets
             SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
             
-            // Fetch air quality data (non-blocking, optional)
-            await fetchAirQuality(latitude: latitude, longitude: longitude)
+            // Await air quality completion (already running in parallel)
+            await airQualityTask
             
         } catch let error as WeatherError {
             // Try offline fallback before showing error

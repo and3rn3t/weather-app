@@ -362,26 +362,38 @@ struct WeatherParticleContainer: View {
     let weatherCode: Int
     let isDay: Bool
     
+    /// Defer particle rendering to avoid competing with initial UI layout
+    @State private var isReady = false
+    
     var body: some View {
         ZStack {
-            switch WeatherCondition(code: weatherCode) {
-            case .rain:
-                RainEffect(intensity: 0.8)
-            case .drizzle:
-                RainEffect(intensity: 0.4)
-            case .snow:
-                SnowEffect(intensity: 0.7)
-            case .thunderstorm:
-                RainEffect(intensity: 1.0)
-                LightningEffect()
-            case .foggy:
-                FogEffect(intensity: 0.7)
-            case .cloudy, .partlyCloudy:
-                CloudsEffect(speed: 0.5)
-            default:
-                EmptyView()
+            if isReady {
+                switch WeatherCondition(code: weatherCode) {
+                case .rain:
+                    RainEffect(intensity: 0.8)
+                case .drizzle:
+                    RainEffect(intensity: 0.4)
+                case .snow:
+                    SnowEffect(intensity: 0.7)
+                case .thunderstorm:
+                    RainEffect(intensity: 1.0)
+                    LightningEffect()
+                case .foggy:
+                    FogEffect(intensity: 0.7)
+                case .cloudy, .partlyCloudy:
+                    CloudsEffect(speed: 0.5)
+                default:
+                    EmptyView()
+                }
             }
         }
         .ignoresSafeArea()
+        .task {
+            // Wait for the main UI to finish rendering before starting particles
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation(.easeIn(duration: 0.5)) {
+                isReady = true
+            }
+        }
     }
 }
