@@ -13,7 +13,7 @@ struct WeatherComparisonView: View {
     @Environment(LocationManager.self) private var locationManager
     @Environment(WeatherService.self) private var weatherService
     @Environment(SettingsManager.self) private var settings
-    @Query private var favorites: [FavoriteLocation]
+    @Query private var favorites: [SavedLocation]
     
     @State private var locationWeatherData: [String: WeatherData] = [:]
     @State private var isLoading = false
@@ -156,9 +156,9 @@ struct WeatherComparisonView: View {
         isLoading = false
     }
     
-    private func findBestWeather() -> (location: FavoriteLocation, weather: WeatherData)? {
+    private func findBestWeather() -> (location: SavedLocation, weather: WeatherData)? {
         var bestScore: Double = -1000
-        var bestPair: (FavoriteLocation, WeatherData)?
+        var bestPair: (SavedLocation, WeatherData)?
         
         for favorite in favorites {
             guard let weather = locationWeatherData[favorite.id.uuidString] else { continue }
@@ -230,9 +230,17 @@ struct WeatherComparisonView: View {
 }
 
 struct ComparisonCard: View {
-    let location: FavoriteLocation
+    let location: SavedLocation
     let weather: WeatherData
     let settings: SettingsManager
+    
+    private var todayHigh: Double {
+        weather.daily.temperature2mMax.first ?? 0
+    }
+    
+    private var todayLow: Double {
+        weather.daily.temperature2mMin.first ?? 0
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -242,7 +250,7 @@ struct ComparisonCard: View {
                     Text(location.name)
                         .font(.headline.weight(.semibold))
                     
-                    Text(location.region ?? "")
+                    Text("Lat: \(String(format: "%.2f", location.latitude)), Lon: \(String(format: "%.2f", location.longitude))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -277,13 +285,13 @@ struct ComparisonCard: View {
             
             // High/Low
             HStack {
-                Label("High: \(settings.formatTemperature(weather.daily.temperature2mMax.first ?? 0))", systemImage: "arrow.up")
+                Label("High: \(settings.formatTemperature(todayHigh))", systemImage: "arrow.up")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.orange)
                 
                 Spacer()
                 
-                Label("Low: \(settings.formatTemperature(weather.daily.temperature2mMin.first ?? 0))", systemImage: "arrow.down")
+                Label("Low: \(settings.formatTemperature(todayLow))", systemImage: "arrow.down")
                     .font(.caption.weight(.medium))
                     .foregroundStyle(.blue)
             }
@@ -323,5 +331,5 @@ struct DetailItem: View {
 
 #Preview {
     WeatherComparisonView()
-        .modelContainer(for: FavoriteLocation.self, inMemory: true)
+        .modelContainer(for: SavedLocation.self, inMemory: true)
 }

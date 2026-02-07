@@ -416,10 +416,10 @@ struct HourlyChartView: View {
                 id: index,
                 date: parsedDate,
                 temperature: weatherData.hourly.temperature2m[safe: index] ?? 0,
-                precipitationProbability: weatherData.hourly.precipitationProbability?[safe: index] ?? 0,
-                windSpeed: weatherData.hourly.windSpeed10m?[safe: index] ?? 0,
+                precipitationProbability: (weatherData.hourly.precipitationProbability?[safe: index]) ?? 0,
+                windSpeed: (weatherData.hourly.windSpeed10m?[safe: index]) ?? 0,
                 windGusts: weatherData.hourly.windGusts10m?[safe: index],
-                humidity: weatherData.hourly.relativeHumidity2m?[safe: index] ?? 0,
+                humidity: (weatherData.hourly.relativeHumidity2m?[safe: index]) ?? 0,
                 weatherCode: weatherData.hourly.weatherCode[safe: index] ?? 0
             )
             points.append(point)

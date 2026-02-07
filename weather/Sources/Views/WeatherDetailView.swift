@@ -35,7 +35,11 @@ struct WeatherDetailView: View {
                         .environment(settings)
                     
                     // Current Weather - Prominent card
-                    CurrentWeatherCard(current: weatherData.current)
+                    CurrentWeatherCard(
+                        current: weatherData.current,
+                        todayHigh: weatherData.daily.temperature2mMax.first,
+                        todayLow: weatherData.daily.temperature2mMin.first
+                    )
                         .environment(settings)
                     
                     // Weather Recommendations - Smart suggestions
@@ -137,6 +141,8 @@ struct WeatherDetailView: View {
 
 struct CurrentWeatherCard: View {
     let current: CurrentWeather
+    let todayHigh: Double?
+    let todayLow: Double?
     @State private var isTapped = false
     @State private var isVisible = false
     @Environment(SettingsManager.self) var settings
@@ -254,10 +260,6 @@ struct CurrentWeatherCard: View {
             return "thermometer.medium"
         }
     }
-    
-    // These would need to be passed in or computed
-    private var todayHigh: Double? { nil }
-    private var todayLow: Double? { nil }
 }
 
 struct SunMoonCard: View {
@@ -519,7 +521,7 @@ struct HourlyForecastCard: View {
                         if showUVIndex, let uvValues = hourly.uvIndex {
                             HourlyUVItem(
                                 time: time,
-                                uvIndex: uvValues[index],
+                                uvIndex: uvValues[index] ?? 0,
                                 weatherCode: hourly.weatherCode[index],
                                 timezone: timezone,
                                 isSelected: selectedHour == index
@@ -710,20 +712,20 @@ struct UVIndexChart: View {
     var body: some View {
         Chart {
             ForEach(Array(hourly.time.prefix(24).enumerated()), id: \.offset) { index, time in
-                if let uvValues = hourly.uvIndex {
+                if let uvValues = hourly.uvIndex, let uvValue = uvValues[index] {
                     BarMark(
                         x: .value("Time", formattedTime(time)),
-                        y: .value("UV Index", uvValues[index])
+                        y: .value("UV Index", uvValue)
                     )
-                    .foregroundStyle(uvGradient(for: uvValues[index]))
+                    .foregroundStyle(uvGradient(for: uvValue))
                     .opacity(selectedHour == nil || selectedHour == index ? 1.0 : 0.3)
                     .annotation(position: .top) {
                         if selectedHour == index {
                             VStack(spacing: 2) {
-                                Text(String(format: "%.1f", uvValues[index]))
+                                Text(String(format: "%.1f", uvValue))
                                     .font(.caption.bold())
-                                    .foregroundStyle(uvColor(for: uvValues[index]))
-                                Text(uvLevel(for: uvValues[index]))
+                                    .foregroundStyle(uvColor(for: uvValue))
+                                Text(uvLevel(for: uvValue))
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -835,8 +837,8 @@ struct DailyForecastCard: View {
                         high: daily.temperature2mMax[index],
                         low: daily.temperature2mMin[index],
                         precipProbability: daily.precipitationProbabilityMax[index],
-                        uvIndex: daily.uvIndexMax[index],
-                        windSpeed: daily.windSpeed10mMax[index]
+                        uvIndex: daily.uvIndexMax[index] ?? 0,
+                        windSpeed: daily.windSpeed10mMax[index] ?? 0
                     )
                     
                     if index < displayedDays - 1 {
@@ -1177,13 +1179,11 @@ struct LocationHeader: View {
         ☁️ \(condition)
         💨 Wind: \(Int(weatherData.current.windSpeed10m)) mph
         💧 Humidity: \(weatherData.current.relativeHumidity2m)%
+        ☀️ UV Index: \(String(format: "%.1f", weatherData.current.uvIndex))
+        
+        Shared from Andernet Weather
         """
         
-        if let aqi = weatherData.current.uvIndex {
-            text += "\n☀️ UV Index: \(String(format: "%.1f", aqi))"
-        }
-        
-        text += "\n\nShared from Andernet Weather"
         return text
     }
     
@@ -1336,10 +1336,9 @@ struct TemperatureChart: View {
         .chartYAxis {
             AxisMarks(position: .leading) { value in
                 AxisValueLabel {
-                    if let temp = value.as(Double.self) {
-                        Text(settings.formatTemperature(temp))
-                            .font(.caption2)
-                    }
+                    let temp = value.as(Double.self)
+                    Text(settings.formatTemperature(temp))
+                        .font(.caption2)
                 }
             }
         }
@@ -1500,6 +1499,15 @@ struct RecommendationRow: View {
     }
 }
 
+// MARK: - Health Recommendation Model
+
+struct HealthRecommendation: Hashable {
+    let icon: String
+    let text: String
+}
+
+// MARK: - Air Quality Card
+
 /// Air Quality Index card with real API data
 struct AirQualityCard: View {
     let airQualityData: AirQualityData?
@@ -1641,36 +1649,36 @@ struct AirQualityCard: View {
         }
     }
     
-    private func healthRecommendations(for aqi: Int) -> [(icon: String, text: String)] {
+    private func healthRecommendations(for aqi: Int) -> [HealthRecommendation] {
         switch aqi {
         case 0..<51:
             return [
-                ("figure.run", "Perfect for outdoor activities and exercise"),
-                ("lungs.fill", "Air quality is ideal for everyone")
+                HealthRecommendation(icon: "figure.run", text: "Perfect for outdoor activities and exercise"),
+                HealthRecommendation(icon: "lungs.fill", text: "Air quality is ideal for everyone")
             ]
         case 51..<101:
             return [
-                ("figure.walk", "Outdoor activities are generally safe"),
-                ("exclamationmark.triangle", "Unusually sensitive people should consider reducing prolonged outdoor exertion")
+                HealthRecommendation(icon: "figure.walk", text: "Outdoor activities are generally safe"),
+                HealthRecommendation(icon: "exclamationmark.triangle", text: "Unusually sensitive people should consider reducing prolonged outdoor exertion")
             ]
         case 101..<151:
             return [
-                ("figure.walk", "Sensitive groups should limit prolonged outdoor activities"),
-                ("allergyshot", "People with respiratory conditions should take extra precautions"),
-                ("wind", "Consider indoor activities if you're sensitive to air pollution")
+                HealthRecommendation(icon: "figure.walk", text: "Sensitive groups should limit prolonged outdoor activities"),
+                HealthRecommendation(icon: "allergyshot", text: "People with respiratory conditions should take extra precautions"),
+                HealthRecommendation(icon: "wind", text: "Consider indoor activities if you're sensitive to air pollution")
             ]
         case 151..<201:
             return [
-                ("exclamationmark.triangle.fill", "Everyone should reduce prolonged outdoor exertion"),
-                ("allergyshot.fill", "Sensitive groups should avoid outdoor activities"),
-                ("house.fill", "Consider staying indoors and using air purifiers")
+                HealthRecommendation(icon: "exclamationmark.triangle.fill", text: "Everyone should reduce prolonged outdoor exertion"),
+                HealthRecommendation(icon: "allergyshot.fill", text: "Sensitive groups should avoid outdoor activities"),
+                HealthRecommendation(icon: "house.fill", text: "Consider staying indoors and using air purifiers")
             ]
         default:
             return [
-                ("exclamationmark.octagon.fill", "Avoid all outdoor physical activities"),
-                ("house.fill", "Stay indoors and keep windows closed"),
-                ("allergyshot.fill", "Sensitive groups should remain indoors"),
-                ("cross.circle.fill", "Health alert: serious health effects for everyone")
+                HealthRecommendation(icon: "exclamationmark.octagon.fill", text: "Avoid all outdoor physical activities"),
+                HealthRecommendation(icon: "house.fill", text: "Stay indoors and keep windows closed"),
+                HealthRecommendation(icon: "allergyshot.fill", text: "Sensitive groups should remain indoors"),
+                HealthRecommendation(icon: "cross.circle.fill", text: "Health alert: serious health effects for everyone")
             ]
         }
     }

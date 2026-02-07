@@ -63,7 +63,7 @@ struct HourlyWeather: Codable {
     let windSpeed10m: [Double]?
     let windGusts10m: [Double]?
     let relativeHumidity2m: [Int]?
-    let uvIndex: [Double]?
+    let uvIndex: [Double?]?
     
     enum CodingKeys: String, CodingKey {
         case time
@@ -85,9 +85,9 @@ struct DailyWeather: Codable {
     let precipitationProbabilityMax: [Int]
     let sunrise: [String]
     let sunset: [String]
-    let uvIndexMax: [Double]
-    let windSpeed10mMax: [Double]
-    let windGusts10mMax: [Double]
+    let uvIndexMax: [Double?]
+    let windSpeed10mMax: [Double?]
+    let windGusts10mMax: [Double?]
     
     enum CodingKeys: String, CodingKey {
         case time

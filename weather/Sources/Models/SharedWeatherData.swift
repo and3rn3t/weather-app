@@ -72,6 +72,9 @@ class SharedDataManager {
                 SharedHourlyData(time: time, temperature: tempCode.0, weatherCode: tempCode.1)
             }
         
+        let highTemp: Double = weatherData.daily.temperature2mMax.first ?? 0.0
+        let lowTemp: Double = weatherData.daily.temperature2mMin.first ?? 0.0
+        
         let sharedData = SharedWeatherData(
             temperature: weatherData.current.temperature2m,
             apparentTemperature: weatherData.current.apparentTemperature,
@@ -79,8 +82,8 @@ class SharedDataManager {
             isDay: weatherData.current.isDay,
             humidity: weatherData.current.relativeHumidity2m,
             windSpeed: weatherData.current.windSpeed10m,
-            highTemp: weatherData.daily.temperature2mMax.first ?? 0,
-            lowTemp: weatherData.daily.temperature2mMin.first ?? 0,
+            highTemp: highTemp,
+            lowTemp: lowTemp,
             precipitationProbability: weatherData.daily.precipitationProbabilityMax.first ?? 0,
             locationName: locationName ?? "Current Location",
             lastUpdated: Date(),
