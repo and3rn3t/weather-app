@@ -1336,9 +1336,10 @@ struct TemperatureChart: View {
         .chartYAxis {
             AxisMarks(position: .leading) { value in
                 AxisValueLabel {
-                    let temp = value.as(Double.self)
-                    Text(settings.formatTemperature(temp))
-                        .font(.caption2)
+                    if let temp = value.as(Double.self) {
+                        Text(settings.formatTemperature(temp))
+                            .font(.caption2)
+                    }
                 }
             }
         }
