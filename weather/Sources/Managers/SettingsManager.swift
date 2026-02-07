@@ -357,34 +357,43 @@ extension SettingsManager {
             return dateString
         }
         
-        let formatter = show24HourFormat ? Self.time24Formatter : Self.time12Formatter
+        // Create per-call formatter to avoid mutating shared static's timeZone (not thread-safe)
+        let formatter = DateFormatter()
+        formatter.dateFormat = show24HourFormat ? "HH:mm" : "h:mm a"
         formatter.timeZone = TimeZone(identifier: timezone)
         
         return formatter.string(from: date)
     }
     
     /// Format a sunrise/sunset time string ("yyyy-MM-dd'T'HH:mm" format)
+    /// Note: Creates per-call formatters because timezone mutation on shared static formatters is not thread-safe
     static func formatSunTime(_ isoString: String, timezone: String) -> String {
-        let parser = Self.simpleDateParser
+        let parser = DateFormatter()
+        parser.dateFormat = "yyyy-MM-dd'T'HH:mm"
+        parser.locale = Locale(identifier: "en_US_POSIX")
         if let timeZone = TimeZone(identifier: timezone) {
             parser.timeZone = timeZone
         }
         guard let date = parser.date(from: isoString) else { return "N/A" }
         
-        let formatter = Self.time12Formatter
+        let formatter = DateFormatter()
+        formatter.dateFormat = "h:mm a"
         formatter.timeZone = parser.timeZone
         return formatter.string(from: date)
     }
     
     /// Format an ISO time string to hour format (e.g., "3PM")
+    /// Note: Creates per-call formatter when timezone is specified because mutating shared static formatters is not thread-safe
     static func formatHour(_ isoString: String, timezone: String? = nil) -> String {
         guard let date = isoParser.date(from: isoString) else { return "" }
         
-        let formatter = Self.hourFormatter
         if let tz = timezone, let timeZone = TimeZone(identifier: tz) {
+            let formatter = DateFormatter()
+            formatter.dateFormat = "ha"
             formatter.timeZone = timeZone
+            return formatter.string(from: date)
         }
-        return formatter.string(from: date)
+        return Self.hourFormatter.string(from: date)
     }
     
     /// Format a date string to day abbreviation (e.g., "Mon")

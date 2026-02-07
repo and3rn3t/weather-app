@@ -43,7 +43,6 @@ struct ContentView: View {
                         airQualityData: weatherService.airQualityData,
                         settings: settings
                     )
-                    .id(settings.temperatureUnit) // Force refresh when settings change
                 } else if weatherService.isLoading {
                     LoadingView()
                 } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {

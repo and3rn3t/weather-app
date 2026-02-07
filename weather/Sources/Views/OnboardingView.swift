@@ -126,8 +126,9 @@ struct OnboardingView: View {
         isRequestingLocation = true
         locationManager.requestLocation()
         
-        // Wait a moment for the permission dialog, then complete
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+        // Wait for the permission dialog, then complete
+        Task { @MainActor in
+            try? await Task.sleep(for: .seconds(1.5))
             isRequestingLocation = false
             completeOnboarding()
         }

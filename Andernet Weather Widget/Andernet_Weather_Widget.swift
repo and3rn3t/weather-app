@@ -381,17 +381,24 @@ struct LargeWeatherWidgetView: View {
         }
     }
     
-    private func formattedHour(_ timeString: String) -> String {
+    /// Cached formatters — creating formatters inside ForEach is expensive
+    private static let isoParser: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        
-        guard let date = formatter.date(from: timeString) else {
+        return formatter
+    }()
+    
+    private static let hourDisplayFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "ha"
+        return formatter
+    }()
+    
+    private func formattedHour(_ timeString: String) -> String {
+        guard let date = Self.isoParser.date(from: timeString) else {
             return ""
         }
-        
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "ha"
-        return displayFormatter.string(from: date)
+        return Self.hourDisplayFormatter.string(from: date)
     }
     
     private func backgroundGradient(for code: Int) -> some View {

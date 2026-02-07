@@ -152,6 +152,13 @@ struct CurrentWeatherCard: View {
     @State private var isVisible = false
     @Environment(SettingsManager.self) var settings
     
+    /// Shared haptic generator — avoids allocating a new one per tap
+    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        return generator
+    }()
+    
     var body: some View {
         VStack(spacing: 16) {
             let condition = WeatherCondition(code: current.weatherCode)
@@ -168,14 +175,14 @@ struct CurrentWeatherCard: View {
             // Temperature display - tap it for interaction!
             Button(action: {
                 // Haptic feedback
-                let generator = UIImpactFeedbackGenerator(style: .light)
-                generator.impactOccurred()
+                Self.feedbackGenerator.impactOccurred()
                 
                 // Bounce animation
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
                     isTapped.toggle()
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                Task { @MainActor in
+                    try? await Task.sleep(for: .milliseconds(300))
                     isTapped = false
                 }
             }) {
@@ -272,9 +279,8 @@ struct SunMoonCard: View {
     let isDay: Bool
     let timezone: String
     
-    private var moonPhase: MoonPhase {
-        MoonPhase.current()
-    }
+    /// Cached moon phase — computed once instead of on every re-render
+    @State private var moonPhase = MoonPhase.current()
     
     var body: some View {
         VStack(spacing: 16) {
@@ -431,6 +437,13 @@ struct HourlyForecastCard: View {
     @State private var showUVIndex = false
     @Environment(SettingsManager.self) var settings
     
+    /// Shared haptic generator — avoids allocating a new one per tap
+    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        return generator
+    }()
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -442,8 +455,7 @@ struct HourlyForecastCard: View {
                 // Toggle between temperature and UV index
                 if hourly.uvIndex != nil {
                     Button {
-                        let generator = UIImpactFeedbackGenerator(style: .light)
-                        generator.impactOccurred()
+                        Self.feedbackGenerator.impactOccurred()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             showUVIndex.toggle()
                         }
@@ -500,7 +512,7 @@ struct HourlyForecastCard: View {
                 .padding(.horizontal, 20)
             
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 24) {
+                LazyHStack(spacing: 24) {
                     ForEach(Array(hourly.time.prefix(24).enumerated()), id: \.offset) { index, time in
                         if showUVIndex, let uvValues = hourly.uvIndex {
                             HourlyUVItem(
@@ -511,8 +523,7 @@ struct HourlyForecastCard: View {
                                 isSelected: selectedHour == index
                             )
                             .onTapGesture {
-                                let generator = UIImpactFeedbackGenerator(style: .light)
-                                generator.impactOccurred()
+                                Self.feedbackGenerator.impactOccurred()
                                 
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedHour = selectedHour == index ? nil : index
@@ -527,8 +538,7 @@ struct HourlyForecastCard: View {
                                 isSelected: selectedHour == index
                             )
                             .onTapGesture {
-                                let generator = UIImpactFeedbackGenerator(style: .light)
-                                generator.impactOccurred()
+                                Self.feedbackGenerator.impactOccurred()
                                 
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedHour = selectedHour == index ? nil : index
@@ -754,6 +764,13 @@ struct DailyForecastCard: View {
     let daily: DailyWeather
     @State private var showExtendedForecast = false
     
+    /// Shared haptic generator — avoids allocating a new one per tap
+    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        return generator
+    }()
+    
     var displayedDays: Int {
         showExtendedForecast ? min(daily.time.count, 14) : 7
     }
@@ -767,8 +784,7 @@ struct DailyForecastCard: View {
                 Spacer()
                 
                 Button {
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
+                    Self.feedbackGenerator.impactOccurred()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         showExtendedForecast.toggle()
                     }
@@ -1123,6 +1139,13 @@ struct LocationHeader: View {
     let onSearchTapped: () -> Void
     @Environment(SettingsManager.self) var settings
     
+    /// Shared haptic generator — avoids allocating a new one per tap
+    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .light)
+        generator.prepare()
+        return generator
+    }()
+    
     private var shareText: String {
         let location = locationName ?? "Current Location"
         let condition = WeatherCondition(code: weatherData.current.weatherCode).description
@@ -1187,10 +1210,7 @@ struct LocationHeader: View {
                 
                 // Search button
                 Button(action: {
-                    // Haptic feedback
-                    let generator = UIImpactFeedbackGenerator(style: .light)
-                    generator.impactOccurred()
-                    
+                    Self.feedbackGenerator.impactOccurred()
                     onSearchTapped()
                 }) {
                     Image(systemName: "magnifyingglass")
