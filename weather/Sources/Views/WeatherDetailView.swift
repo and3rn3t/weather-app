@@ -194,26 +194,17 @@ struct MoreDetailsSection: View {
                     isExpanded.toggle()
                 }
             } label: {
-                HStack(spacing: 8) {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.blue)
-                    
-                    Text("More Details")
+                HStack {
+                    Text(isExpanded ? "Less" : "More Details")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.primary)
                     
                     Spacer()
                     
-                    // Compact preview when collapsed
-                    if !isExpanded {
-                        moreDetailsPreview
-                    }
-                    
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                    Image(systemName: "chevron.down")
                         .font(.caption.weight(.bold))
                         .foregroundStyle(.secondary)
-                        .contentTransition(.symbolEffect(.replace))
+                        .rotationEffect(.degrees(isExpanded ? -180 : 0))
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 14)
@@ -250,56 +241,6 @@ struct MoreDetailsSection: View {
                     removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
                 ))
             }
-        }
-    }
-    
-    /// Compact inline preview showing key stats when collapsed
-    private var moreDetailsPreview: some View {
-        HStack(spacing: 10) {
-            // Wind speed pill
-            HStack(spacing: 3) {
-                Image(systemName: "wind")
-                    .font(.caption2)
-                Text("\(Int(weatherData.current.windSpeed10m))")
-                    .font(.caption.weight(.medium))
-                    .monospacedDigit()
-            }
-            .foregroundStyle(.cyan)
-            
-            // AQI pill
-            if let aqi = airQualityData?.current.usAqi {
-                HStack(spacing: 3) {
-                    Image(systemName: "aqi.low")
-                        .font(.caption2)
-                    Text("\(aqi)")
-                        .font(.caption.weight(.medium))
-                        .monospacedDigit()
-                }
-                .foregroundStyle(aqiColor(for: aqi))
-            }
-            
-            // Humidity pill
-            HStack(spacing: 3) {
-                Image(systemName: "humidity.fill")
-                    .font(.caption2)
-                Text("\(weatherData.current.relativeHumidity2m)%")
-                    .font(.caption.weight(.medium))
-                    .monospacedDigit()
-            }
-            .foregroundStyle(.blue)
-        }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 5)
-        .background(.secondary.opacity(0.1), in: Capsule())
-    }
-    
-    private func aqiColor(for aqi: Int) -> Color {
-        switch aqi {
-        case 0..<51: return .green
-        case 51..<101: return .yellow
-        case 101..<151: return .orange
-        case 151..<201: return .red
-        default: return .purple
         }
     }
 }
