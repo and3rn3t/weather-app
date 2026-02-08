@@ -56,19 +56,20 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     }
     
     nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-        Task { @MainActor in
+        Task { @MainActor [weak self] in
+            guard let self else { return }
             guard let newLocation = locations.last else { return }
-            location = newLocation
-            errorMessage = nil
+            self.location = newLocation
+            self.errorMessage = nil
             
             // Reverse geocode to get location name
-            await fetchLocationName(for: newLocation)
+            await self.fetchLocationName(for: newLocation)
         }
     }
     
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
-        Task { @MainActor in
-            errorMessage = "Failed to get location: \(error.localizedDescription)"
+        Task { @MainActor [weak self] in
+            self?.errorMessage = "Failed to get location: \(error.localizedDescription)"
         }
     }
     

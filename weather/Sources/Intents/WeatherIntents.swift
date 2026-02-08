@@ -257,6 +257,9 @@ class IntentLocationProvider: NSObject, CLLocationManagerDelegate {
     private let locationManager = CLLocationManager()
     private var continuation: CheckedContinuation<CLLocation, Error>?
     
+    /// Timeout duration for location requests (seconds)
+    private static let locationTimeoutSeconds: UInt64 = 10
+    
     func getCurrentLocation() async throws -> CLLocation {
         return try await withCheckedThrowingContinuation { continuation in
             self.continuation = continuation
@@ -264,6 +267,15 @@ class IntentLocationProvider: NSObject, CLLocationManagerDelegate {
             locationManager.desiredAccuracy = kCLLocationAccuracyKilometer
             locationManager.requestWhenInUseAuthorization()
             locationManager.requestLocation()
+            
+            // Timeout to ensure the continuation always resumes
+            Task { [weak self] in
+                try? await Task.sleep(for: .seconds(Self.locationTimeoutSeconds))
+                if let self, let pending = self.continuation {
+                    self.continuation = nil
+                    pending.resume(throwing: WeatherIntentError.locationAccessDenied)
+                }
+            }
         }
     }
     

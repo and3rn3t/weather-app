@@ -33,4 +33,7 @@ extension Logger {
     
     /// Logs related to location search.
     static let search = Logger(subsystem: subsystem, category: "Search")
+    
+    /// Logs related to notifications.
+    static let notifications = Logger(subsystem: subsystem, category: "Notifications")
 }

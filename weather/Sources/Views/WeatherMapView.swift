@@ -937,26 +937,6 @@ struct WeatherMapLegend: View {
     }
 }
 
-// MARK: - Map Button for Main View
-
-struct MapButton: View {
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            HStack {
-                Image(systemName: "map")
-                Text("Weather Map")
-            }
-            .font(.subheadline.weight(.medium))
-            .foregroundStyle(.white)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
-            .background(.ultraThinMaterial, in: Capsule())
-        }
-    }
-}
-
 #Preview {
     WeatherMapView(
         weatherData: nil,

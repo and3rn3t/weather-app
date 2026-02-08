@@ -8,6 +8,7 @@
 import Foundation
 import UserNotifications
 import CoreLocation
+import OSLog
 
 @Observable
 class NotificationManager: NSObject {
@@ -15,6 +16,11 @@ class NotificationManager: NSObject {
     var hasPermission: Bool = false
     
     private let notificationCenter = UNUserNotificationCenter.current()
+    
+    /// How far ahead to check for rain (seconds)
+    private static let rainLookAheadInterval: TimeInterval = 2 * 60 * 60
+    /// Minimum precipitation probability to trigger rain alert (%)
+    private static let rainProbabilityThreshold = 50
     
     override init() {
         super.init()
@@ -32,7 +38,7 @@ class NotificationManager: NSObject {
             checkAuthorizationStatus()
             return granted
         } catch {
-            // Log error silently - user will see system permission dialog
+            Logger.notifications.error("Authorization request failed: \(error.localizedDescription)")
             return false
         }
     }
@@ -78,7 +84,7 @@ class NotificationManager: NSObject {
         do {
             try await notificationCenter.add(request)
         } catch {
-            // Notification scheduling failed - will retry on next update
+            Logger.notifications.error("Failed to schedule daily forecast: \(error.localizedDescription)")
         }
     }
     
@@ -107,7 +113,7 @@ class NotificationManager: NSObject {
         do {
             try await notificationCenter.add(request)
         } catch {
-            // Alert notification failed - will retry on next weather update
+            Logger.notifications.error("Failed to send severe weather alert: \(error.localizedDescription)")
         }
     }
     
@@ -116,7 +122,7 @@ class NotificationManager: NSObject {
     func checkForRainAndNotify(weather: WeatherData, locationName: String?) async {
         // Check if rain is expected in the next 2 hours
         let now = Date()
-        let twoHoursLater = now.addingTimeInterval(2 * 60 * 60)
+        let lookAheadEnd = now.addingTimeInterval(Self.rainLookAheadInterval)
         
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
@@ -125,9 +131,9 @@ class NotificationManager: NSObject {
         for (index, timeString) in weather.hourly.time.enumerated() {
             guard let time = formatter.date(from: timeString) else { continue }
             
-            if time > now && time <= twoHoursLater {
+            if time > now && time <= lookAheadEnd {
                 let precipProb = weather.hourly.precipitationProbability?[index] ?? 0
-                if precipProb > 50 {
+                if precipProb > Self.rainProbabilityThreshold {
                     willRain = true
                     break
                 }
@@ -154,7 +160,7 @@ class NotificationManager: NSObject {
             do {
                 try await notificationCenter.add(request)
             } catch {
-                // Rain alert notification failed
+                Logger.notifications.error("Failed to send rain alert: \(error.localizedDescription)")
             }
         }
     }
@@ -186,7 +192,7 @@ class NotificationManager: NSObject {
         do {
             try await notificationCenter.add(request)
         } catch {
-            // Weather change notification failed
+            Logger.notifications.error("Failed to send weather change notification: \(error.localizedDescription)")
         }
     }
     

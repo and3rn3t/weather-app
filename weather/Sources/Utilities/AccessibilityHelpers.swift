@@ -12,6 +12,9 @@ import SwiftUI
 /// Centralized accessibility labels for weather data
 enum WeatherAccessibility {
     
+    /// Meters per mile conversion factor
+    private static let metersPerMile = 1609.34
+    
     // MARK: - Temperature Labels
     
     static func temperatureLabel(_ temp: Double, unit: TemperatureUnit = .fahrenheit) -> String {
@@ -64,7 +67,7 @@ enum WeatherAccessibility {
     }
     
     static func visibilityLabel(_ meters: Double) -> String {
-        let miles = meters / 1609.34
+        let miles = meters / metersPerMile
         if miles >= 10 {
             return "Visibility: excellent, more than 10 miles"
         } else if miles >= 5 {
@@ -215,27 +218,6 @@ extension WeatherCondition {
         case .thunderstorm: return "thunderstorm"
         case .unknown: return "unknown conditions"
         }
-    }
-}
-
-// MARK: - Reduce Motion Support
-
-struct ReduceMotionModifier: ViewModifier {
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
-    
-    let animation: Animation?
-    let reducedAnimation: Animation?
-    
-    func body(content: Content) -> some View {
-        content
-            .animation(reduceMotion ? reducedAnimation : animation, value: UUID())
-    }
-}
-
-extension View {
-    /// Applies animation that respects accessibility reduce motion setting
-    func accessibleAnimation(_ animation: Animation?, reduced: Animation? = nil) -> some View {
-        modifier(ReduceMotionModifier(animation: animation, reducedAnimation: reduced))
     }
 }
 

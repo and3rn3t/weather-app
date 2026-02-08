@@ -152,13 +152,6 @@ struct CurrentWeatherCard: View {
     @State private var isVisible = false
     @Environment(SettingsManager.self) var settings
     
-    /// Shared haptic generator — avoids allocating a new one per tap
-    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        return generator
-    }()
-    
     var body: some View {
         VStack(spacing: 16) {
             let condition = WeatherCondition(code: current.weatherCode)
@@ -175,7 +168,7 @@ struct CurrentWeatherCard: View {
             // Temperature display - tap it for interaction!
             Button(action: {
                 // Haptic feedback
-                Self.feedbackGenerator.impactOccurred()
+                HapticFeedback.impact()
                 
                 // Bounce animation
                 withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
@@ -437,13 +430,6 @@ struct HourlyForecastCard: View {
     @State private var showUVIndex = false
     @Environment(SettingsManager.self) var settings
     
-    /// Shared haptic generator — avoids allocating a new one per tap
-    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        return generator
-    }()
-    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -455,7 +441,7 @@ struct HourlyForecastCard: View {
                 // Toggle between temperature and UV index
                 if hourly.uvIndex != nil {
                     Button {
-                        Self.feedbackGenerator.impactOccurred()
+                        HapticFeedback.impact()
                         withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                             showUVIndex.toggle()
                         }
@@ -523,7 +509,7 @@ struct HourlyForecastCard: View {
                                 isSelected: selectedHour == index
                             )
                             .onTapGesture {
-                                Self.feedbackGenerator.impactOccurred()
+                                HapticFeedback.impact()
                                 
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedHour = selectedHour == index ? nil : index
@@ -538,7 +524,7 @@ struct HourlyForecastCard: View {
                                 isSelected: selectedHour == index
                             )
                             .onTapGesture {
-                                Self.feedbackGenerator.impactOccurred()
+                                HapticFeedback.impact()
                                 
                                 withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                                     selectedHour = selectedHour == index ? nil : index
@@ -657,23 +643,11 @@ struct HourlyUVItem: View {
     }
     
     private var uvColor: Color {
-        switch uvIndex {
-        case 0..<3: return .green
-        case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
-        }
+        UVIndexHelper.color(for: uvIndex)
     }
     
     private var uvLevel: String {
-        switch uvIndex {
-        case 0..<3: return "Low"
-        case 3..<6: return "Moderate"
-        case 6..<8: return "High"
-        case 8..<11: return "Very High"
-        default: return "Extreme"
-        }
+        UVIndexHelper.level(for: uvIndex)
     }
 }
 
@@ -732,13 +706,7 @@ struct UVIndexChart: View {
     }
     
     private func uvColor(for uv: Double) -> Color {
-        switch uv {
-        case 0..<3: return .green
-        case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
-        }
+        UVIndexHelper.color(for: uv)
     }
     
     private func uvGradient(for uv: Double) -> LinearGradient {
@@ -750,26 +718,13 @@ struct UVIndexChart: View {
     }
     
     private func uvLevel(for uv: Double) -> String {
-        switch uv {
-        case 0..<3: return "Low"
-        case 3..<6: return "Moderate"
-        case 6..<8: return "High"
-        case 8..<11: return "Very High"
-        default: return "Extreme"
-        }
+        UVIndexHelper.level(for: uv)
     }
 }
 
 struct DailyForecastCard: View {
     let daily: DailyWeather
     @State private var showExtendedForecast = false
-    
-    /// Shared haptic generator — avoids allocating a new one per tap
-    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        return generator
-    }()
     
     var displayedDays: Int {
         showExtendedForecast ? min(daily.time.count, 14) : 7
@@ -784,7 +739,7 @@ struct DailyForecastCard: View {
                 Spacer()
                 
                 Button {
-                    Self.feedbackGenerator.impactOccurred()
+                    HapticFeedback.impact()
                     withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
                         showExtendedForecast.toggle()
                     }
@@ -922,19 +877,16 @@ struct DailyWeatherRow: View {
     }
     
     private var uvColor: Color {
-        switch uvIndex {
-        case 0..<3: return .green
-        case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
-        }
+        UVIndexHelper.color(for: uvIndex)
     }
 }
 
 struct WeatherDetailsCard: View {
     let current: CurrentWeather
     @Environment(SettingsManager.self) private var settings
+    
+    /// Meters per mile conversion factor
+    private static let metersPerMile = 1609.34
     
     var body: some View {
         VStack(spacing: 20) {
@@ -998,7 +950,7 @@ struct WeatherDetailsCard: View {
                 
                 WeatherDetailItem(
                     title: "Visibility",
-                    value: String(format: "%.1f", current.visibility / 1609.34),
+                    value: String(format: "%.1f", current.visibility / Self.metersPerMile),
                     unit: "mi",
                     icon: "eye.fill",
                     color: .purple
@@ -1067,23 +1019,11 @@ struct WeatherDetailsCard: View {
     }
     
     private var uvCategory: String {
-        switch current.uvIndex {
-        case 0..<3: return "Low"
-        case 3..<6: return "Moderate"
-        case 6..<8: return "High"
-        case 8..<11: return "Very High"
-        default: return "Extreme"
-        }
+        UVIndexHelper.level(for: current.uvIndex)
     }
     
     private var uvColor: Color {
-        switch current.uvIndex {
-        case 0..<3: return .green
-        case 3..<6: return .yellow
-        case 6..<8: return .orange
-        case 8..<11: return .red
-        default: return .purple
-        }
+        UVIndexHelper.color(for: current.uvIndex)
     }
 }
 
@@ -1138,13 +1078,6 @@ struct LocationHeader: View {
     let weatherData: WeatherData
     let onSearchTapped: () -> Void
     @Environment(SettingsManager.self) var settings
-    
-    /// Shared haptic generator — avoids allocating a new one per tap
-    private static let feedbackGenerator: UIImpactFeedbackGenerator = {
-        let generator = UIImpactFeedbackGenerator(style: .light)
-        generator.prepare()
-        return generator
-    }()
     
     private var shareText: String {
         let location = locationName ?? "Current Location"
@@ -1210,7 +1143,7 @@ struct LocationHeader: View {
                 
                 // Search button
                 Button(action: {
-                    Self.feedbackGenerator.impactOccurred()
+                    HapticFeedback.impact()
                     onSearchTapped()
                 }) {
                     Image(systemName: "magnifyingglass")

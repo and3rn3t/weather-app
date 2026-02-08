@@ -50,15 +50,26 @@ class WeatherService {
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
     
+    // MARK: - Constants
+    
+    /// Cache capacity: 10 MB in memory
+    private static let memoryCacheCapacity = 10_000_000
+    /// Cache capacity: 50 MB on disk
+    private static let diskCacheCapacity = 50_000_000
+    /// Timeout for individual requests (seconds)
+    private static let requestTimeout: TimeInterval = 15
+    /// Timeout for overall resource loading (seconds)
+    private static let resourceTimeout: TimeInterval = 30
+    
     // MARK: - Performance Optimizations
     
     /// Shared URL session with caching enabled for faster repeated requests
     private static let cachedSession: URLSession = {
         let config = URLSessionConfiguration.default
-        config.urlCache = URLCache(memoryCapacity: 10_000_000, diskCapacity: 50_000_000) // 10MB mem, 50MB disk
+        config.urlCache = URLCache(memoryCapacity: memoryCacheCapacity, diskCapacity: diskCacheCapacity)
         config.requestCachePolicy = .returnCacheDataElseLoad
-        config.timeoutIntervalForRequest = 15
-        config.timeoutIntervalForResource = 30
+        config.timeoutIntervalForRequest = requestTimeout
+        config.timeoutIntervalForResource = resourceTimeout
         return URLSession(configuration: config)
     }()
     

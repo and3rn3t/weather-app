@@ -9,120 +9,6 @@
 
 import SwiftUI
 
-// MARK: - iOS 26 Liquid Glass Styles
-
-/// Glass style options that map to iOS 26's native Glass types
-enum LiquidGlassStyle {
-    case regular
-    case clear
-    case prominent
-    
-    var nativeGlass: Glass {
-        switch self {
-        case .regular, .prominent:
-            return .regular
-        case .clear:
-            return .clear
-        }
-    }
-}
-
-// MARK: - Liquid Glass Card
-
-/// A card component using iOS 26's native Liquid Glass effect
-struct LiquidGlassCard<Content: View>: View {
-    let style: LiquidGlassStyle
-    @ViewBuilder let content: Content
-    
-    init(style: LiquidGlassStyle = .regular, @ViewBuilder content: () -> Content) {
-        self.style = style
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .glassEffect(style.nativeGlass, in: .rect(cornerRadius: 20))
-    }
-}
-
-// MARK: - Weather Glass Card
-
-/// A weather-specific glass card with conditional tinting
-struct WeatherGlassCard<Content: View>: View {
-    let weatherCode: Int?
-    let isDay: Bool
-    @ViewBuilder let content: Content
-    
-    init(weatherCode: Int? = nil, isDay: Bool = true, @ViewBuilder content: () -> Content) {
-        self.weatherCode = weatherCode
-        self.isDay = isDay
-        self.content = content()
-    }
-    
-    var body: some View {
-        content
-            .padding()
-            .glassEffect(Glass.regular, in: .rect(cornerRadius: 20))
-    }
-}
-
-// MARK: - Floating Action Button
-
-/// iOS 26 style floating action button with glass effect
-struct FloatingGlassButton: View {
-    let icon: String
-    let action: () -> Void
-    
-    var body: some View {
-        Button(action: action) {
-            Image(systemName: icon)
-                .font(.title2)
-                .frame(width: 56, height: 56)
-        }
-        .buttonStyle(.glass)
-    }
-}
-
-// MARK: - Glass Navigation Bar Style
-
-/// Custom toolbar styling for iOS 26 glass navigation
-struct GlassToolbarContent: ToolbarContent {
-    let leadingAction: (() -> Void)?
-    let leadingIcon: String?
-    let trailingActions: [(icon: String, action: () -> Void)]
-    
-    init(
-        leadingIcon: String? = nil,
-        leadingAction: (() -> Void)? = nil,
-        trailingActions: [(icon: String, action: () -> Void)] = []
-    ) {
-        self.leadingIcon = leadingIcon
-        self.leadingAction = leadingAction
-        self.trailingActions = trailingActions
-    }
-    
-    var body: some ToolbarContent {
-        if let icon = leadingIcon, let action = leadingAction {
-            ToolbarItem(placement: .topBarLeading) {
-                Button(action: action) {
-                    Image(systemName: icon)
-                        .symbolEffect(.pulse)
-                }
-                .buttonStyle(.glass)
-            }
-        }
-        
-        ToolbarItemGroup(placement: .topBarTrailing) {
-            ForEach(Array(trailingActions.enumerated()), id: \.offset) { _, item in
-                Button(action: item.action) {
-                    Image(systemName: item.icon)
-                }
-                .buttonStyle(.glass)
-            }
-        }
-    }
-}
-
 // MARK: - iOS 26 Floating Tab Bar
 
 /// Floating tab bar in iOS 26 style
@@ -279,25 +165,6 @@ struct GlassStyle {
 // MARK: - View Extension for iOS 26 Liquid Glass
 
 extension View {
-    /// Apply iOS 26 liquid glass card styling with default corner radius
-    func liquidGlassCard() -> some View {
-        self
-            .padding()
-            .glassEffect(Glass.regular, in: .rect(cornerRadius: 20))
-    }
-    
-    /// Apply iOS 26 liquid glass with custom corner radius
-    func liquidGlass(cornerRadius: CGFloat = 20) -> some View {
-        self
-            .glassEffect(Glass.regular, in: .rect(cornerRadius: cornerRadius))
-    }
-    
-    /// Apply prominent glass effect (for CTAs)
-    func prominentGlass() -> some View {
-        self
-            .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
-    }
-    
     /// Legacy glass effect using custom GlassStyle (maps to native iOS 26)
     @ViewBuilder
     func glassEffect(_ style: GlassStyle) -> some View {
@@ -400,22 +267,21 @@ extension ButtonStyle where Self == CustomGlassProminentButtonStyle {
 
 // MARK: - Previews
 
-#Preview("Liquid Glass Card") {
+#Preview("Glass Components") {
     ZStack {
         LinearGradient(colors: [.blue, .purple], startPoint: .top, endPoint: .bottom)
             .ignoresSafeArea()
         
         VStack(spacing: 20) {
-            LiquidGlassCard {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Weather")
-                        .font(.headline)
-                    Text("72°F - Sunny")
-                        .font(.largeTitle.bold())
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Weather")
+                    .font(.headline)
+                Text("72°F - Sunny")
+                    .font(.largeTitle.bold())
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding()
+            .glassEffect(Glass.regular, in: .rect(cornerRadius: 20))
             
             HStack(spacing: 16) {
                 Button("Glass") {}
@@ -424,8 +290,6 @@ extension ButtonStyle where Self == CustomGlassProminentButtonStyle {
                 Button("Prominent") {}
                     .buttonStyle(.glassProminent)
             }
-            
-            FloatingGlassButton(icon: "plus") {}
         }
         .padding()
     }
