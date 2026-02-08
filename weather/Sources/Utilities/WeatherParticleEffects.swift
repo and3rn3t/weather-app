@@ -190,8 +190,13 @@ struct CloudsEffect: View {
     
     private func animateClouds(in size: CGSize) {
         for index in clouds.indices {
+            let duration = Double((size.width + clouds[index].width * 2) / clouds[index].speed)
+            
+            // Start cloud from left edge (off-screen) and animate across
+            clouds[index].x = -clouds[index].width
+            
             withAnimation(
-                .linear(duration: Double(size.width / clouds[index].speed))
+                .linear(duration: duration)
                 .repeatForever(autoreverses: false)
             ) {
                 clouds[index].x = size.width + clouds[index].width

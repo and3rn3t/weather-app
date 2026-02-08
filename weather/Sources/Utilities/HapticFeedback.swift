@@ -18,8 +18,54 @@ enum HapticFeedback {
         return generator
     }()
     
-    /// Trigger a light haptic impact
+    /// Medium impact haptic generator
+    static let medium: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .medium)
+        generator.prepare()
+        return generator
+    }()
+    
+    /// Heavy impact haptic generator
+    static let heavy: UIImpactFeedbackGenerator = {
+        let generator = UIImpactFeedbackGenerator(style: .heavy)
+        generator.prepare()
+        return generator
+    }()
+    
+    /// Notification feedback generator for success/error/warning
+    static let notification: UINotificationFeedbackGenerator = {
+        let generator = UINotificationFeedbackGenerator()
+        generator.prepare()
+        return generator
+    }()
+    
+    /// Trigger a light haptic impact (default)
     static func impact() {
         light.impactOccurred()
+    }
+    
+    /// Trigger a medium haptic impact
+    static func mediumImpact() {
+        medium.impactOccurred()
+    }
+    
+    /// Trigger a heavy haptic impact
+    static func heavyImpact() {
+        heavy.impactOccurred()
+    }
+    
+    /// Trigger a success notification haptic
+    static func success() {
+        notification.notificationOccurred(.success)
+    }
+    
+    /// Trigger an error notification haptic
+    static func error() {
+        notification.notificationOccurred(.error)
+    }
+    
+    /// Trigger a warning notification haptic
+    static func warning() {
+        notification.notificationOccurred(.warning)
     }
 }

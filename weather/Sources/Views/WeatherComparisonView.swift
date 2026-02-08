@@ -193,7 +193,8 @@ struct WeatherComparisonView: View {
     private func calculateWeatherScore(_ weather: WeatherData) -> Double {
         var score: Double = 0
         
-        // Temperature score (ideal: 65-75°F)
+        // Temperature score (ideal: 65-75°F / 18-24°C)
+        // API always returns Fahrenheit, so score on raw Fahrenheit values
         let temp = weather.current.temperature2m
         if temp >= 65 && temp <= 75 {
             score += 30
@@ -235,9 +236,10 @@ struct WeatherComparisonView: View {
     }
     
     private func bestWeatherReason(_ weather: WeatherData) -> String {
+        let temp = weather.current.temperature2m
         let reasons = [
             weather.current.weatherCode == 0 ? "Clear skies" : nil,
-            (65...75).contains(weather.current.temperature2m) ? "Perfect temperature" : nil,
+            (65...75).contains(Int(temp)) ? "Perfect temperature" : nil,
             weather.current.windSpeed10m < 10 ? "Calm winds" : nil,
             (30...60).contains(weather.current.relativeHumidity2m) ? "Comfortable humidity" : nil
         ].compactMap { $0 }
@@ -267,7 +269,7 @@ struct ComparisonCard: View {
                     Text(location.name)
                         .font(.headline.weight(.semibold))
                     
-                    Text("Lat: \(String(format: "%.2f", location.latitude)), Lon: \(String(format: "%.2f", location.longitude))")
+                    Text(WeatherCondition(code: weather.current.weatherCode).description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

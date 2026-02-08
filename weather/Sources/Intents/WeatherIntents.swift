@@ -43,18 +43,18 @@ struct GetWeatherIntent: AppIntent {
         }
         
         let conditionCode = weatherData.current.weatherCode
-        let temp = Int(weatherData.current.temperature2m)
-        let feelsLike = Int(weatherData.current.apparentTemperature)
-        let high = Int(weatherData.daily.temperature2mMax.first ?? 0)
-        let low = Int(weatherData.daily.temperature2mMin.first ?? 0)
+        let temp = weatherData.current.temperature2m
+        let feelsLike = weatherData.current.apparentTemperature
+        let high = weatherData.daily.temperature2mMax.first ?? 0
+        let low = weatherData.daily.temperature2mMin.first ?? 0
         
         let conditionDescription = await MainActor.run {
             WeatherCondition(code: conditionCode).description
         }
         
         let dialog = """
-        It's currently \(temp)°F and \(conditionDescription.lowercased()) in \(resolvedName ?? "your location"). \
-        It feels like \(feelsLike)°F with a high of \(high)°F and low of \(low)°F today.
+        It's currently \(Int(temp))°F and \(conditionDescription.lowercased()) in \(resolvedName ?? "your location"). \
+        It feels like \(Int(feelsLike))°F with a high of \(Int(high))°F and low of \(Int(low))°F today.
         """
         
         return await MainActor.run {

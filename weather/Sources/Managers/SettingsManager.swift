@@ -422,7 +422,7 @@ extension SettingsManager {
         if calendar.isDateInToday(date) {
             return "Today"
         } else if calendar.isDateInTomorrow(date) {
-            return "Tmrw"
+            return "Tomorrow"
         } else {
             return Self.dayAndDateFormatter.string(from: date)
         }

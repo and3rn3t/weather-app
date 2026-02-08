@@ -16,6 +16,8 @@ struct FavoritesView: View {
     let onLocationSelected: (SavedLocation) -> Void
     
     @State private var showingSearch = false
+    @State private var locationWeather: [String: WeatherData] = [:]
+    @State private var isLoadingWeather = false
     
     var body: some View {
         NavigationStack {
@@ -77,26 +79,46 @@ struct FavoritesView: View {
                     dismiss()
                 } label: {
                     HStack(spacing: 16) {
-                        Image(systemName: location.isCurrentLocation ? "location.fill" : "mappin.and.ellipse")
-                            .font(.title2)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.blue.gradient)
-                            .frame(width: 40)
+                        // Weather icon or location icon
+                        if let weather = locationWeather[location.id.uuidString] {
+                            Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
+                                .font(.title2)
+                                .symbolRenderingMode(.multicolor)
+                                .frame(width: 40)
+                        } else {
+                            Image(systemName: location.isCurrentLocation ? "location.fill" : "mappin.and.ellipse")
+                                .font(.title2)
+                                .symbolRenderingMode(.hierarchical)
+                                .foregroundStyle(.blue.gradient)
+                                .frame(width: 40)
+                        }
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text(location.name)
                                 .font(.headline)
                             
-                            Text("Lat: \(String(format: "%.2f", location.latitude)), Lon: \(String(format: "%.2f", location.longitude))")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
+                            if let weather = locationWeather[location.id.uuidString] {
+                                Text(WeatherCondition(code: weather.current.weatherCode).description)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            } else if isLoadingWeather {
+                                ProgressView()
+                                    .scaleEffect(0.6)
+                            }
                         }
                         
                         Spacer()
                         
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                        // Temperature or chevron
+                        if let weather = locationWeather[location.id.uuidString] {
+                            Text("\(Int(weather.current.temperature2m))°")
+                                .font(.title2.weight(.semibold).monospacedDigit())
+                                .foregroundStyle(.primary)
+                        } else {
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     .padding(.vertical, 8)
                 }
@@ -113,6 +135,37 @@ struct FavoritesView: View {
             }
         }
         .listStyle(.plain)
+        .task {
+            await loadWeatherPreviews()
+        }
+    }
+    
+    private func loadWeatherPreviews() async {
+        guard !favoritesManager.savedLocations.isEmpty else { return }
+        isLoadingWeather = true
+        let service = WeatherService()
+        
+        await withTaskGroup(of: (String, WeatherData?).self) { group in
+            for location in favoritesManager.savedLocations {
+                let lat = location.latitude
+                let lon = location.longitude
+                let name = location.name
+                let id = location.id.uuidString
+                
+                group.addTask {
+                    await service.fetchWeather(latitude: lat, longitude: lon, locationName: name)
+                    let data = await MainActor.run { service.weatherData }
+                    return (id, data)
+                }
+            }
+            
+            for await (id, data) in group {
+                if let data = data {
+                    locationWeather[id] = data
+                }
+            }
+        }
+        isLoadingWeather = false
     }
 }
 

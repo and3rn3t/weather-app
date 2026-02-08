@@ -14,6 +14,7 @@ struct WindCompassCard: View {
     @Environment(SettingsManager.self) private var settings
     @State private var isVisible = false
     @State private var needleAnimated = false
+    @State private var previousDirection: Double = 0
     
     var body: some View {
         VStack(spacing: 16) {
@@ -39,7 +40,8 @@ struct WindCompassCard: View {
                     windGusts: settings.convertedWindSpeed(current.windGusts10m),
                     windUnit: settings.windSpeedUnit.symbol,
                     isVisible: isVisible,
-                    needleAnimated: needleAnimated
+                    needleAnimated: needleAnimated,
+                    previousDirection: previousDirection
                 )
                 .frame(width: 220, height: 220)
             }
@@ -85,6 +87,12 @@ struct WindCompassCard: View {
             }
             withAnimation(.spring(response: 1.2, dampingFraction: 0.6).delay(0.5)) {
                 needleAnimated = true
+            }
+        }
+        .onChange(of: current.windDirection10m) { oldValue, newValue in
+            previousDirection = oldValue
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
+                // needleAnimated is already true, so the needle will animate to the new direction
             }
         }
         .accessibilityElement(children: .ignore)
@@ -141,6 +149,7 @@ struct WindCompassRose: View {
     let windUnit: String
     let isVisible: Bool
     let needleAnimated: Bool
+    let previousDirection: Double
     
     private let cardinalDirections = ["N", "E", "S", "W"]
     private let ordinalDirections = ["NE", "SE", "SW", "NW"]
@@ -223,9 +232,9 @@ struct WindCompassRose: View {
                     )
                 }
                 
-                // Wind direction needle
+                // Wind direction needle — animates from previous direction
                 WindNeedle(
-                    angle: needleAnimated ? windDirection : 0,
+                    angle: needleAnimated ? windDirection : previousDirection,
                     radius: radius * 0.45
                 )
                 

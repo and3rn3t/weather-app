@@ -21,7 +21,17 @@ struct LocationSearchView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                if searchResults.isEmpty && !searchText.isEmpty && !isSearching {
+                if isSearching {
+                    VStack(spacing: 12) {
+                        Spacer()
+                        ProgressView()
+                            .scaleEffect(1.2)
+                        Text("Searching...")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                    }
+                } else if searchResults.isEmpty && !searchText.isEmpty {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List(searchResults, id: \.self) { item in

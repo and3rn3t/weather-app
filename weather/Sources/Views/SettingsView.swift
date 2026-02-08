@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(ThemeManager.self) private var themeManager
     @State private var showingThemePicker = false
+    @State private var showingResetConfirmation = false
     
     init(settings: SettingsManager, notifications: NotificationManager) {
         self.settings = settings
@@ -56,8 +57,8 @@ struct SettingsView: View {
                             get: { settings.preferredColorScheme ?? .light },
                             set: { settings.preferredColorScheme = $0 }
                         )) {
-                            Label("Light", systemImage: "sun.max").tag(ColorScheme.light)
-                            Label("Dark", systemImage: "moon").tag(ColorScheme.dark)
+                            Text("Light").tag(ColorScheme.light)
+                            Text("Dark").tag(ColorScheme.dark)
                         }
                         .pickerStyle(.segmented)
                     }
@@ -184,7 +185,7 @@ struct SettingsView: View {
                     HStack {
                         Text("Version")
                         Spacer()
-                        Text("1.0.0")
+                        Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0")
                             .foregroundStyle(.secondary)
                     }
                     
@@ -210,9 +211,22 @@ struct SettingsView: View {
                 // Reset Section
                 Section {
                     Button(role: .destructive) {
-                        settings.resetToDefaults()
+                        showingResetConfirmation = true
                     } label: {
                         Label("Reset to Defaults", systemImage: "arrow.counterclockwise")
+                    }
+                    .confirmationDialog(
+                        "Reset all settings to their default values?",
+                        isPresented: $showingResetConfirmation,
+                        titleVisibility: .visible
+                    ) {
+                        Button("Reset", role: .destructive) {
+                            HapticFeedback.warning()
+                            settings.resetToDefaults()
+                        }
+                        Button("Cancel", role: .cancel) { }
+                    } message: {
+                        Text("This will reset all units, appearance, notification, and display settings. This action cannot be undone.")
                     }
                 }
             }
