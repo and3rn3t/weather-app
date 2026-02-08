@@ -68,25 +68,27 @@ class WeatherService {
         let start = CFAbsoluteTimeGetCurrent()
         os_signpost(.begin, log: StartupSignpost.log, name: "CacheLoad")
 
-        // All SharedDataManager methods are non-isolated synchronous file I/O.
-        // Run them together in one detached task so we pay the thread-hop cost
-        // only once, and never serialize through the main actor queue.
-        let result = await Task.detached(priority: .userInitiated) {
-            let cached = SharedDataManager.shared.loadCachedFullWeatherData()
-            let meta = SharedDataManager.shared.lastKnownLocation()
-            return (cached, meta)
+        // Read last-known location from UserDefaults.
+        // UserDefaults.standard is @MainActor-isolated in Swift 6, so we must await.
+        let locationMeta = await SharedDataManager.lastKnownLocation()
+
+        // Hop off the main actor for the file read + JSON decode.
+        let cached: WeatherData? = await Task.detached(priority: .userInitiated) {
+            SharedDataManager.loadWeatherFileDetached(
+                primary: SharedDataManager.cachedWeatherFilePrimaryURL,
+                legacy: SharedDataManager.cachedWeatherFileLegacyURL
+            )
         }.value
 
         os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
         startupLog("WeatherService cache load: \(String(format: "%.0f", elapsed))ms")
 
-        guard let cached = result.0 else { return }
+        guard let cached else { return }
         // Don't overwrite if a network fetch already provided fresh data
         guard self.weatherData == nil else { return }
-        // Back on main actor (this function is called from a Task started on MainActor)
         self.weatherData = cached
-        self.currentLocationName = result.1?.name
+        self.currentLocationName = locationMeta?.name
         self.restoredFromCache = true
     }
     

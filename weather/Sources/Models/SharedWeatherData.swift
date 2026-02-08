@@ -66,7 +66,8 @@ class SharedDataManager {
     
     /// File URL for the cached full WeatherData — computed once and reused.
     /// Uses Application Support (durable) instead of Caches (purge-able by iOS).
-    private let cachedWeatherFileURL: URL? = {
+    /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
+    static let cachedWeatherFilePrimaryURL: URL? = {
         guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
@@ -75,9 +76,10 @@ class SharedDataManager {
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("cachedWeatherData.json")
     }()
-    
-    /// Legacy Caches location — used as fallback for migration
-    private let legacyCachedWeatherFileURL: URL? = FileManager.default.urls(
+
+    /// Legacy Caches location — used as fallback for migration.
+    /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
+    static let cachedWeatherFileLegacyURL: URL? = FileManager.default.urls(
         for: .cachesDirectory, in: .userDomainMask
     ).first?.appendingPathComponent("cachedWeatherData.json")
     
@@ -126,8 +128,12 @@ class SharedDataManager {
             let data = try Self.encoder.encode(sharedData)
             sharedDefaults.set(data, forKey: weatherDataKey)
             
-            // Tell widgets to refresh
-            WidgetCenterHelper.reloadAllTimelines()
+            // Tell widgets to refresh (must happen on main actor).
+            // Both WidgetCenter.shared and reloadAllTimelines() are async in the latest WidgetKit SDK.
+            Task { @MainActor in
+                let center = await WidgetCenter.shared
+                await center.reloadAllTimelines()
+            }
         } catch {
             Logger.sharedData.error("Failed to encode weather data: \(error.localizedDescription)")
         }
@@ -160,7 +166,7 @@ class SharedDataManager {
         ud.set(locationName, forKey: lastLocationNameKey)
 
         // Write full WeatherData to Application Support (durable, not backed up)
-        guard let fileURL = cachedWeatherFileURL else { return }
+        guard let fileURL = Self.cachedWeatherFilePrimaryURL else { return }
         do {
             os_signpost(.begin, log: StartupSignpost.log, name: "CacheWrite")
             let data = try Self.encoder.encode(weatherData)
@@ -175,48 +181,42 @@ class SharedDataManager {
     /// Load the previously cached full WeatherData from disk.
     /// Returns nil on first launch or if cache is corrupt/missing.
     func loadCachedFullWeatherData() -> WeatherData? {
-        // Try primary location (Application Support)
-        if let data = loadWeatherFile(at: cachedWeatherFileURL) {
-            return data
-        }
-        // Fallback: try legacy Caches location (migration path)
-        if let data = loadWeatherFile(at: legacyCachedWeatherFileURL) {
-            // Migrate to durable location for next time
-            if let fileURL = cachedWeatherFileURL {
-                try? Self.encoder.encode(data).write(to: fileURL, options: .atomic)
+        Self.loadWeatherFileDetached(primary: Self.cachedWeatherFilePrimaryURL, legacy: Self.cachedWeatherFileLegacyURL)
+    }
+    
+    /// Pure file I/O — safe to call from any thread.
+    static func loadWeatherFileDetached(primary: URL?, legacy: URL?) -> WeatherData? {
+        for url in [primary, legacy].compactMap({ $0 }) {
+            guard FileManager.default.fileExists(atPath: url.path) else { continue }
+            do {
+                os_signpost(.begin, log: StartupSignpost.log, name: "CacheRead")
+                let data = try Data(contentsOf: url)
+                let decoded = try decoder.decode(WeatherData.self, from: data)
+                os_signpost(.end, log: StartupSignpost.log, name: "CacheRead")
+                startupLog("Cache read: \(data.count / 1024)KB")
+                return decoded
+            } catch {
+                Logger.sharedData.error("Failed to load cached weather data: \(error.localizedDescription)")
             }
-            return data
         }
         return nil
     }
     
-    private func loadWeatherFile(at url: URL?) -> WeatherData? {
-        guard let fileURL = url,
-              FileManager.default.fileExists(atPath: fileURL.path) else {
-            return nil
-        }
-        do {
-            os_signpost(.begin, log: StartupSignpost.log, name: "CacheRead")
-            let data = try Data(contentsOf: fileURL)
-            let decoded = try Self.decoder.decode(WeatherData.self, from: data)
-            os_signpost(.end, log: StartupSignpost.log, name: "CacheRead")
-            startupLog("Cache read: \(data.count / 1024)KB")
-            return decoded
-        } catch {
-            Logger.sharedData.error("Failed to load cached weather data: \(error.localizedDescription)")
-            return nil
-        }
-    }
-    
     /// Returns the last-known location coordinates and name, if available.
-    func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
+    /// Static so it can be called from nonisolated contexts without going
+    /// through the actor-isolated `shared` instance.
+    static func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
         let ud = UserDefaults.standard
-        // latitude/longitude default to 0.0 if not set; check both are non-zero
-        let lat = ud.double(forKey: lastLatitudeKey)
-        let lon = ud.double(forKey: lastLongitudeKey)
+        let lat = ud.double(forKey: "lastWeatherLatitude")
+        let lon = ud.double(forKey: "lastWeatherLongitude")
         guard lat != 0.0 || lon != 0.0 else { return nil }
-        let name = ud.string(forKey: lastLocationNameKey)
+        let name = ud.string(forKey: "lastWeatherLocationName")
         return (lat, lon, name)
+    }
+
+    /// Instance convenience wrapper kept for existing call sites.
+    func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
+        Self.lastKnownLocation()
     }
 }
 
@@ -224,8 +224,3 @@ class SharedDataManager {
 
 import WidgetKit
 
-enum WidgetCenterHelper {
-    static func reloadAllTimelines() {
-        WidgetCenter.shared.reloadAllTimelines()
-    }
-}
