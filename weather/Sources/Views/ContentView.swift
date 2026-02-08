@@ -63,60 +63,25 @@ struct ContentView: View {
                 }
             }
             .task {
-                // MARK: - Instant Startup: Restore cached data immediately
-                let startTime = CFAbsoluteTimeGetCurrent()
-                os_signpost(.begin, log: StartupSignpost.log, name: "AppStartup")
+                // MARK: - Background Refresh
+                // Cache was already loaded in WeatherService.init() — the user
+                // sees weather data from the very first frame. This task just
+                // refreshes data in the background and starts GPS.
                 
-                // Step 1: Show cached weather data instantly (typically <50ms)
-                if weatherService.weatherData == nil,
-                   let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
-                    let cachedName = SharedDataManager.shared.lastKnownLocation()?.name
-                    weatherService.weatherData = cached
-                    weatherService.currentLocationName = cachedName
-                    let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-                    Logger.startup.info("Restored cached weather in \(elapsed, format: .fixed(precision: 0))ms")
-                }
-                
-                os_signpost(.event, log: StartupSignpost.log, name: "CacheRestored")
-                
-                if weatherService.weatherData != nil {
-                    // FAST PATH: We have cached data visible.
-                    // Refresh silently in background (won't show LoadingView).
-                    if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
-                        Logger.startup.info("Background refresh using cached coordinates")
-                        Task {
-                            await weatherService.fetchWeather(
-                                latitude: lastLocation.latitude,
-                                longitude: lastLocation.longitude,
-                                locationName: lastLocation.name,
-                                forceRefresh: true
-                            )
-                        }
+                // Fire background API refresh using last-known coordinates
+                if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
+                    Task {
+                        await weatherService.fetchWeather(
+                            latitude: lastLocation.latitude,
+                            longitude: lastLocation.longitude,
+                            locationName: lastLocation.name,
+                            forceRefresh: true
+                        )
                     }
-                    // Also request fresh GPS location (will update via .onChange when ready)
-                    checkAndFetchWeather()
-                } else if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
-                    // NO CACHE but we know the last coordinates.
-                    // Fetch directly (shows LoadingView only during the ~1-2s API call,
-                    // NOT the 5-8s GPS wait).
-                    Logger.startup.info("No cache — fetching with last-known coordinates")
-                    await weatherService.fetchWeather(
-                        latitude: lastLocation.latitude,
-                        longitude: lastLocation.longitude,
-                        locationName: lastLocation.name,
-                        forceRefresh: true
-                    )
-                    // Also start GPS for future accuracy
-                    checkAndFetchWeather()
-                } else {
-                    // COLD START: No cache, no last location. Must wait for GPS.
-                    Logger.startup.info("Cold start — waiting for location")
-                    checkAndFetchWeather()
                 }
                 
-                let totalElapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-                Logger.startup.info("Startup sequence complete in \(totalElapsed, format: .fixed(precision: 0))ms")
-                os_signpost(.end, log: StartupSignpost.log, name: "AppStartup")
+                // Request fresh GPS location (will update via .onChange when ready)
+                checkAndFetchWeather()
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible

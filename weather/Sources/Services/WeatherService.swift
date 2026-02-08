@@ -47,6 +47,24 @@ class WeatherService {
     var lastError: WeatherError?
     var currentLocationName: String?
     
+    // MARK: - Instant Startup
+    
+    /// Whether cached data was restored during init (for callers to know)
+    private(set) var restoredFromCache = false
+    
+    init() {
+        // Synchronously restore cached weather data so the FIRST frame
+        // already has data to display (no LoadingView / WelcomeView flash).
+        let startTime = CFAbsoluteTimeGetCurrent()
+        if let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
+            self.weatherData = cached
+            self.currentLocationName = SharedDataManager.shared.lastKnownLocation()?.name
+            self.restoredFromCache = true
+            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+            Logger.startup.info("WeatherService.init: restored cache in \(elapsed, format: .fixed(precision: 0))ms")
+        }
+    }
+    
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
     private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
     
