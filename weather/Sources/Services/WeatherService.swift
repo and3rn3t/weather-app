@@ -57,9 +57,16 @@ class WeatherService {
         // Do NOT block the main thread with synchronous disk I/O here.
         // Load the cached weather file on a background thread, then publish
         // the result on the main actor — the view will update automatically.
+        //
+        // IMPORTANT: Use Task.detached — a plain Task inherits MainActor
+        // isolation from the call site (@State init in WeatherApp) and would
+        // be blocked until SwiftUI finishes scene setup (~5s). Detaching lets
+        // cache I/O and the background refresh run truly in parallel.
         os_signpost(.event, log: StartupSignpost.log, name: "WeatherService.init")
         startupLog("WeatherService.init — dispatching cache load")
-        Task(priority: .userInitiated) { await self.loadCacheInBackground() }
+        Task.detached(priority: .userInitiated) { [self] in
+            await self.loadCacheInBackground()
+        }
     }
 
     /// Reads the cached weather file off the main thread, then updates
