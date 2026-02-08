@@ -21,6 +21,7 @@ struct WeatherDetailView: View {
     var settings: SettingsManager
     
     @State private var showMoreDetails = false
+    @State private var showMeshGradient = false
     
     var body: some View {
         ZStack {
@@ -97,8 +98,8 @@ struct WeatherDetailView: View {
                 endPoint: .bottomTrailing
             )
             
-            // Subtle mesh gradient overlay for depth (iOS 18+)
-            if settings.showAnimatedBackgrounds {
+            // Subtle mesh gradient overlay for depth — deferred to avoid blocking first frame
+            if showMeshGradient && settings.showAnimatedBackgrounds {
                 MeshGradient(
                     width: 3,
                     height: 3,
@@ -110,10 +111,11 @@ struct WeatherDetailView: View {
                     colors: meshColors(for: condition)
                 )
                 .opacity(0.3)
+                .transition(.opacity)
             }
             
-            // Weather particle effects
-            if settings.showWeatherParticles {
+            // Weather particle effects — deferred to avoid blocking first frame
+            if showMeshGradient && settings.showWeatherParticles {
                 WeatherParticleContainer(
                     weatherCode: weatherData.current.weatherCode,
                     isDay: weatherData.current.isDay == 1
@@ -121,6 +123,13 @@ struct WeatherDetailView: View {
             }
         }
         .ignoresSafeArea()
+        .task {
+            // Defer heavy visual effects until after the first frame is on screen
+            try? await Task.sleep(for: .milliseconds(200))
+            withAnimation(.easeIn(duration: 0.4)) {
+                showMeshGradient = true
+            }
+        }
     }
     
     private func backgroundColors(for condition: WeatherCondition) -> [Color] {

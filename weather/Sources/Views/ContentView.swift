@@ -68,33 +68,39 @@ struct ContentView: View {
                 os_signpost(.begin, log: StartupSignpost.log, name: "AppStartup")
                 
                 // Step 1: Show cached weather data instantly (typically <50ms)
+                let hasCachedData: Bool
                 if weatherService.weatherData == nil,
                    let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
                     let cachedName = SharedDataManager.shared.lastKnownLocation()?.name
                     weatherService.weatherData = cached
                     weatherService.currentLocationName = cachedName
+                    hasCachedData = true
                     let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
                     Logger.startup.info("Restored cached weather in \(elapsed, format: .fixed(precision: 0))ms")
+                } else {
+                    hasCachedData = false
                 }
                 
                 os_signpost(.event, log: StartupSignpost.log, name: "CacheRestored")
                 
-                // Step 2: Start fresh data fetch in background
-                // Use last-known coordinates for a speculative fetch while CLLocationManager warms up
+                // Step 2: Fire background refresh WITHOUT blocking the UI
+                // The user already sees cached data, so the network fetch runs silently
                 if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
-                    // Fire speculative fetch using cached coordinates (doesn't wait for CLLocationManager)
-                    Logger.startup.info("Speculative fetch using last coordinates: \(lastLocation.latitude), \(lastLocation.longitude)")
-                    await weatherService.fetchWeather(
-                        latitude: lastLocation.latitude,
-                        longitude: lastLocation.longitude,
-                        locationName: lastLocation.name,
-                        forceRefresh: true
-                    )
-                    os_signpost(.event, log: StartupSignpost.log, name: "SpeculativeFetchDone")
+                    Logger.startup.info("Background refresh using last coordinates: \(lastLocation.latitude), \(lastLocation.longitude)")
+                    Task {
+                        await weatherService.fetchWeather(
+                            latitude: lastLocation.latitude,
+                            longitude: lastLocation.longitude,
+                            locationName: lastLocation.name,
+                            forceRefresh: true,
+                            silentRefresh: hasCachedData
+                        )
+                        os_signpost(.event, log: StartupSignpost.log, name: "BackgroundRefreshDone")
+                    }
                 }
                 
-                // Step 3: Also request fresh location (will trigger .onChange when ready)
-                await checkAndFetchWeather()
+                // Step 3: Request fresh location (will trigger .onChange when ready)
+                checkAndFetchWeather()
                 
                 let totalElapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
                 Logger.startup.info("Startup sequence complete in \(totalElapsed, format: .fixed(precision: 0))ms")
@@ -298,7 +304,7 @@ struct ContentView: View {
         selectedCoordinate?.longitude ?? locationManager.location?.coordinate.longitude ?? 0
     }
     
-    private func checkAndFetchWeather() async {
+    private func checkAndFetchWeather() {
         if locationManager.authorizationStatus == .authorizedWhenInUse ||
            locationManager.authorizationStatus == .authorizedAlways {
             locationManager.requestLocation()

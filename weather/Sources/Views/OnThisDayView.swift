@@ -140,12 +140,6 @@ struct OnThisDayCard: View {
         }
         .padding(20)
         .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
-        .task {
-            // Prefetch data on appear so the fun fact shows in collapsed header
-            if !hasLoaded {
-                fetchHistoricalData()
-            }
-        }
     }
     
     // MARK: - Expanded Content
@@ -447,21 +441,28 @@ enum HistoricalWeatherService {
         let currentDay = calendar.component(.day, from: today)
         let currentYear = calendar.component(.year, from: today)
         
-        // Fetch each year sequentially (simple & concurrency-safe)
-        var results: [YearComparison] = []
-        
-        for yearOffset in 1...yearsBack {
-            let targetYear = currentYear - yearOffset
-            
-            if let comparison = try? await fetchSingleDay(
-                latitude: latitude,
-                longitude: longitude,
-                year: targetYear,
-                month: currentMonth,
-                day: currentDay
-            ) {
-                results.append(comparison)
+        // Fetch all years concurrently for much faster results
+        let results: [YearComparison] = await withTaskGroup(of: YearComparison?.self) { group in
+            for yearOffset in 1...yearsBack {
+                let targetYear = currentYear - yearOffset
+                group.addTask {
+                    try? await fetchSingleDay(
+                        latitude: latitude,
+                        longitude: longitude,
+                        year: targetYear,
+                        month: currentMonth,
+                        day: currentDay
+                    )
+                }
             }
+            
+            var collected: [YearComparison] = []
+            for await result in group {
+                if let comparison = result {
+                    collected.append(comparison)
+                }
+            }
+            return collected
         }
         
         return results.sorted(by: { $0.year > $1.year })

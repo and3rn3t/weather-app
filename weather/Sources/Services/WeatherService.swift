@@ -86,7 +86,7 @@ class WeatherService {
     
     // MARK: - Public Methods
     
-    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
+    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false, silentRefresh: Bool = false) async {
         self.currentLocationName = locationName
         
         // Debounce: Skip fetch if we recently fetched (unless force refresh)
@@ -97,7 +97,11 @@ class WeatherService {
         }
         
         await MainActor.run {
-            isLoading = true
+            // Don't show loading indicator during silent background refreshes
+            // (cached data is already visible to the user)
+            if !silentRefresh {
+                isLoading = true
+            }
             errorMessage = nil
             lastError = nil
         }
