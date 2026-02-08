@@ -68,10 +68,12 @@ struct ContentView: View {
                 // sees weather data from the very first frame. This task just
                 // refreshes data in the background and starts GPS.
 
-                os_signpost(.begin, log: makeStartupSignpostLog(), name: "ContentView.task1")
+                os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.task1")
+                let taskStart = CFAbsoluteTimeGetCurrent()
 
                 // Fire background API refresh using last-known coordinates
                 if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
+                    os_signpost(.begin, log: StartupSignpost.log, name: "BackgroundRefresh")
                     Task {
                         await weatherService.fetchWeather(
                             latitude: lastLocation.latitude,
@@ -79,16 +81,23 @@ struct ContentView: View {
                             locationName: lastLocation.name,
                             forceRefresh: true
                         )
+                        os_signpost(.end, log: StartupSignpost.log, name: "BackgroundRefresh")
+                        let refreshMs = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
+                        Logger.startup.info("Background refresh complete: \(refreshMs, format: .fixed(precision: 0))ms since task start")
                     }
                 }
 
                 // Request fresh GPS location (will update via .onChange when ready)
+                os_signpost(.begin, log: StartupSignpost.log, name: "GPSRequest")
                 checkAndFetchWeather()
-                os_signpost(.end, log: makeStartupSignpostLog(), name: "ContentView.task1")
+
+                let task1Ms = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
+                os_signpost(.end, log: StartupSignpost.log, name: "ContentView.task1")
+                Logger.startup.info("ContentView.task1 synchronous: \(task1Ms, format: .fixed(precision: 0))ms")
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible
-                os_signpost(.begin, log: makeStartupSignpostLog(), name: "ContentView.deferredSetup")
+                os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.deferredSetup")
                 try? await Task.sleep(for: .milliseconds(300))
 
                 // Initialize favorites manager (SwiftData fetch)
@@ -106,9 +115,13 @@ struct ContentView: View {
 
                 // Start auto-refresh timer
                 startAutoRefreshTimer()
-                os_signpost(.end, log: makeStartupSignpostLog(), name: "ContentView.deferredSetup")
+                os_signpost(.end, log: StartupSignpost.log, name: "ContentView.deferredSetup")
             }
             .onChange(of: locationManager.location) { _, newLocation in
+                // GPS fix received — end the signpost started in task1
+                os_signpost(.end, log: StartupSignpost.log, name: "GPSRequest")
+                Logger.startup.info("GPS fix received")
+
                 // Only use location manager if no manual location selected
                 if selectedCoordinate == nil, let location = newLocation {
                     Task {

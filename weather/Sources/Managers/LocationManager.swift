@@ -23,12 +23,13 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     
     override init() {
         super.init()
-        os_signpost(.begin, log: makeStartupSignpostLog(), name: "LocationManager.init")
+        os_signpost(.begin, log: StartupSignpost.log, name: "LocationManager.init")
         manager.delegate = self
         // Kilometer accuracy is sufficient for weather and produces a much faster initial fix
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         authorizationStatus = manager.authorizationStatus
-        os_signpost(.end, log: makeStartupSignpostLog(), name: "LocationManager.init")
+        os_signpost(.end, log: StartupSignpost.log, name: "LocationManager.init")
+        Logger.startup.info("LocationManager.init complete, auth=\(String(describing: self.authorizationStatus.rawValue))")
     }
     
     func requestLocation() {

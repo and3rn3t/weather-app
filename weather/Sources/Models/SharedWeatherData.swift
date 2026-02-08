@@ -157,10 +157,10 @@ class SharedDataManager {
         // Write full WeatherData to Application Support (durable, not backed up)
         guard let fileURL = cachedWeatherFileURL else { return }
         do {
-            os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheWrite")
+            os_signpost(.begin, log: StartupSignpost.log, name: "CacheWrite")
             let data = try JSONEncoder().encode(weatherData)
             try data.write(to: fileURL, options: .atomic)
-            os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheWrite")
+            os_signpost(.end, log: StartupSignpost.log, name: "CacheWrite")
             Logger.startup.info("Cache write: \(data.count / 1024)KB")
         } catch {
             Logger.sharedData.error("Failed to cache full weather data: \(error.localizedDescription)")
@@ -191,10 +191,10 @@ class SharedDataManager {
             return nil
         }
         do {
-            os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheRead")
+            os_signpost(.begin, log: StartupSignpost.log, name: "CacheRead")
             let data = try Data(contentsOf: fileURL)
             let decoded = try JSONDecoder().decode(WeatherData.self, from: data)
-            os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheRead")
+            os_signpost(.end, log: StartupSignpost.log, name: "CacheRead")
             Logger.startup.info("Cache read: \(data.count / 1024)KB")
             return decoded
         } catch {

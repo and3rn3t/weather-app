@@ -8,6 +8,7 @@
 import OSLog
 import os.signpost
 
+nonisolated
 extension Logger {
     // MARK: - Category Loggers
     // String literals only — no Bundle.main, no actor dependency.
@@ -23,9 +24,33 @@ extension Logger {
     static let startup = Logger(subsystem: "dev.andernet.weather", category: "Startup")
 }
 
-/// Returns a signpost log for the Points of Interest instrument track.
-/// Declared as a `nonisolated` function so it is callable from any
-/// actor context under SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor.
+// MARK: - Startup Signpost Instrumentation
+//
+// Usage:
+//   os_signpost(.begin, log: StartupSignpost.log, name: "PhaseName")
+//   os_signpost(.end,   log: StartupSignpost.log, name: "PhaseName")
+//
+// View in Instruments → os_signpost → Points of Interest track.
+
+/// Centralised signpost log for startup profiling.
+/// Explicitly nonisolated so it can be used from any actor context.
+nonisolated
+enum StartupSignpost: Sendable {
+    /// Cached OSLog — created once, reused everywhere.
+    static let log = OSLog(
+        subsystem: "dev.andernet.weather",
+        category: .pointsOfInterest
+    )
+
+    /// Wall-clock reference set at static-init time (before main()).
+    /// Compare with `CFAbsoluteTimeGetCurrent()` to measure total
+    /// pre-main + main startup cost.
+    static let processStart = CFAbsoluteTimeGetCurrent()
+}
+
+/// Backwards-compatible shim — call sites that haven't been updated yet
+/// will still compile. Prefer `StartupSignpost.log` for new code.
+@available(*, deprecated, renamed: "StartupSignpost.log")
 nonisolated func makeStartupSignpostLog() -> OSLog {
-    OSLog(subsystem: "dev.andernet.weather", category: .pointsOfInterest)
+    StartupSignpost.log
 }

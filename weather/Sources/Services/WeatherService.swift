@@ -57,23 +57,24 @@ class WeatherService {
         // Do NOT block the main thread with synchronous disk I/O here.
         // Load the cached weather file on a background thread, then publish
         // the result on the main actor — the view will update automatically.
-        os_signpost(.begin, log: makeStartupSignpostLog(), name: "WeatherService.init")
+        os_signpost(.event, log: StartupSignpost.log, name: "WeatherService.init")
+        Logger.startup.info("WeatherService.init — dispatching cache load")
         Task { await self.loadCacheInBackground() }
-        os_signpost(.end, log: makeStartupSignpostLog(), name: "WeatherService.init")
     }
 
     /// Reads the cached weather file off the main thread, then updates
     /// observable state back on the main actor.
     private func loadCacheInBackground() async {
         let start = CFAbsoluteTimeGetCurrent()
-        os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheLoad")
-        // Hop off the main actor for the blocking disk I/O
+        os_signpost(.begin, log: StartupSignpost.log, name: "CacheLoad")
+        // Hop off the main actor for the actual I/O, awaiting back for
+        // the MainActor-isolated SharedDataManager methods.
         let (cached, locationMeta) = await Task.detached(priority: .userInitiated) {
-            let data = SharedDataManager.shared.loadCachedFullWeatherData()
-            let meta = SharedDataManager.shared.lastKnownLocation()
+            let data = await SharedDataManager.shared.loadCachedFullWeatherData()
+            let meta = await SharedDataManager.shared.lastKnownLocation()
             return (data, meta)
         }.value
-        os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheLoad")
+        os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
         Logger.startup.info("WeatherService cache load: \(elapsed, format: .fixed(precision: 0))ms")
 
@@ -219,6 +220,13 @@ class WeatherService {
     // MARK: - Private Methods
     
     private func performWeatherFetch(latitude: Double, longitude: Double) async throws -> WeatherData {
+        os_signpost(.begin, log: StartupSignpost.log, name: "NetworkFetch")
+        let fetchStart = CFAbsoluteTimeGetCurrent()
+        defer {
+            let fetchMs = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1_000
+            os_signpost(.end, log: StartupSignpost.log, name: "NetworkFetch")
+            Logger.startup.info("Network fetch: \(fetchMs, format: .fixed(precision: 0))ms")
+        }
         var components = URLComponents(string: baseURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
