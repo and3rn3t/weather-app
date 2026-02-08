@@ -986,7 +986,7 @@ struct VisualEffectsShowcase: View {
 }
 
 #Preview {
-    ContentView()
+    ContentView(modelContainer: .constant(nil))
 }
 
 
