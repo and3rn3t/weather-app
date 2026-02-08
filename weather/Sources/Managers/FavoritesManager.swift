@@ -20,6 +20,9 @@ class FavoritesManager {
     
     private let modelContext: ModelContext
     
+    /// Coordinate comparison threshold — locations within this degree range are considered the same
+    private static let coordinateTolerance = 0.01
+    
     init(modelContext: ModelContext) {
         self.modelContext = modelContext
         loadSavedLocations()
@@ -43,8 +46,8 @@ class FavoritesManager {
     func addLocation(name: String, coordinate: CLLocationCoordinate2D) {
         // Check if location already exists
         if savedLocations.contains(where: { 
-            abs($0.latitude - coordinate.latitude) < 0.01 && 
-            abs($0.longitude - coordinate.longitude) < 0.01 
+            abs($0.latitude - coordinate.latitude) < Self.coordinateTolerance && 
+            abs($0.longitude - coordinate.longitude) < Self.coordinateTolerance 
         }) {
             return
         }
@@ -94,15 +97,15 @@ class FavoritesManager {
     
     func isFavorite(coordinate: CLLocationCoordinate2D) -> Bool {
         savedLocations.contains { location in
-            abs(location.latitude - coordinate.latitude) < 0.01 &&
-            abs(location.longitude - coordinate.longitude) < 0.01
+            abs(location.latitude - coordinate.latitude) < Self.coordinateTolerance &&
+            abs(location.longitude - coordinate.longitude) < Self.coordinateTolerance
         }
     }
     
     func toggleFavorite(name: String, coordinate: CLLocationCoordinate2D) {
         if let existing = savedLocations.first(where: { 
-            abs($0.latitude - coordinate.latitude) < 0.01 && 
-            abs($0.longitude - coordinate.longitude) < 0.01 
+            abs($0.latitude - coordinate.latitude) < Self.coordinateTolerance && 
+            abs($0.longitude - coordinate.longitude) < Self.coordinateTolerance 
         }) {
             removeLocation(existing)
         } else {

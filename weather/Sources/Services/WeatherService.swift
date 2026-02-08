@@ -50,9 +50,6 @@ class WeatherService {
     
     // MARK: - Instant Startup
 
-    /// Whether cached data was restored during init (for callers to know)
-    private(set) var restoredFromCache = false
-
     init() {
         // Synchronous cache load + decode in init().
         //
@@ -67,7 +64,9 @@ class WeatherService {
         // setup, delaying the decode until ~7.5s despite the I/O finishing
         // at 2ms.
         os_signpost(.begin, log: StartupSignpost.log, name: "WeatherService.init")
+        #if DEBUG
         startupLog("WeatherService.init — synchronous cache load")
+        #endif
 
         let locationMeta = SharedDataManager.lastKnownLocation()
         let cached = SharedDataManager.shared.loadCachedFullWeatherData()
@@ -75,9 +74,10 @@ class WeatherService {
         if let cached {
             self.weatherData = cached
             self.currentLocationName = locationMeta?.name
-            self.restoredFromCache = true
+            #if DEBUG
             let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
             startupLog("Cache loaded + published: \(String(format: "%.0f", elapsed))ms since launch")
+            #endif
         }
 
         os_signpost(.end, log: StartupSignpost.log, name: "WeatherService.init")
@@ -86,7 +86,9 @@ class WeatherService {
         // This runs after init returns, overlapping with SwiftUI scene setup.
         if let loc = locationMeta {
             Task.detached(priority: .userInitiated) { [self] in
+                #if DEBUG
                 startupLog(cached == nil ? "No cache — eager fetch" : "Eager background refresh")
+                #endif
                 await self.fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
                                         locationName: loc.name, forceRefresh: true)
             }
@@ -246,9 +248,11 @@ class WeatherService {
         os_signpost(.begin, log: StartupSignpost.log, name: "NetworkFetch")
         let fetchStart = CFAbsoluteTimeGetCurrent()
         defer {
-            let fetchMs = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1_000
             os_signpost(.end, log: StartupSignpost.log, name: "NetworkFetch")
+            #if DEBUG
+            let fetchMs = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1_000
             startupLog("Network fetch: \(String(format: "%.0f", fetchMs))ms")
+            #endif
         }
         var components = URLComponents(string: baseURL)
         components?.queryItems = [

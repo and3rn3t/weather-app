@@ -996,7 +996,7 @@ struct WeatherDetailsCard: View {
     @Environment(SettingsManager.self) private var settings
     
     /// Meters per mile conversion factor
-    private static let metersPerMile = 1609.34
+    private static let metersPerMile = WeatherAccessibility.metersPerMile
     
     var body: some View {
         VStack(spacing: 20) {

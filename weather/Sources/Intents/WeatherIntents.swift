@@ -48,7 +48,9 @@ struct GetWeatherIntent: AppIntent {
         let high = Int(weatherData.daily.temperature2mMax.first ?? 0)
         let low = Int(weatherData.daily.temperature2mMin.first ?? 0)
         
-        let conditionDescription = weatherConditionDescription(for: conditionCode)
+        let conditionDescription = await MainActor.run {
+            WeatherCondition(code: conditionCode).description
+        }
         
         let dialog = """
         It's currently \(temp)°F and \(conditionDescription.lowercased()) in \(resolvedName ?? "your location"). \
@@ -66,20 +68,6 @@ struct GetWeatherIntent: AppIntent {
                     low: low
                 )
             )
-        }
-    }
-    
-    private func weatherConditionDescription(for code: Int) -> String {
-        switch code {
-        case 0: return "Clear"
-        case 1, 2: return "Partly Cloudy"
-        case 3: return "Cloudy"
-        case 45, 48: return "Foggy"
-        case 51, 53, 55: return "Drizzle"
-        case 61, 63, 65, 80, 81, 82: return "Rainy"
-        case 71, 73, 75, 77, 85, 86: return "Snowy"
-        case 95, 96, 99: return "Stormy"
-        default: return "Unknown"
         }
     }
     

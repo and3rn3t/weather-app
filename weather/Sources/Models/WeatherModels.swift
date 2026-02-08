@@ -168,9 +168,6 @@ enum WeatherCondition {
         }
     }
     
-    // Alias for consistency
-    var sfSymbol: String { symbolName }
-    
     var iconColor: Color {
         switch self {
         case .clearSky: return .orange

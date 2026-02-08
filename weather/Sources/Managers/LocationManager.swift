@@ -29,7 +29,9 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         authorizationStatus = manager.authorizationStatus
         os_signpost(.end, log: StartupSignpost.log, name: "LocationManager.init")
+        #if DEBUG
         startupLog("LocationManager.init complete, auth=\(self.authorizationStatus.rawValue)")
+        #endif
     }
     
     func requestLocation() {

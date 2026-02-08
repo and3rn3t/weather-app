@@ -12,8 +12,8 @@ import SwiftUI
 /// Centralized accessibility labels for weather data
 enum WeatherAccessibility {
     
-    /// Meters per mile conversion factor
-    private static let metersPerMile = 1609.34
+    /// Meters per mile conversion factor (shared across the app)
+    static let metersPerMile = 1609.34
     
     // MARK: - Temperature Labels
     
@@ -151,6 +151,33 @@ enum WeatherAccessibility {
         return "Air quality index: \(aqi), \(level). \(advice)"
     }
     
+    // MARK: - Cached Formatters
+    
+    private static let speechISOParser: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
+        return formatter
+    }()
+    
+    private static let speechTimeFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        return formatter
+    }()
+    
+    private static let speechDayParser: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
+    
+    private static let speechDayNameFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEEE"
+        return formatter
+    }()
+    
     // MARK: - Time Labels
     
     static func sunriseLabel(_ time: String) -> String {
@@ -162,16 +189,10 @@ enum WeatherAccessibility {
     }
     
     private static func formatTimeForSpeech(_ isoTime: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withFullDate, .withTime, .withColonSeparatorInTime]
-        
-        guard let date = formatter.date(from: isoTime) else {
+        guard let date = speechISOParser.date(from: isoTime) else {
             return isoTime
         }
-        
-        let timeFormatter = DateFormatter()
-        timeFormatter.timeStyle = .short
-        return timeFormatter.string(from: date)
+        return speechTimeFormatter.string(from: date)
     }
     
     // MARK: - Forecast Summary
@@ -183,10 +204,7 @@ enum WeatherAccessibility {
     }
     
     private static func formatDayForSpeech(_ isoDay: String) -> String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd"
-        
-        guard let date = formatter.date(from: isoDay) else {
+        guard let date = speechDayParser.date(from: isoDay) else {
             return isoDay
         }
         
@@ -196,8 +214,7 @@ enum WeatherAccessibility {
         } else if calendar.isDateInTomorrow(date) {
             return "Tomorrow"
         } else {
-            formatter.dateFormat = "EEEE"
-            return formatter.string(from: date)
+            return speechDayNameFormatter.string(from: date)
         }
     }
 }

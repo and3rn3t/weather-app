@@ -503,8 +503,7 @@ struct ChartTypeButton: View {
     
     var body: some View {
         Button(action: {
-            let generator = UIImpactFeedbackGenerator(style: .light)
-            generator.impactOccurred()
+            HapticFeedback.impact()
             action()
         }) {
             HStack(spacing: 6) {
@@ -562,7 +561,7 @@ struct HourlyRow: View {
                 .frame(width: 50, alignment: .leading)
             
             // Weather icon
-            Image(systemName: WeatherCondition(code: point.weatherCode).sfSymbol)
+            Image(systemName: WeatherCondition(code: point.weatherCode).symbolName)
                 .font(.title3)
                 .foregroundStyle(WeatherCondition(code: point.weatherCode).iconColor)
                 .frame(width: 30)

@@ -523,8 +523,8 @@ enum HistoricalWeatherService {
             high: high,
             low: low,
             condition: WeatherCondition(code: code),
-            precipitation: historical.daily.precipitationSum.first ?? nil,
-            windSpeed: historical.daily.windSpeed10mMax.first ?? nil
+            precipitation: historical.daily.precipitationSum.first.flatMap { $0 },
+            windSpeed: historical.daily.windSpeed10mMax.first.flatMap { $0 }
         )
     }
 }

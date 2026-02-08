@@ -48,13 +48,6 @@ enum StartupSignpost: Sendable {
     static let processStart = CFAbsoluteTimeGetCurrent()
 }
 
-/// Backwards-compatible shim — call sites that haven't been updated yet
-/// will still compile. Prefer `StartupSignpost.log` for new code.
-@available(*, deprecated, renamed: "StartupSignpost.log")
-nonisolated func makeStartupSignpostLog() -> OSLog {
-    StartupSignpost.log
-}
-
 // MARK: - Startup Timing Log Helper
 
 /// Logs a startup timing message via `Logger.startup` (for Xcode console)

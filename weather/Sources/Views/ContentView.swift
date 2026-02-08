@@ -19,7 +19,6 @@ struct ContentView: View {
     @Environment(LocationManager.self) private var locationManager
     @Environment(WeatherService.self) private var weatherService
     @State private var showingSearch = false
-    @State private var showingEffectsShowcase = false
     @State private var showingSettings = false
     @State private var showingFavorites = false
     @State private var showingComparison = false
@@ -41,12 +40,13 @@ struct ContentView: View {
 
     init(modelContainer: Binding<ModelContainer?>) {
         self._modelContainer = modelContainer
+        #if DEBUG
         startupLog("ContentView.init")
+        #endif
     }
 
     var body: some View {
         NavigationStack {
-            let _ = startupLog("ContentView.body")
             Group {
                 if let weatherData = weatherService.weatherData {
                     WeatherDetailView(
@@ -81,7 +81,9 @@ struct ContentView: View {
                 // ready, triggering a location-accurate fetch).
 
                 os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.task1")
+                #if DEBUG
                 let taskStart = CFAbsoluteTimeGetCurrent()
+                #endif
 
                 // Request fresh GPS location (will update via .onChange when ready).
                 // App.init already called requestLocation() if authorized, but
@@ -89,9 +91,11 @@ struct ContentView: View {
                 os_signpost(.begin, log: StartupSignpost.log, name: "GPSRequest")
                 checkAndFetchWeather()
 
-                let task1Ms = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
                 os_signpost(.end, log: StartupSignpost.log, name: "ContentView.task1")
+                #if DEBUG
+                let task1Ms = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
                 startupLog("ContentView.task1 synchronous: \(String(format: "%.0f", task1Ms))ms")
+                #endif
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible
@@ -107,9 +111,13 @@ struct ContentView: View {
 
                 // Initialize favorites manager (SwiftData fetch)
                 if favoritesManager == nil, let container = modelContainer {
+                    #if DEBUG
                     let t = CFAbsoluteTimeGetCurrent()
+                    #endif
                     favoritesManager = FavoritesManager(modelContext: container.mainContext)
+                    #if DEBUG
                     startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - t) * 1_000))ms")
+                    #endif
                 }
 
                 // Restore any existing Live Activity (only if enabled)
@@ -125,15 +133,19 @@ struct ContentView: View {
             .onChange(of: weatherService.weatherData != nil) { _, hasData in
                 guard hasData, !hasLoggedFirstData else { return }
                 hasLoggedFirstData = true
-                let totalMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
                 os_signpost(.event, log: StartupSignpost.log, name: "FirstDataVisible")
+                #if DEBUG
+                let totalMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
                 startupLog("⛅ STARTUP COMPLETE — First weather data visible: \(String(format: "%.0f", totalMs))ms since process start")
+                #endif
             }
             .onChange(of: locationManager.location) { _, newLocation in
                 // GPS fix received — end the signpost started in task1
                 os_signpost(.end, log: StartupSignpost.log, name: "GPSRequest")
+                #if DEBUG
                 let gpsMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
                 startupLog("GPS fix received — \(String(format: "%.0f", gpsMs))ms since process start")
+                #endif
 
                 // Debounce: CLLocationManager often fires multiple fixes in quick
                 // succession. Only act on one every 5 seconds to avoid redundant
@@ -179,9 +191,6 @@ struct ContentView: View {
                         }
                     }
                 }
-            }
-            .sheet(isPresented: $showingEffectsShowcase) {
-                VisualEffectsShowcase()
             }
             .sheet(isPresented: $showingSettings) {
                 SettingsView(settings: settings, notifications: ensureNotificationManager())
@@ -712,263 +721,6 @@ struct WelcomeView: View {
                 isAnimating = true
             }
         }
-    }
-}
-
-// MARK: - Visual Effects Showcase
-
-struct VisualEffectsShowcase: View {
-    @State private var isAnimating = false
-    @State private var showExtraGlass = false
-    @Namespace private var glassNamespace
-    
-    var body: some View {
-        ScrollView {
-            VStack(spacing: 40) {
-                // Header
-                VStack(spacing: 8) {
-                    Text("Visual Effects")
-                        .font(.largeTitle.bold())
-                    
-                    Text("Explore the latest iOS design effects")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.top, 20)
-                
-                // Liquid Glass Section
-                liquidGlassSection
-                
-                // Interactive Glass Buttons
-                glassButtonsSection
-                
-                // Morphing Glass Animation
-                morphingGlassSection
-                
-                // Material Effects
-                materialEffectsSection
-                
-                // Symbol Effects
-                symbolEffectsSection
-                
-                // Mesh Gradients
-                meshGradientSection
-            }
-            .padding()
-        }
-        .background(
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: [
-                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                    [0.0, 0.5], [isAnimating ? 0.8 : 0.2, 0.5], [1.0, 0.5],
-                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
-                ],
-                colors: [
-                    .blue, .cyan, .purple,
-                    .indigo, .pink, .orange,
-                    .purple, .blue, .cyan
-                ]
-            )
-            .ignoresSafeArea()
-            .opacity(0.4)
-        )
-        .onAppear {
-            withAnimation(.easeInOut(duration: 5).repeatForever(autoreverses: true)) {
-                isAnimating = true
-            }
-        }
-    }
-    
-    private var liquidGlassSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Liquid Glass", icon: "drop.fill")
-            
-            GlassEffectContainer(spacing: 30) {
-                HStack(spacing: 30) {
-                    glassCard(icon: "sun.max.fill", title: "Sunny", color: .orange)
-                    glassCard(icon: "cloud.rain.fill", title: "Rainy", color: .blue)
-                }
-            }
-        }
-    }
-    
-    private func glassCard(icon: String, title: String, color: Color) -> some View {
-        VStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 40))
-                .symbolRenderingMode(.multicolor)
-            Text(title)
-                .font(.headline)
-        }
-        .frame(width: 140, height: 140)
-        .background(color.opacity(0.2))
-        .glassEffect(Glass.regular, in: .rect(cornerRadius: 20))
-    }
-    
-    private var glassButtonsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Interactive Glass Buttons", icon: "hand.tap.fill")
-            
-            VStack(spacing: 16) {
-                Button("Standard Glass") {
-                    withAnimation(.spring(response: 0.3)) {
-                        showExtraGlass.toggle()
-                    }
-                }
-                .buttonStyle(.glass)
-                .controlSize(.large)
-                
-                Button("Prominent Glass") {
-                    withAnimation(.spring(response: 0.3)) {
-                        showExtraGlass.toggle()
-                    }
-                }
-                .buttonStyle(.glassProminent)
-                .controlSize(.large)
-            }
-        }
-    }
-    
-    private var morphingGlassSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Morphing Transitions", icon: "wand.and.stars")
-            
-            GlassEffectContainer(spacing: 40) {
-                HStack(spacing: 40) {
-                    Image(systemName: "star.fill")
-                        .font(.system(size: 36))
-                        .frame(width: 80, height: 80)
-                        .background(Color.yellow.opacity(0.2))
-                        .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
-                        .glassEffectID("star", in: glassNamespace)
-                    
-                    if showExtraGlass {
-                        Image(systemName: "moon.stars.fill")
-                            .font(.system(size: 36))
-                            .frame(width: 80, height: 80)
-                            .background(Color.indigo.opacity(0.2))
-                            .glassEffect(Glass.regular, in: .rect(cornerRadius: 16))
-                            .glassEffectID("moon", in: glassNamespace)
-                            .transition(.scale.combined(with: .opacity))
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: 120)
-            
-            Text("Tap the buttons above to morph")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity)
-        }
-    }
-    
-    private var materialEffectsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Material Effects", icon: "circle.hexagongrid.fill")
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 16) {
-                    materialCard("Ultra Thin", material: .ultraThinMaterial)
-                    materialCard("Thin", material: .thinMaterial)
-                    materialCard("Regular", material: .regularMaterial)
-                    materialCard("Thick", material: .thickMaterial)
-                    materialCard("Ultra Thick", material: .ultraThickMaterial)
-                }
-                .padding(.horizontal, 4)
-            }
-        }
-    }
-    
-    private func materialCard(_ title: String, material: Material) -> some View {
-        VStack(spacing: 8) {
-            RoundedRectangle(cornerRadius: 12)
-                .fill(.blue.gradient)
-                .frame(width: 100, height: 60)
-                .overlay {
-                    Text("BG")
-                        .font(.caption.bold())
-                        .foregroundStyle(.white)
-                }
-            
-            Text(title)
-                .font(.caption)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(material, in: Capsule())
-        }
-    }
-    
-    private var symbolEffectsSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("SF Symbol Effects", icon: "rays")
-            
-            GlassEffectContainer(spacing: 20) {
-                HStack(spacing: 20) {
-                    symbolWithEffect("cloud.bolt.fill", effect: .variableColor.iterative, color: .yellow)
-                    symbolWithEffect("heart.fill", effect: .pulse, color: .red)
-                    symbolWithEffect("star.fill", effect: .breathe, color: .pink)
-                    symbolWithEffect("waveform", effect: .variableColor.iterative.reversing, color: .green)
-                }
-            }
-        }
-    }
-    
-    private func symbolWithEffect(_ name: String, effect: some SymbolEffect & IndefiniteSymbolEffect, color: Color) -> some View {
-        Image(systemName: name)
-            .font(.system(size: 44))
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(color.gradient)
-            .symbolEffect(effect)
-            .frame(width: 70, height: 70)
-            .background(color.opacity(0.15))
-            .glassEffect(Glass.regular, in: .rect(cornerRadius: 14))
-    }
-    
-    private var meshGradientSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            sectionTitle("Mesh Gradients", icon: "grid")
-            
-            ZStack {
-                MeshGradient(
-                    width: 3,
-                    height: 3,
-                    points: [
-                        [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                        [0.0, 0.5], [0.5, 0.5], [1.0, 0.5],
-                        [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
-                    ],
-                    colors: [
-                        .purple, .blue, .cyan,
-                        .pink, .white, .orange,
-                        .red, .yellow, .green
-                    ]
-                )
-                .frame(height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 20))
-                
-                VStack {
-                    Text("Smooth Color Transitions")
-                        .font(.title3.bold())
-                        .foregroundStyle(.white)
-                    
-                    Text("Mesh gradients create fluid color flows")
-                        .font(.caption)
-                        .foregroundStyle(.white.opacity(0.8))
-                }
-                .padding()
-                .glassEffect(Glass.regular, in: .rect(cornerRadius: 12))
-            }
-        }
-        .padding(.bottom, 40)
-    }
-    
-    private func sectionTitle(_ text: String, icon: String) -> some View {
-        Label(text, systemImage: icon)
-            .font(.title2.bold())
-            .foregroundStyle(.primary)
     }
 }
 

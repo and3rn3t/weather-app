@@ -305,31 +305,6 @@ struct ThemeRow: View {
     }
 }
 
-// MARK: - Theme-Aware Modifier
-
-struct ThemedBackground: ViewModifier {
-    @Environment(ThemeManager.self) private var themeManager
-    let weatherCode: Int?
-    let isDay: Bool
-    
-    func body(content: Content) -> some View {
-        content
-            .background {
-                if let code = weatherCode {
-                    ThemeGradient(theme: themeManager.adaptiveTheme(for: code, isDay: isDay))
-                } else {
-                    ThemeGradient(theme: themeManager.currentTheme)
-                }
-            }
-    }
-}
-
-extension View {
-    func themedBackground(weatherCode: Int? = nil, isDay: Bool = true) -> some View {
-        modifier(ThemedBackground(weatherCode: weatherCode, isDay: isDay))
-    }
-}
-
 #Preview("Theme Picker") {
     ThemePickerView()
         .environment(ThemeManager())

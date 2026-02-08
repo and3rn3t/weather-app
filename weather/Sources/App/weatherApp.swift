@@ -32,8 +32,10 @@ struct WeatherApp: App {
         #endif
         os_signpost(.begin, log: StartupSignpost.log, name: "App.init")
 
+        #if DEBUG
         let preMainMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
+        #endif
 
         // Kick off ModelContainer creation on a background thread immediately.
         // By the time the user taps Favorites it will long be ready.
@@ -55,12 +57,16 @@ struct WeatherApp: App {
         if locationManager.authorizationStatus == .authorizedWhenInUse ||
            locationManager.authorizationStatus == .authorizedAlways {
             locationManager.requestLocation()
+            #if DEBUG
             startupLog("GPS request fired eagerly from App.init")
+            #endif
         }
 
-        let appInitMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
+        #if DEBUG
+        let appInitMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         startupLog("App.init total: \(String(format: "%.0f", appInitMs))ms")
+        #endif
     }
 
     var body: some Scene {

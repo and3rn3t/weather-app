@@ -98,6 +98,48 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
     }
 }
 
+// MARK: - Shared Widget Helpers
+
+/// Shared background gradient for all widget sizes
+private func widgetBackgroundGradient(for code: Int) -> some View {
+    let condition = WeatherCondition(code: code)
+    let colors: [Color] = {
+        switch condition {
+        case .clearSky:
+            return [.blue, .cyan]
+        case .partlyCloudy:
+            return [.blue.opacity(0.7), .gray.opacity(0.5)]
+        case .cloudy:
+            return [.gray, .gray.opacity(0.6)]
+        case .rain, .drizzle:
+            return [.blue.opacity(0.8), .gray]
+        case .snow:
+            return [.cyan.opacity(0.3), .white.opacity(0.5)]
+        case .thunderstorm:
+            return [.indigo, .gray]
+        default:
+            return [.blue, .cyan]
+        }
+    }()
+    
+    return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+}
+
+/// Cached formatters for widget hour display
+private enum WidgetFormatters {
+    static let isoParser: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+    
+    static let hourFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "ha"
+        return formatter
+    }()
+}
+
 // MARK: - Widget Views
 
 struct SmallWeatherWidgetView: View {
@@ -124,7 +166,7 @@ struct SmallWeatherWidgetView: View {
                     .lineLimit(1)
             }
             .containerBackground(for: .widget) {
-                backgroundGradient(for: weather.current.weatherCode)
+                widgetBackgroundGradient(for: weather.current.weatherCode)
             }
         } else {
             VStack {
@@ -137,30 +179,6 @@ struct SmallWeatherWidgetView: View {
             }
             .containerBackground(.ultraThinMaterial, for: .widget)
         }
-    }
-    
-    private func backgroundGradient(for code: Int) -> some View {
-        let condition = WeatherCondition(code: code)
-        let colors: [Color] = {
-            switch condition {
-            case .clearSky:
-                return [.blue, .cyan]
-            case .partlyCloudy:
-                return [.blue.opacity(0.7), .gray.opacity(0.5)]
-            case .cloudy:
-                return [.gray, .gray.opacity(0.6)]
-            case .rain, .drizzle:
-                return [.blue.opacity(0.8), .gray]
-            case .snow:
-                return [.cyan.opacity(0.3), .white.opacity(0.5)]
-            case .thunderstorm:
-                return [.indigo, .gray]
-            default:
-                return [.blue, .cyan]
-            }
-        }()
-        
-        return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 
@@ -222,7 +240,7 @@ struct MediumWeatherWidgetView: View {
             }
             .padding()
             .containerBackground(for: .widget) {
-                backgroundGradient(for: weather.current.weatherCode)
+                widgetBackgroundGradient(for: weather.current.weatherCode)
             }
         } else {
             HStack {
@@ -233,30 +251,6 @@ struct MediumWeatherWidgetView: View {
             }
             .containerBackground(.ultraThinMaterial, for: .widget)
         }
-    }
-    
-    private func backgroundGradient(for code: Int) -> some View {
-        let condition = WeatherCondition(code: code)
-        let colors: [Color] = {
-            switch condition {
-            case .clearSky:
-                return [.blue, .cyan]
-            case .partlyCloudy:
-                return [.blue.opacity(0.7), .gray.opacity(0.5)]
-            case .cloudy:
-                return [.gray, .gray.opacity(0.6)]
-            case .rain, .drizzle:
-                return [.blue.opacity(0.8), .gray]
-            case .snow:
-                return [.cyan.opacity(0.3), .white.opacity(0.5)]
-            case .thunderstorm:
-                return [.indigo, .gray]
-            default:
-                return [.blue, .cyan]
-            }
-        }()
-        
-        return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
     }
 }
 
@@ -342,40 +336,14 @@ struct LargeWeatherWidgetView: View {
     }
     
     private func formattedHour(_ timeString: String) -> String {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
-        guard let date = formatter.date(from: timeString) else {
+        guard let date = WidgetFormatters.isoParser.date(from: timeString) else {
             return ""
         }
-        
-        let displayFormatter = DateFormatter()
-        displayFormatter.dateFormat = "ha"
-        return displayFormatter.string(from: date)
+        return WidgetFormatters.hourFormatter.string(from: date)
     }
     
     private func backgroundGradient(for code: Int) -> some View {
-        let condition = WeatherCondition(code: code)
-        let colors: [Color] = {
-            switch condition {
-            case .clearSky:
-                return [.blue, .cyan]
-            case .partlyCloudy:
-                return [.blue.opacity(0.7), .gray.opacity(0.5)]
-            case .cloudy:
-                return [.gray, .gray.opacity(0.6)]
-            case .rain, .drizzle:
-                return [.blue.opacity(0.8), .gray]
-            case .snow:
-                return [.cyan.opacity(0.3), .white.opacity(0.5)]
-            case .thunderstorm:
-                return [.indigo, .gray]
-            default:
-                return [.blue, .cyan]
-            }
-        }()
-        
-        return LinearGradient(colors: colors, startPoint: .topLeading, endPoint: .bottomTrailing)
+        widgetBackgroundGradient(for: code)
     }
 }
 

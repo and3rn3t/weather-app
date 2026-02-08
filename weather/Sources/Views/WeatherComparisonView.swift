@@ -138,6 +138,9 @@ struct WeatherComparisonView: View {
         isLoading = true
         
         // Fetch all locations in parallel using TaskGroup
+        // Share a single WeatherService to avoid redundant cache loading in each init
+        let service = WeatherService()
+        
         let results = await withTaskGroup(of: (String, WeatherData?).self, returning: [String: WeatherData].self) { group in
             for favorite in favorites {
                 // Extract values on main actor before entering concurrent context
@@ -147,7 +150,6 @@ struct WeatherComparisonView: View {
                 let id = favorite.id.uuidString
                 
                 group.addTask {
-                    let service = await MainActor.run { WeatherService() }
                     await service.fetchWeather(
                         latitude: lat,
                         longitude: lon,
@@ -208,8 +210,8 @@ struct WeatherComparisonView: View {
         case 1, 2: score += 20  // Partly cloudy
         case 3: score += 10  // Cloudy
         case 45, 48: score -= 10  // Fog
-        case 51...82: score -= 20  // Rain
-        case 71...86: score -= 25  // Snow
+        case 71...77, 85, 86: score -= 25  // Snow
+        case 51...67, 80...82: score -= 20  // Rain/drizzle
         case 95...99: score -= 30  // Thunderstorm
         default: break
         }
@@ -294,7 +296,7 @@ struct ComparisonCard: View {
             LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
                 DetailItem(icon: "drop.fill", label: "Humidity", value: "\(weather.current.relativeHumidity2m)%", color: .blue)
                 DetailItem(icon: "wind", label: "Wind", value: settings.formatWindSpeed(weather.current.windSpeed10m), color: .gray)
-                DetailItem(icon: "eye.fill", label: "Visibility", value: String(format: "%.1f mi", weather.current.visibility / 1609.34), color: .cyan)
+                DetailItem(icon: "eye.fill", label: "Visibility", value: String(format: "%.1f mi", weather.current.visibility / WeatherAccessibility.metersPerMile), color: .cyan)
                 DetailItem(icon: "barometer", label: "Pressure", value: String(format: "%.0f mb", weather.current.pressure), color: .purple)
             }
             

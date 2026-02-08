@@ -156,19 +156,15 @@ enum WeatherError: LocalizedError, Equatable {
             return .invalidURL
         case 429:
             return .rateLimited
-        case 500...599:
-            return .serverError(statusCode: statusCode)
         case 503:
             return .apiUnavailable
+        case 500...599:
+            return .serverError(statusCode: statusCode)
         default:
             return .serverError(statusCode: statusCode)
         }
     }
 }
-
-// MARK: - Result Type Alias
-
-typealias WeatherResult<T> = Result<T, WeatherError>
 
 // MARK: - Retry Configuration
 
@@ -183,13 +179,6 @@ struct RetryConfiguration: Sendable {
         initialDelay: 1.0,
         maxDelay: 10.0,
         multiplier: 2.0
-    )
-    
-    nonisolated static let aggressive = RetryConfiguration(
-        maxAttempts: 5,
-        initialDelay: 0.5,
-        maxDelay: 15.0,
-        multiplier: 1.5
     )
     
     nonisolated func delay(for attempt: Int) -> TimeInterval {

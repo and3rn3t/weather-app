@@ -721,7 +721,7 @@ struct WeatherCalloutView: View {
         if let data = weatherData {
             VStack(alignment: .leading, spacing: 8) {
                 HStack {
-                    Image(systemName: WeatherCondition(code: data.current.weatherCode).sfSymbol)
+                    Image(systemName: WeatherCondition(code: data.current.weatherCode).symbolName)
                         .font(.title2)
                         .symbolRenderingMode(.multicolor)
                     
@@ -794,19 +794,6 @@ enum MapLayer: String, CaseIterable, Identifiable {
         case .satellite: return "globe.americas"
         case .hybrid: return "map.fill"
         case .precipitation: return "cloud.rain"
-        }
-    }
-    
-    var mapStyle: MapStyle {
-        switch self {
-        case .standard:
-            return .standard
-        case .satellite:
-            return .imagery
-        case .hybrid:
-            return .hybrid
-        case .precipitation:
-            return .standard(emphasis: .muted)
         }
     }
     

@@ -121,7 +121,9 @@ class SettingsManager {
         // MARK: - Performance: Individual key lookups
         // Each UserDefaults read is O(1); avoids serializing entire defaults database
         os_signpost(.begin, log: StartupSignpost.log, name: "SettingsManager.init")
+        #if DEBUG
         let initStart = CFAbsoluteTimeGetCurrent()
+        #endif
         let ud = UserDefaults.standard
         let decoder = Self.settingsDecoder
         
@@ -185,9 +187,11 @@ class SettingsManager {
         // Load data settings
         self.autoRefreshInterval = ud.object(forKey: "autoRefreshInterval") as? Int ?? 30
 
-        let elapsed = (CFAbsoluteTimeGetCurrent() - initStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "SettingsManager.init")
+        #if DEBUG
+        let elapsed = (CFAbsoluteTimeGetCurrent() - initStart) * 1_000
         startupLog("SettingsManager.init: \(String(format: "%.0f", elapsed))ms")
+        #endif
     }
     
     func resetToDefaults() {
@@ -234,14 +238,6 @@ extension SettingsManager {
         return formatter
     }()
     
-    private static let isoDateFormatter: ISO8601DateFormatter = {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return formatter
-    }()
-    
-    // MARK: - Cached Date Formatters for Views
-    
     /// ISO8601 parser for hourly time strings (no fractional seconds)
     static let isoParser: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
@@ -253,14 +249,6 @@ extension SettingsManager {
     static let isoDateOnlyParser: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withFullDate]
-        return formatter
-    }()
-    
-    /// Simple date parser for "yyyy-MM-dd'T'HH:mm" format (sunrise/sunset)
-    private static let simpleDateParser: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd'T'HH:mm"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }()
     
@@ -394,7 +382,7 @@ extension SettingsManager {
     }
     
     func formatTime(_ dateString: String, timezone: String) -> String {
-        guard let date = Self.isoDateFormatter.date(from: dateString) else {
+        guard let date = Self.isoParser.date(from: dateString) else {
             return dateString
         }
         
