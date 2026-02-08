@@ -59,21 +59,26 @@ struct ContentView: View {
                 }
             }
             .task {
+                // Priority 1: Get weather on screen as fast as possible
                 await checkAndFetchWeather()
+            }
+            .task {
+                // Priority 2: Deferred non-critical setup after first frame
+                // Small delay so the weather UI renders before we do background work
+                try? await Task.sleep(for: .milliseconds(300))
                 
-                // Initialize favorites manager
+                // Initialize favorites manager (SwiftData fetch)
                 if favoritesManager == nil {
                     favoritesManager = FavoritesManager(modelContext: modelContext)
                 }
                 
-                // Restore any existing Live Activity (deferred, only if enabled)
+                // Restore any existing Live Activity (only if enabled)
                 if settings.liveActivitiesEnabled {
                     let lam = ensureLiveActivityManager()
                     lam.restoreExistingActivity()
                 }
                 
-                // Start auto-refresh timer (deferred slightly to not compete with first render)
-                try? await Task.sleep(for: .milliseconds(500))
+                // Start auto-refresh timer
                 startAutoRefreshTimer()
             }
             .onChange(of: locationManager.location) { _, newLocation in
@@ -528,6 +533,7 @@ struct WelcomeView: View {
     let requestLocationAction: () -> Void
     var authorizationStatus: CLAuthorizationStatus = .notDetermined
     @State private var isAnimating = false
+    @State private var isReady = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     
     private var needsLocationPermission: Bool {
@@ -538,26 +544,33 @@ struct WelcomeView: View {
     
     var body: some View {
         ZStack {
-            // Animated mesh gradient background
-            MeshGradient(
-                width: 3,
-                height: 3,
-                points: [
-                    [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
-                    [0.0, 0.5], [isAnimating ? 0.8 : 0.2, isAnimating ? 0.2 : 0.8], [1.0, 0.5],
-                    [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
-                ],
-                colors: [
-                    .blue, .cyan, .purple,
-                    .indigo, .pink, .orange,
-                    .purple, .blue, .cyan
-                ]
-            )
-            .ignoresSafeArea()
-            .opacity(0.5)
-            
-            // Floating weather particles (reduced for startup performance)
-            FloatingSparkles(count: 8)
+            // Deferred gradient + particles: render a solid color on the first frame,
+            // then swap in the expensive MeshGradient once the view is on screen.
+            if isReady {
+                MeshGradient(
+                    width: 3,
+                    height: 3,
+                    points: [
+                        [0.0, 0.0], [0.5, 0.0], [1.0, 0.0],
+                        [0.0, 0.5], [isAnimating ? 0.8 : 0.2, isAnimating ? 0.2 : 0.8], [1.0, 0.5],
+                        [0.0, 1.0], [0.5, 1.0], [1.0, 1.0]
+                    ],
+                    colors: [
+                        .blue, .cyan, .purple,
+                        .indigo, .pink, .orange,
+                        .purple, .blue, .cyan
+                    ]
+                )
+                .ignoresSafeArea()
+                .opacity(0.5)
+                .transition(.opacity)
+                
+                // Floating weather particles (reduced for startup performance)
+                FloatingSparkles(count: 8)
+            } else {
+                Color.blue.opacity(0.3)
+                    .ignoresSafeArea()
+            }
             
             VStack(spacing: 40) {
                 Spacer()
@@ -622,8 +635,14 @@ struct WelcomeView: View {
             .padding()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
+        .task {
+            // Defer heavy rendering to after the first frame is on screen
+            withAnimation(.easeIn(duration: 0.3)) {
+                isReady = true
+            }
             guard !reduceMotion else { return }
+            // Slight delay so the gradient is visible before animation begins
+            try? await Task.sleep(for: .milliseconds(100))
             withAnimation(.easeInOut(duration: 8).repeatForever(autoreverses: true)) {
                 isAnimating = true
             }

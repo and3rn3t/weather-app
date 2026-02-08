@@ -23,7 +23,8 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     override init() {
         super.init()
         manager.delegate = self
-        manager.desiredAccuracy = kCLLocationAccuracyBest
+        // Kilometer accuracy is sufficient for weather and produces a much faster initial fix
+        manager.desiredAccuracy = kCLLocationAccuracyKilometer
         authorizationStatus = manager.authorizationStatus
     }
     

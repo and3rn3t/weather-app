@@ -116,13 +116,13 @@ class SettingsManager {
     private static let settingsDecoder = JSONDecoder()
     
     init() {
-        // MARK: - Performance: Single snapshot of UserDefaults
-        // Read all defaults once instead of 15+ individual lookups
-        let defaults = UserDefaults.standard.dictionaryRepresentation()
+        // MARK: - Performance: Individual key lookups
+        // Each UserDefaults read is O(1); avoids serializing entire defaults database
+        let ud = UserDefaults.standard
         let decoder = Self.settingsDecoder
         
         // Load temperature unit
-        if let data = defaults["temperatureUnit"] as? Data,
+        if let data = ud.data(forKey: "temperatureUnit"),
            let unit = try? decoder.decode(TemperatureUnit.self, from: data) {
             self.temperatureUnit = unit
         } else {
@@ -130,7 +130,7 @@ class SettingsManager {
         }
         
         // Load wind speed unit
-        if let data = defaults["windSpeedUnit"] as? Data,
+        if let data = ud.data(forKey: "windSpeedUnit"),
            let unit = try? decoder.decode(WindSpeedUnit.self, from: data) {
             self.windSpeedUnit = unit
         } else {
@@ -138,7 +138,7 @@ class SettingsManager {
         }
         
         // Load precipitation unit
-        if let data = defaults["precipitationUnit"] as? Data,
+        if let data = ud.data(forKey: "precipitationUnit"),
            let unit = try? decoder.decode(PrecipitationUnit.self, from: data) {
             self.precipitationUnit = unit
         } else {
@@ -146,20 +146,20 @@ class SettingsManager {
         }
         
         // Load appearance settings
-        self.useSystemAppearance = defaults["useSystemAppearance"] as? Bool ?? true
+        self.useSystemAppearance = ud.object(forKey: "useSystemAppearance") as? Bool ?? true
         
-        if let schemeString = defaults["preferredColorScheme"] as? String {
+        if let schemeString = ud.string(forKey: "preferredColorScheme") {
             self.preferredColorScheme = schemeString == "dark" ? .dark : .light
         } else {
             self.preferredColorScheme = nil
         }
         
         // Load notification settings
-        self.dailyForecastEnabled = defaults["dailyForecastEnabled"] as? Bool ?? false
-        self.severeWeatherAlertsEnabled = defaults["severeWeatherAlertsEnabled"] as? Bool ?? true
-        self.rainAlertsEnabled = defaults["rainAlertsEnabled"] as? Bool ?? false
+        self.dailyForecastEnabled = ud.object(forKey: "dailyForecastEnabled") as? Bool ?? false
+        self.severeWeatherAlertsEnabled = ud.object(forKey: "severeWeatherAlertsEnabled") as? Bool ?? true
+        self.rainAlertsEnabled = ud.object(forKey: "rainAlertsEnabled") as? Bool ?? false
         
-        if let time = defaults["notificationTime"] as? Date {
+        if let time = ud.object(forKey: "notificationTime") as? Date {
             self.notificationTime = time
         } else {
             // Default to 8:00 AM
@@ -170,16 +170,16 @@ class SettingsManager {
         }
         
         // Load display options
-        self.showFeelsLike = defaults["showFeelsLike"] as? Bool ?? true
-        self.show24HourFormat = defaults["show24HourFormat"] as? Bool ?? false
-        self.showAnimatedBackgrounds = defaults["showAnimatedBackgrounds"] as? Bool ?? true
-        self.showWeatherParticles = defaults["showWeatherParticles"] as? Bool ?? true
+        self.showFeelsLike = ud.object(forKey: "showFeelsLike") as? Bool ?? true
+        self.show24HourFormat = ud.object(forKey: "show24HourFormat") as? Bool ?? false
+        self.showAnimatedBackgrounds = ud.object(forKey: "showAnimatedBackgrounds") as? Bool ?? true
+        self.showWeatherParticles = ud.object(forKey: "showWeatherParticles") as? Bool ?? true
         
         // Load Live Activities setting
-        self.liveActivitiesEnabled = defaults["liveActivitiesEnabled"] as? Bool ?? true
+        self.liveActivitiesEnabled = ud.object(forKey: "liveActivitiesEnabled") as? Bool ?? true
         
         // Load data settings
-        self.autoRefreshInterval = defaults["autoRefreshInterval"] as? Int ?? 30
+        self.autoRefreshInterval = ud.object(forKey: "autoRefreshInterval") as? Int ?? 30
     }
     
     func resetToDefaults() {
@@ -352,45 +352,57 @@ extension SettingsManager {
         return "\(formatted) \(precipitationUnit.symbol)"
     }
     
+    // MARK: - Thread-safe timezone-keyed formatter cache
+    // DateFormatter creation is ~50× more expensive than a String operation.
+    // Instead of creating per-call formatters, we cache them keyed by "format|timezone".
+    // NSCache is thread-safe, so this avoids the shared-static mutation problem.
+    
+    private static let formatterCache: NSCache<NSString, DateFormatter> = {
+        let cache = NSCache<NSString, DateFormatter>()
+        cache.countLimit = 30 // Keep up to 30 formatter variants
+        return cache
+    }()
+    
+    private static func cachedFormatter(format: String, timezone: String) -> DateFormatter {
+        let key = "\(format)|\(timezone)" as NSString
+        if let cached = formatterCache.object(forKey: key) {
+            return cached
+        }
+        let formatter = DateFormatter()
+        formatter.dateFormat = format
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        if let tz = TimeZone(identifier: timezone) {
+            formatter.timeZone = tz
+        }
+        formatterCache.setObject(formatter, forKey: key)
+        return formatter
+    }
+    
     func formatTime(_ dateString: String, timezone: String) -> String {
         guard let date = Self.isoDateFormatter.date(from: dateString) else {
             return dateString
         }
         
-        // Create per-call formatter to avoid mutating shared static's timeZone (not thread-safe)
-        let formatter = DateFormatter()
-        formatter.dateFormat = show24HourFormat ? "HH:mm" : "h:mm a"
-        formatter.timeZone = TimeZone(identifier: timezone)
-        
+        let format = show24HourFormat ? "HH:mm" : "h:mm a"
+        let formatter = Self.cachedFormatter(format: format, timezone: timezone)
         return formatter.string(from: date)
     }
     
     /// Format a sunrise/sunset time string ("yyyy-MM-dd'T'HH:mm" format)
-    /// Note: Creates per-call formatters because timezone mutation on shared static formatters is not thread-safe
     static func formatSunTime(_ isoString: String, timezone: String) -> String {
-        let parser = DateFormatter()
-        parser.dateFormat = "yyyy-MM-dd'T'HH:mm"
-        parser.locale = Locale(identifier: "en_US_POSIX")
-        if let timeZone = TimeZone(identifier: timezone) {
-            parser.timeZone = timeZone
-        }
+        let parser = cachedFormatter(format: "yyyy-MM-dd'T'HH:mm", timezone: timezone)
         guard let date = parser.date(from: isoString) else { return "N/A" }
         
-        let formatter = DateFormatter()
-        formatter.dateFormat = "h:mm a"
-        formatter.timeZone = parser.timeZone
+        let formatter = cachedFormatter(format: "h:mm a", timezone: timezone)
         return formatter.string(from: date)
     }
     
     /// Format an ISO time string to hour format (e.g., "3PM")
-    /// Note: Creates per-call formatter when timezone is specified because mutating shared static formatters is not thread-safe
     static func formatHour(_ isoString: String, timezone: String? = nil) -> String {
         guard let date = isoParser.date(from: isoString) else { return "" }
         
-        if let tz = timezone, let timeZone = TimeZone(identifier: tz) {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "ha"
-            formatter.timeZone = timeZone
+        if let tz = timezone {
+            let formatter = cachedFormatter(format: "ha", timezone: tz)
             return formatter.string(from: date)
         }
         return Self.hourFormatter.string(from: date)
