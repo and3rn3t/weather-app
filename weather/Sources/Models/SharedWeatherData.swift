@@ -128,11 +128,9 @@ class SharedDataManager {
             let data = try Self.encoder.encode(sharedData)
             sharedDefaults.set(data, forKey: weatherDataKey)
             
-            // Tell widgets to refresh (must happen on main actor).
-            // Both WidgetCenter.shared and reloadAllTimelines() are async in the latest WidgetKit SDK.
+            // Tell widgets to refresh
             Task { @MainActor in
-                let center = await WidgetCenter.shared
-                await center.reloadAllTimelines()
+                WidgetCenter.shared.reloadAllTimelines()
             }
         } catch {
             Logger.sharedData.error("Failed to encode weather data: \(error.localizedDescription)")

@@ -69,14 +69,13 @@ class WeatherService {
         os_signpost(.begin, log: StartupSignpost.log, name: "CacheLoad")
 
         // Read last-known location from UserDefaults.
-        // UserDefaults.standard is @MainActor-isolated in Swift 6, so we must await.
-        let locationMeta = await SharedDataManager.lastKnownLocation()
+        let locationMeta = SharedDataManager.lastKnownLocation()
 
         // Hop off the main actor for the file read + JSON decode.
         let cached: WeatherData? = await Task.detached(priority: .userInitiated) {
-            SharedDataManager.loadWeatherFileDetached(
-                primary: SharedDataManager.cachedWeatherFilePrimaryURL,
-                legacy: SharedDataManager.cachedWeatherFileLegacyURL
+            await SharedDataManager.loadWeatherFileDetached(
+                primary: await SharedDataManager.cachedWeatherFilePrimaryURL,
+                legacy: await SharedDataManager.cachedWeatherFileLegacyURL
             )
         }.value
 
@@ -213,7 +212,7 @@ class WeatherService {
     
     private func performWeatherFetchWithRetry(latitude: Double, longitude: Double) async throws -> WeatherData {
         let config = RetryConfiguration.default
-        var lastError: Error?
+        var lastError: (any Error)?
         
         for attempt in 1...config.maxAttempts {
             do {
