@@ -59,7 +59,7 @@ class WeatherService {
         // the result on the main actor — the view will update automatically.
         os_signpost(.event, log: StartupSignpost.log, name: "WeatherService.init")
         startupLog("WeatherService.init — dispatching cache load")
-        Task { await self.loadCacheInBackground() }
+        Task(priority: .userInitiated) { await self.loadCacheInBackground() }
     }
 
     /// Reads the cached weather file off the main thread, then updates
@@ -71,12 +71,14 @@ class WeatherService {
         // Read last-known location from UserDefaults.
         let locationMeta = SharedDataManager.lastKnownLocation()
 
+        // Capture URLs before the detached task to avoid any actor-isolation
+        // inference on the static let properties inside the closure.
+        let primaryURL = SharedDataManager.cachedWeatherFilePrimaryURL
+        let legacyURL = SharedDataManager.cachedWeatherFileLegacyURL
+
         // Hop off the main actor for the file read + JSON decode.
         let cached: WeatherData? = await Task.detached(priority: .userInitiated) {
-            await SharedDataManager.loadWeatherFileDetached(
-                primary: await SharedDataManager.cachedWeatherFilePrimaryURL,
-                legacy: await SharedDataManager.cachedWeatherFileLegacyURL
-            )
+            SharedDataManager.loadWeatherFileDetached(primary: primaryURL, legacy: legacyURL)
         }.value
 
         os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")

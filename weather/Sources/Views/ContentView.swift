@@ -12,8 +12,8 @@ import OSLog
 import os.signpost
 
 struct ContentView: View {
-    @State private var locationManager = LocationManager()
-    @State private var weatherService = WeatherService()
+    @Environment(LocationManager.self) private var locationManager
+    @Environment(WeatherService.self) private var weatherService
     @State private var showingSearch = false
     @State private var showingEffectsShowcase = false
     @State private var showingSettings = false

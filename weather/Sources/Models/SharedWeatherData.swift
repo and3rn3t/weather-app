@@ -67,7 +67,7 @@ class SharedDataManager {
     /// File URL for the cached full WeatherData — computed once and reused.
     /// Uses Application Support (durable) instead of Caches (purge-able by iOS).
     /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
-    static let cachedWeatherFilePrimaryURL: URL? = {
+    nonisolated(unsafe) static let cachedWeatherFilePrimaryURL: URL? = {
         guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
@@ -79,15 +79,15 @@ class SharedDataManager {
 
     /// Legacy Caches location — used as fallback for migration.
     /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
-    static let cachedWeatherFileLegacyURL: URL? = FileManager.default.urls(
+    nonisolated(unsafe) static let cachedWeatherFileLegacyURL: URL? = FileManager.default.urls(
         for: .cachesDirectory, in: .userDomainMask
     ).first?.appendingPathComponent("cachedWeatherData.json")
     
     /// Shared decoder — reused across all cache reads to avoid repeated alloc.
-    private static let decoder = JSONDecoder()
+    nonisolated(unsafe) static let decoder = JSONDecoder()
     
     /// Shared encoder — reused across all cache writes to avoid repeated alloc.
-    private static let encoder = JSONEncoder()
+    nonisolated(unsafe) static let encoder = JSONEncoder()
     
     private init() {}
     
@@ -183,7 +183,7 @@ class SharedDataManager {
     }
     
     /// Pure file I/O — safe to call from any thread.
-    static func loadWeatherFileDetached(primary: URL?, legacy: URL?) -> WeatherData? {
+    nonisolated static func loadWeatherFileDetached(primary: URL?, legacy: URL?) -> WeatherData? {
         for url in [primary, legacy].compactMap({ $0 }) {
             guard FileManager.default.fileExists(atPath: url.path) else { continue }
             do {
@@ -201,9 +201,9 @@ class SharedDataManager {
     }
     
     /// Returns the last-known location coordinates and name, if available.
-    /// Static so it can be called from nonisolated contexts without going
-    /// through the actor-isolated `shared` instance.
-    static func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
+    /// Marked nonisolated so it can be called from any context without an
+    /// actor hop — UserDefaults scalar reads are safe to call off the main actor.
+    nonisolated(unsafe) static func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
         let ud = UserDefaults.standard
         let lat = ud.double(forKey: "lastWeatherLatitude")
         let lon = ud.double(forKey: "lastWeatherLongitude")

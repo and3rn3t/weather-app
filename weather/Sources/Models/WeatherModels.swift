@@ -6,11 +6,10 @@
 //
 
 import Foundation
-import SwiftUI
 
 // MARK: - Weather Data Models
 
-struct WeatherData: Codable {
+struct WeatherData: Codable, Sendable {
     let latitude: Double
     let longitude: Double
     let timezone: String
@@ -19,7 +18,7 @@ struct WeatherData: Codable {
     let daily: DailyWeather
 }
 
-struct CurrentWeather: Codable {
+struct CurrentWeather: Codable, Sendable {
     let time: String
     let temperature2m: Double
     let apparentTemperature: Double
@@ -55,7 +54,7 @@ struct CurrentWeather: Codable {
     }
 }
 
-struct HourlyWeather: Codable {
+struct HourlyWeather: Codable, Sendable {
     let time: [String]
     let temperature2m: [Double]
     let weatherCode: [Int]
@@ -77,7 +76,7 @@ struct HourlyWeather: Codable {
     }
 }
 
-struct DailyWeather: Codable {
+struct DailyWeather: Codable, Sendable {
     let time: [String]
     let weatherCode: [Int]
     let temperature2mMax: [Double]
@@ -104,6 +103,8 @@ struct DailyWeather: Codable {
 }
 
 // MARK: - Weather Condition Helpers
+
+import SwiftUI
 
 enum WeatherCondition {
     case clearSky
@@ -187,14 +188,14 @@ enum WeatherCondition {
 
 // MARK: - Air Quality Models
 
-struct AirQualityData: Codable {
+struct AirQualityData: Codable, Sendable {
     let latitude: Double
     let longitude: Double
     let timezone: String
     let current: CurrentAirQuality
 }
 
-struct CurrentAirQuality: Codable {
+struct CurrentAirQuality: Codable, Sendable {
     let time: String
     let usAqi: Int
     let pm10: Double

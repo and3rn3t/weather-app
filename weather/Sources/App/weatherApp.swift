@@ -14,6 +14,10 @@ import os.signpost
 @main
 struct WeatherApp: App {
     @State private var themeManager = ThemeManager()
+    // Lifted out of ContentView so they initialize as early as possible
+    // and don't block the first SwiftUI render pass.
+    @State private var locationManager = LocationManager()
+    @State private var weatherService = WeatherService()
     
     init() {
         #if DEBUG
@@ -34,6 +38,8 @@ struct WeatherApp: App {
         WindowGroup {
             ContentView()
                 .environment(themeManager)
+                .environment(locationManager)
+                .environment(weatherService)
                 .task {
                     // Defer non-critical initialization to after first render
                     await deferredInitialization()
