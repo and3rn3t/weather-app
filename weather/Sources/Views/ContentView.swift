@@ -12,6 +12,10 @@ import OSLog
 import os.signpost
 
 struct ContentView: View {
+    /// Passed in from App so we never block the main thread on SQLite init.
+    /// Nil until the background container setup completes (~100-500ms in).
+    let modelContainer: ModelContainer?
+
     @Environment(LocationManager.self) private var locationManager
     @Environment(WeatherService.self) private var weatherService
     @State private var showingSearch = false
@@ -27,17 +31,22 @@ struct ContentView: View {
     @State private var selectedLocationName: String?
     @State private var autoRefreshTask: Task<Void, Never>?
     @State private var lastLocationFetchTime: Date?
-    
-    @State private var settings = SettingsManager()
+
+    @Environment(SettingsManager.self) private var settings
     @State private var notificationManager: NotificationManager?
     @State private var liveActivityManager: LiveActivityManager?
     @State private var hasLoggedFirstData = false
-    @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
-    
+
+    init(modelContainer: ModelContainer?) {
+        self.modelContainer = modelContainer
+        startupLog("ContentView.init")
+    }
+
     var body: some View {
         NavigationStack {
+            let _ = startupLog("ContentView.body")
             Group {
                 if let weatherData = weatherService.weatherData {
                     WeatherDetailView(
@@ -103,9 +112,9 @@ struct ContentView: View {
                 try? await Task.sleep(for: .milliseconds(300))
 
                 // Initialize favorites manager (SwiftData fetch)
-                if favoritesManager == nil {
+                if favoritesManager == nil, let container = modelContainer {
                     let t = CFAbsoluteTimeGetCurrent()
-                    favoritesManager = FavoritesManager(modelContext: modelContext)
+                    favoritesManager = FavoritesManager(modelContext: container.mainContext)
                     startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - t) * 1_000))ms")
                 }
 

@@ -86,11 +86,14 @@ class WeatherService {
         startupLog("WeatherService cache load: \(String(format: "%.0f", elapsed))ms")
 
         guard let cached else { return }
-        // Don't overwrite if a network fetch already provided fresh data
-        guard self.weatherData == nil else { return }
-        self.weatherData = cached
-        self.currentLocationName = locationMeta?.name
-        self.restoredFromCache = true
+        // Don't overwrite if a network fetch already provided fresh data.
+        // Publish on the main actor so SwiftUI picks up the change immediately.
+        await MainActor.run {
+            guard self.weatherData == nil else { return }
+            self.weatherData = cached
+            self.currentLocationName = locationMeta?.name
+            self.restoredFromCache = true
+        }
     }
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
