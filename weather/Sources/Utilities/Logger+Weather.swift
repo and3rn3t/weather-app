@@ -6,44 +6,26 @@
 //
 
 import OSLog
-
-extension Logger {
-    /// Bundle identifier used as the subsystem for all loggers.
-    private static let subsystem = Bundle.main.bundleIdentifier ?? "dev.andernet.weather"
-    
-    // MARK: - Category Loggers
-    
-    /// Logs related to weather data fetching and API calls.
-    static let weatherService = Logger(subsystem: subsystem, category: "WeatherService")
-    
-    /// Logs related to location services and geocoding.
-    static let location = Logger(subsystem: subsystem, category: "Location")
-    
-    /// Logs related to favorites / saved locations.
-    static let favorites = Logger(subsystem: subsystem, category: "Favorites")
-    
-    /// Logs related to Live Activities.
-    static let liveActivity = Logger(subsystem: subsystem, category: "LiveActivity")
-    
-    /// Logs related to shared data (App Group / widget data).
-    static let sharedData = Logger(subsystem: subsystem, category: "SharedData")
-    
-    /// Logs related to weather maps and radar.
-    static let weatherMap = Logger(subsystem: subsystem, category: "WeatherMap")
-    
-    /// Logs related to location search.
-    static let search = Logger(subsystem: subsystem, category: "Search")
-    
-    /// Logs related to notifications.
-    static let notifications = Logger(subsystem: subsystem, category: "Notifications")
-    
-    /// Logs related to app startup performance.
-    static let startup = Logger(subsystem: subsystem, category: "Startup")
-}
-
 import os.signpost
 
-/// Signpost log for profiling startup phases in Instruments.
-enum StartupSignpost {
-    static let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "dev.andernet.weather", category: .pointsOfInterest)
+extension Logger {
+    // MARK: - Category Loggers
+    // String literals only — no Bundle.main, no actor dependency.
+
+    static let weatherService = Logger(subsystem: "dev.andernet.weather", category: "WeatherService")
+    static let location = Logger(subsystem: "dev.andernet.weather", category: "Location")
+    static let favorites = Logger(subsystem: "dev.andernet.weather", category: "Favorites")
+    static let liveActivity = Logger(subsystem: "dev.andernet.weather", category: "LiveActivity")
+    static let sharedData = Logger(subsystem: "dev.andernet.weather", category: "SharedData")
+    static let weatherMap = Logger(subsystem: "dev.andernet.weather", category: "WeatherMap")
+    static let search = Logger(subsystem: "dev.andernet.weather", category: "Search")
+    static let notifications = Logger(subsystem: "dev.andernet.weather", category: "Notifications")
+    static let startup = Logger(subsystem: "dev.andernet.weather", category: "Startup")
+}
+
+/// Returns a signpost log for the Points of Interest instrument track.
+/// Declared as a `nonisolated` function so it is callable from any
+/// actor context under SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor.
+nonisolated func makeStartupSignpostLog() -> OSLog {
+    OSLog(subsystem: "dev.andernet.weather", category: .pointsOfInterest)
 }

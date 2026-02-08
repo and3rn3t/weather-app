@@ -67,7 +67,9 @@ struct ContentView: View {
                 // Cache was already loaded in WeatherService.init() — the user
                 // sees weather data from the very first frame. This task just
                 // refreshes data in the background and starts GPS.
-                
+
+                os_signpost(.begin, log: makeStartupSignpostLog(), name: "ContentView.task1")
+
                 // Fire background API refresh using last-known coordinates
                 if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
                     Task {
@@ -79,27 +81,32 @@ struct ContentView: View {
                         )
                     }
                 }
-                
+
                 // Request fresh GPS location (will update via .onChange when ready)
                 checkAndFetchWeather()
+                os_signpost(.end, log: makeStartupSignpostLog(), name: "ContentView.task1")
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible
+                os_signpost(.begin, log: makeStartupSignpostLog(), name: "ContentView.deferredSetup")
                 try? await Task.sleep(for: .milliseconds(300))
-                
+
                 // Initialize favorites manager (SwiftData fetch)
                 if favoritesManager == nil {
+                    let t = CFAbsoluteTimeGetCurrent()
                     favoritesManager = FavoritesManager(modelContext: modelContext)
+                    Logger.startup.info("FavoritesManager.init: \((CFAbsoluteTimeGetCurrent() - t) * 1_000, format: .fixed(precision: 0))ms")
                 }
-                
+
                 // Restore any existing Live Activity (only if enabled)
                 if settings.liveActivitiesEnabled {
                     let lam = ensureLiveActivityManager()
                     lam.restoreExistingActivity()
                 }
-                
+
                 // Start auto-refresh timer
                 startAutoRefreshTimer()
+                os_signpost(.end, log: makeStartupSignpostLog(), name: "ContentView.deferredSetup")
             }
             .onChange(of: locationManager.location) { _, newLocation in
                 // Only use location manager if no manual location selected

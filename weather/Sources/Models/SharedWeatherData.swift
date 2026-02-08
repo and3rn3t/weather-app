@@ -10,6 +10,7 @@
 
 import Foundation
 import OSLog
+import os.signpost
 
 // MARK: - App Group Identifier
 
@@ -152,12 +153,15 @@ class SharedDataManager {
         ud.set(weatherData.latitude, forKey: lastLatitudeKey)
         ud.set(weatherData.longitude, forKey: lastLongitudeKey)
         ud.set(locationName, forKey: lastLocationNameKey)
-        
-        // Write full WeatherData to Caches directory (not backed up, fast)
+
+        // Write full WeatherData to Application Support (durable, not backed up)
         guard let fileURL = cachedWeatherFileURL else { return }
         do {
+            os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheWrite")
             let data = try JSONEncoder().encode(weatherData)
             try data.write(to: fileURL, options: .atomic)
+            os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheWrite")
+            Logger.startup.info("Cache write: \(data.count / 1024)KB")
         } catch {
             Logger.sharedData.error("Failed to cache full weather data: \(error.localizedDescription)")
         }
@@ -187,8 +191,12 @@ class SharedDataManager {
             return nil
         }
         do {
+            os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheRead")
             let data = try Data(contentsOf: fileURL)
-            return try JSONDecoder().decode(WeatherData.self, from: data)
+            let decoded = try JSONDecoder().decode(WeatherData.self, from: data)
+            os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheRead")
+            Logger.startup.info("Cache read: \(data.count / 1024)KB")
+            return decoded
         } catch {
             Logger.sharedData.error("Failed to load cached weather data: \(error.localizedDescription)")
             return nil

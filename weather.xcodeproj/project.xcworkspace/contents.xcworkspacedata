@@ -4,4 +4,22 @@
    <FileRef
       location = "self:">
    </FileRef>
+   <FileRef
+      location = "group:weatherApp.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Logger+Weather.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Logger+Weather 2.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Logger+Weather 3.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Logger+Weather 4.swift">
+   </FileRef>
+   <FileRef
+      location = "group:Logger+Weather 5.swift">
+   </FileRef>
 </Workspace>

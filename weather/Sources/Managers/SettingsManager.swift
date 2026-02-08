@@ -7,6 +7,8 @@
 
 import Foundation
 import SwiftUI
+import OSLog
+import os.signpost
 
 // MARK: - Settings Manager
 
@@ -118,6 +120,8 @@ class SettingsManager {
     init() {
         // MARK: - Performance: Individual key lookups
         // Each UserDefaults read is O(1); avoids serializing entire defaults database
+        os_signpost(.begin, log: makeStartupSignpostLog(), name: "SettingsManager.init")
+        let initStart = CFAbsoluteTimeGetCurrent()
         let ud = UserDefaults.standard
         let decoder = Self.settingsDecoder
         
@@ -180,6 +184,10 @@ class SettingsManager {
         
         // Load data settings
         self.autoRefreshInterval = ud.object(forKey: "autoRefreshInterval") as? Int ?? 30
+
+        let elapsed = (CFAbsoluteTimeGetCurrent() - initStart) * 1_000
+        os_signpost(.end, log: makeStartupSignpostLog(), name: "SettingsManager.init")
+        Logger.startup.info("SettingsManager.init: \(elapsed, format: .fixed(precision: 0))ms")
     }
     
     func resetToDefaults() {

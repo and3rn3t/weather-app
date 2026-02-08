@@ -10,6 +10,7 @@ import CoreLocation
 import Contacts
 @preconcurrency import MapKit
 import OSLog
+import os.signpost
 
 @Observable
 class LocationManager: NSObject, CLLocationManagerDelegate {
@@ -22,10 +23,12 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     
     override init() {
         super.init()
+        os_signpost(.begin, log: makeStartupSignpostLog(), name: "LocationManager.init")
         manager.delegate = self
         // Kilometer accuracy is sufficient for weather and produces a much faster initial fix
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         authorizationStatus = manager.authorizationStatus
+        os_signpost(.end, log: makeStartupSignpostLog(), name: "LocationManager.init")
     }
     
     func requestLocation() {

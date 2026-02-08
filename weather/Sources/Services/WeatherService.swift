@@ -8,6 +8,7 @@
 import Foundation
 import CoreLocation
 import OSLog
+import os.signpost
 
 // MARK: - Weather Alert (additional model not in WeatherModels)
 
@@ -48,21 +49,39 @@ class WeatherService {
     var currentLocationName: String?
     
     // MARK: - Instant Startup
-    
+
     /// Whether cached data was restored during init (for callers to know)
     private(set) var restoredFromCache = false
-    
+
     init() {
-        // Synchronously restore cached weather data so the FIRST frame
-        // already has data to display (no LoadingView / WelcomeView flash).
-        let startTime = CFAbsoluteTimeGetCurrent()
-        if let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
-            self.weatherData = cached
-            self.currentLocationName = SharedDataManager.shared.lastKnownLocation()?.name
-            self.restoredFromCache = true
-            let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
-            Logger.startup.info("WeatherService.init: restored cache in \(elapsed, format: .fixed(precision: 0))ms")
-        }
+        // Do NOT block the main thread with synchronous disk I/O here.
+        // Load the cached weather file on a background thread, then publish
+        // the result on the main actor — the view will update automatically.
+        os_signpost(.begin, log: makeStartupSignpostLog(), name: "WeatherService.init")
+        Task { await self.loadCacheInBackground() }
+        os_signpost(.end, log: makeStartupSignpostLog(), name: "WeatherService.init")
+    }
+
+    /// Reads the cached weather file off the main thread, then updates
+    /// observable state back on the main actor.
+    private func loadCacheInBackground() async {
+        let start = CFAbsoluteTimeGetCurrent()
+        os_signpost(.begin, log: makeStartupSignpostLog(), name: "CacheLoad")
+        // Hop off the main actor for the blocking disk I/O
+        let (cached, locationMeta) = await Task.detached(priority: .userInitiated) {
+            let data = SharedDataManager.shared.loadCachedFullWeatherData()
+            let meta = SharedDataManager.shared.lastKnownLocation()
+            return (data, meta)
+        }.value
+        os_signpost(.end, log: makeStartupSignpostLog(), name: "CacheLoad")
+        let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
+        Logger.startup.info("WeatherService cache load: \(elapsed, format: .fixed(precision: 0))ms")
+
+        guard let cached else { return }
+        // Back on main actor (this function is called from a Task started on MainActor)
+        self.weatherData = cached
+        self.currentLocationName = locationMeta?.name
+        self.restoredFromCache = true
     }
     
     private let baseURL = "https://api.open-meteo.com/v1/forecast"
