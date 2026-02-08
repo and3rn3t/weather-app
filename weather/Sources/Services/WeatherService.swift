@@ -85,7 +85,15 @@ class WeatherService {
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
         startupLog("WeatherService cache load: \(String(format: "%.0f", elapsed))ms")
 
-        guard let cached else { return }
+        guard let cached else {
+            // No cache — try an eager network fetch with last-known coords
+            if let loc = locationMeta {
+                startupLog("No cache — eager fetch with last-known coords")
+                await fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
+                                   locationName: loc.name, forceRefresh: true)
+            }
+            return
+        }
         // Don't overwrite if a network fetch already provided fresh data.
         // Publish on the main actor so SwiftUI picks up the change immediately.
         await MainActor.run {
@@ -93,6 +101,14 @@ class WeatherService {
             self.weatherData = cached
             self.currentLocationName = locationMeta?.name
             self.restoredFromCache = true
+        }
+
+        // Immediately kick off a background refresh so the user gets fresh
+        // data without waiting for ContentView's .task (~3-4s later).
+        if let loc = locationMeta {
+            startupLog("Eager background refresh from WeatherService")
+            await fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
+                               locationName: loc.name, forceRefresh: true)
         }
     }
     

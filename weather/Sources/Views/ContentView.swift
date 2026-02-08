@@ -75,30 +75,17 @@ struct ContentView: View {
             }
             .task {
                 // MARK: - Background Refresh
-                // Cache was already loaded in WeatherService.init() — the user
-                // sees weather data from the very first frame. This task just
-                // refreshes data in the background and starts GPS.
+                // WeatherService.init() already loaded cache and kicked off a
+                // background refresh with last-known coords. This task only
+                // needs to request a fresh GPS fix (which fires .onChange when
+                // ready, triggering a location-accurate fetch).
 
                 os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.task1")
                 let taskStart = CFAbsoluteTimeGetCurrent()
 
-                // Fire background API refresh using last-known coordinates
-                if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
-                    os_signpost(.begin, log: StartupSignpost.log, name: "BackgroundRefresh")
-                    Task {
-                        await weatherService.fetchWeather(
-                            latitude: lastLocation.latitude,
-                            longitude: lastLocation.longitude,
-                            locationName: lastLocation.name,
-                            forceRefresh: true
-                        )
-                        os_signpost(.end, log: StartupSignpost.log, name: "BackgroundRefresh")
-                        let refreshMs = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
-                        startupLog("Background refresh complete: \(String(format: "%.0f", refreshMs))ms since task start")
-                    }
-                }
-
-                // Request fresh GPS location (will update via .onChange when ready)
+                // Request fresh GPS location (will update via .onChange when ready).
+                // App.init already called requestLocation() if authorized, but
+                // calling again is a no-op — CLLocationManager deduplicates.
                 os_signpost(.begin, log: StartupSignpost.log, name: "GPSRequest")
                 checkAndFetchWeather()
 

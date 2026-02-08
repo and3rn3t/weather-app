@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import CoreLocation
 import AppIntents
 import OSLog
 import os.signpost
@@ -33,6 +34,29 @@ struct WeatherApp: App {
 
         let preMainMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
+
+        // Kick off ModelContainer creation on a background thread immediately.
+        // By the time the user taps Favorites it will long be ready.
+        Task.detached(priority: .utility) { [self] in
+            let container: ModelContainer
+            do {
+                container = try ModelContainer(for: SavedLocation.self)
+            } catch {
+                Logger.startup.error("ModelContainer failed: \(error)")
+                return
+            }
+            await MainActor.run {
+                self.modelContainer = container
+            }
+        }
+
+        // If location is already authorized, request GPS fix immediately —
+        // don't wait for ContentView's .task (which won't fire for ~3-4s).
+        if locationManager.authorizationStatus == .authorizedWhenInUse ||
+           locationManager.authorizationStatus == .authorizedAlways {
+            locationManager.requestLocation()
+            startupLog("GPS request fired eagerly from App.init")
+        }
 
         let appInitMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
