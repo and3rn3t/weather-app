@@ -121,6 +121,15 @@ class WeatherService {
         return URLSession(configuration: config)
     }()
     
+    /// Separate session that bypasses HTTP cache for force-refresh requests
+    private static let forceRefreshSession: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.requestCachePolicy = .reloadIgnoringLocalCacheData
+        config.timeoutIntervalForRequest = requestTimeout
+        config.timeoutIntervalForResource = resourceTimeout
+        return URLSession(configuration: config)
+    }()
+    
     /// Shared decoder - creating decoders is expensive
     private static let decoder: JSONDecoder = {
         let decoder = JSONDecoder()
@@ -135,6 +144,11 @@ class WeatherService {
     /// Coordinates of the currently in-flight fetch (prevents redundant concurrent requests)
     private var activeFetchCoordinate: (latitude: Double, longitude: Double)?
     
+    /// In-flight dedup tolerance: broader than FavoritesManager.coordinateTolerance (0.01°)
+    /// because we're preventing redundant network requests, not matching saved locations.
+    /// 0.05° ≈ 5.5 km at the equator — close enough that weather data is identical.
+    private static let inFlightDeduplicationTolerance = 0.05
+    
     // MARK: - Public Methods
     
     func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
@@ -148,10 +162,9 @@ class WeatherService {
         }
         
         // Skip if another fetch is already in flight for a nearby location.
-        // Weather data at kilometer accuracy doesn't change between ~0.01° differences.
         if let active = activeFetchCoordinate,
-           abs(active.latitude - latitude) < 0.05,
-           abs(active.longitude - longitude) < 0.05,
+           abs(active.latitude - latitude) < Self.inFlightDeduplicationTolerance,
+           abs(active.longitude - longitude) < Self.inFlightDeduplicationTolerance,
            !forceRefresh {
             return
         }
@@ -172,7 +185,7 @@ class WeatherService {
         do {
             // Perform weather fetch; kick off air quality in parallel (fire-and-forget)
             async let airQualityTask: Void = fetchAirQuality(latitude: latitude, longitude: longitude)
-            let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude)
+            let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             
             // Update last fetch time on success
             lastFetchTime = Date()
@@ -214,13 +227,13 @@ class WeatherService {
         }
     }
     
-    private func performWeatherFetchWithRetry(latitude: Double, longitude: Double) async throws -> WeatherData {
+    private func performWeatherFetchWithRetry(latitude: Double, longitude: Double, forceRefresh: Bool = false) async throws -> WeatherData {
         let config = RetryConfiguration.default
         var lastError: (any Error)?
         
         for attempt in 1...config.maxAttempts {
             do {
-                return try await performWeatherFetch(latitude: latitude, longitude: longitude)
+                return try await performWeatherFetch(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             } catch let error as WeatherError where error.isRetryable && attempt < config.maxAttempts {
                 lastError = error
                 let delay = config.delay(for: attempt)
@@ -244,7 +257,7 @@ class WeatherService {
     
     // MARK: - Private Methods
     
-    private func performWeatherFetch(latitude: Double, longitude: Double) async throws -> WeatherData {
+    private func performWeatherFetch(latitude: Double, longitude: Double, forceRefresh: Bool = false) async throws -> WeatherData {
         os_signpost(.begin, log: StartupSignpost.log, name: "NetworkFetch")
         let fetchStart = CFAbsoluteTimeGetCurrent()
         defer {
@@ -258,9 +271,9 @@ class WeatherService {
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: currentParameters),
-            URLQueryItem(name: "hourly", value: hourlyParameters),
-            URLQueryItem(name: "daily", value: dailyParameters),
+            URLQueryItem(name: "current", value: Self.currentParameters),
+            URLQueryItem(name: "hourly", value: Self.hourlyParameters),
+            URLQueryItem(name: "daily", value: Self.dailyParameters),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "wind_speed_unit", value: "mph"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
@@ -272,8 +285,9 @@ class WeatherService {
             throw WeatherError.invalidURL
         }
         
-        // Use cached session for better performance
-        let (data, response) = try await Self.cachedSession.data(from: url)
+        // Use force-refresh session to bypass HTTP cache when user explicitly refreshes
+        let session = forceRefresh ? Self.forceRefreshSession : Self.cachedSession
+        let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WeatherError.invalidResponse
@@ -329,54 +343,82 @@ class WeatherService {
         }
     }
     
-    private var currentParameters: String {
-        [
-            "temperature_2m",
-            "apparent_temperature",
-            "weather_code",
-            "is_day",
-            "precipitation",
-            "wind_speed_10m",
-            "wind_direction_10m",
-            "wind_gusts_10m",
-            "relative_humidity_2m",
-            "dew_point_2m",
-            "surface_pressure",
-            "visibility",
-            "uv_index",
-            "cloud_cover"
-        ].joined(separator: ",")
-    }
+    private static let currentParameters: String = [
+        "temperature_2m",
+        "apparent_temperature",
+        "weather_code",
+        "is_day",
+        "precipitation",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "wind_gusts_10m",
+        "relative_humidity_2m",
+        "dew_point_2m",
+        "surface_pressure",
+        "visibility",
+        "uv_index",
+        "cloud_cover"
+    ].joined(separator: ",")
     
-    private var hourlyParameters: String {
-        [
-            "temperature_2m",
-            "apparent_temperature",
-            "weather_code",
-            "precipitation",
-            "precipitation_probability",
-            "wind_speed_10m",
-            "wind_gusts_10m",
-            "wind_direction_10m",
-            "relative_humidity_2m",
-            "uv_index",
-            "visibility"
-        ].joined(separator: ",")
-    }
+    private static let hourlyParameters: String = [
+        "temperature_2m",
+        "apparent_temperature",
+        "weather_code",
+        "precipitation",
+        "precipitation_probability",
+        "wind_speed_10m",
+        "wind_gusts_10m",
+        "wind_direction_10m",
+        "relative_humidity_2m",
+        "uv_index",
+        "visibility"
+    ].joined(separator: ",")
     
-    private var dailyParameters: String {
-        [
-            "weather_code",
-            "temperature_2m_max",
-            "temperature_2m_min",
-            "sunrise",
-            "sunset",
-            "precipitation_sum",
-            "precipitation_probability_max",
-            "wind_speed_10m_max",
-            "wind_gusts_10m_max",
-            "uv_index_max"
-        ].joined(separator: ",")
+    private static let dailyParameters: String = [
+        "weather_code",
+        "temperature_2m_max",
+        "temperature_2m_min",
+        "sunrise",
+        "sunset",
+        "precipitation_sum",
+        "precipitation_probability_max",
+        "wind_speed_10m_max",
+        "wind_gusts_10m_max",
+        "uv_index_max"
+    ].joined(separator: ",")
+    
+    // MARK: - Lightweight Static Fetch
+    
+    /// Fetch weather data without instantiating a full WeatherService.
+    /// Use this for transient callers like FavoritesView, ComparisonView, and widgets
+    /// to avoid heavyweight init() (cache I/O + eager background refresh).
+    static func fetchWeatherData(latitude: Double, longitude: Double) async -> WeatherData? {
+        let baseURL = "https://api.open-meteo.com/v1/forecast"
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "current", value: currentParameters),
+            URLQueryItem(name: "hourly", value: hourlyParameters),
+            URLQueryItem(name: "daily", value: dailyParameters),
+            URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
+            URLQueryItem(name: "wind_speed_unit", value: "mph"),
+            URLQueryItem(name: "precipitation_unit", value: "inch"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "forecast_days", value: "14")
+        ]
+        
+        guard let url = components?.url else { return nil }
+        
+        do {
+            let (data, response) = try await cachedSession.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else { return nil }
+            return try decoder.decode(WeatherData.self, from: data)
+        } catch {
+            Logger.weatherService.warning("Static fetch failed: \(error.localizedDescription)")
+            return nil
+        }
     }
 }
 

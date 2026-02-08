@@ -143,18 +143,15 @@ struct FavoritesView: View {
     private func loadWeatherPreviews() async {
         guard !favoritesManager.savedLocations.isEmpty else { return }
         isLoadingWeather = true
-        let service = WeatherService()
         
         await withTaskGroup(of: (String, WeatherData?).self) { group in
             for location in favoritesManager.savedLocations {
                 let lat = location.latitude
                 let lon = location.longitude
-                let name = location.name
                 let id = location.id.uuidString
                 
                 group.addTask {
-                    await service.fetchWeather(latitude: lat, longitude: lon, locationName: name)
-                    let data = await MainActor.run { service.weatherData }
+                    let data = await WeatherService.fetchWeatherData(latitude: lat, longitude: lon)
                     return (id, data)
                 }
             }

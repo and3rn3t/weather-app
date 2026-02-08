@@ -16,6 +16,9 @@ struct LocationHeader: View {
     var onShareCardTapped: (() -> Void)? = nil
     @Environment(SettingsManager.self) var settings
     
+    /// Cached update timestamp — avoids Date.now which changes every render and causes perpetual redraws
+    @State private var lastUpdated: Date = Date()
+    
     private var shareText: String {
         let location = locationName ?? "Current Location"
         let condition = WeatherCondition(code: weatherData.current.weatherCode).description
@@ -60,11 +63,14 @@ struct LocationHeader: View {
                 }
                 
                 // Last updated time
-                Text("Updated \(Date.now, format: .dateTime.hour().minute())")
+                Text("Updated \(lastUpdated, format: .dateTime.hour().minute())")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
+            .onChange(of: weatherData) { _, _ in
+                lastUpdated = Date()
+            }
             
             HStack(spacing: 12) {
                 // Share button

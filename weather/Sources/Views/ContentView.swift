@@ -130,6 +130,11 @@ struct ContentView: View {
                 startAutoRefreshTimer()
                 os_signpost(.end, log: StartupSignpost.log, name: "ContentView.deferredSetup")
             }
+            .onDisappear {
+                // Cancel auto-refresh timer when view is removed to prevent task leak
+                autoRefreshTask?.cancel()
+                autoRefreshTask = nil
+            }
             .onChange(of: weatherService.weatherData != nil) { _, hasData in
                 guard hasData, !hasLoggedFirstData else { return }
                 hasLoggedFirstData = true

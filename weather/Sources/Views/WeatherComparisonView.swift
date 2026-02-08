@@ -137,25 +137,15 @@ struct WeatherComparisonView: View {
     private func loadWeatherForAllFavorites() async {
         isLoading = true
         
-        // Fetch all locations in parallel using TaskGroup
-        // Share a single WeatherService to avoid redundant cache loading in each init
-        let service = WeatherService()
-        
+        // Fetch all locations in parallel using static method (no shared state)
         let results = await withTaskGroup(of: (String, WeatherData?).self, returning: [String: WeatherData].self) { group in
             for favorite in favorites {
-                // Extract values on main actor before entering concurrent context
                 let lat = favorite.latitude
                 let lon = favorite.longitude
-                let name = favorite.name
                 let id = favorite.id.uuidString
                 
                 group.addTask {
-                    await service.fetchWeather(
-                        latitude: lat,
-                        longitude: lon,
-                        locationName: name
-                    )
-                    let data = await MainActor.run { service.weatherData }
+                    let data = await WeatherService.fetchWeatherData(latitude: lat, longitude: lon)
                     return (id, data)
                 }
             }
@@ -253,6 +243,10 @@ struct ComparisonCard: View {
     let weather: WeatherData
     let settings: SettingsManager
     
+    private var condition: WeatherCondition {
+        WeatherCondition(code: weather.current.weatherCode)
+    }
+    
     private var todayHigh: Double {
         weather.daily.temperature2mMax.first ?? 0
     }
@@ -269,14 +263,14 @@ struct ComparisonCard: View {
                     Text(location.name)
                         .font(.headline.weight(.semibold))
                     
-                    Text(WeatherCondition(code: weather.current.weatherCode).description)
+                    Text(condition.description)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
                 
                 Spacer()
                 
-                Image(systemName: WeatherCondition(code: weather.current.weatherCode).symbolName)
+                Image(systemName: condition.symbolName)
                     .font(.largeTitle)
                     .symbolRenderingMode(.multicolor)
             }

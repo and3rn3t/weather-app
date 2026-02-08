@@ -23,8 +23,9 @@ struct RainEffect: View {
             }
             .onAppear {
                 let dropCount = Int(intensity * 50) + 10
-                drops = (0..<dropCount).map { _ in
+                drops = (0..<dropCount).map { index in
                     RainDrop(
+                        id: index,
                         x: CGFloat.random(in: 0...geometry.size.width),
                         y: CGFloat.random(in: -geometry.size.height...0),
                         speed: CGFloat.random(in: 300...500),
@@ -51,7 +52,7 @@ struct RainEffect: View {
 }
 
 struct RainDrop: Identifiable {
-    let id = UUID()
+    let id: Int
     var x: CGFloat
     var y: CGFloat
     let speed: CGFloat
@@ -96,8 +97,9 @@ struct SnowEffect: View {
             }
             .onAppear {
                 let flakeCount = Int(intensity * 40) + 10
-                flakes = (0..<flakeCount).map { _ in
+                flakes = (0..<flakeCount).map { index in
                     Snowflake(
+                        id: index,
                         x: CGFloat.random(in: 0...geometry.size.width),
                         y: CGFloat.random(in: -geometry.size.height...0),
                         speed: CGFloat.random(in: 100...200),
@@ -135,7 +137,7 @@ struct SnowEffect: View {
 }
 
 struct Snowflake: Identifiable {
-    let id = UUID()
+    let id: Int
     var x: CGFloat
     var y: CGFloat
     let speed: CGFloat
@@ -174,6 +176,7 @@ struct CloudsEffect: View {
                 let cloudCount = Int(speed * 5) + 3
                 clouds = (0..<cloudCount).map { index in
                     Cloud(
+                        id: index,
                         x: CGFloat.random(in: 0...geometry.size.width),
                         y: CGFloat.random(in: 0...geometry.size.height * 0.4),
                         width: CGFloat.random(in: 80...150),
@@ -206,7 +209,7 @@ struct CloudsEffect: View {
 }
 
 struct Cloud: Identifiable {
-    let id = UUID()
+    let id: Int
     var x: CGFloat
     var y: CGFloat
     let width: CGFloat
@@ -306,6 +309,7 @@ struct FogEffect: View {
             .onAppear {
                 layers = (0..<3).map { index in
                     FogLayer(
+                        id: index,
                         offset: CGFloat(index) * geometry.size.width / 3,
                         speed: CGFloat.random(in: 20...40),
                         opacity: intensity * Double.random(in: 0.2...0.4)
@@ -330,7 +334,7 @@ struct FogEffect: View {
 }
 
 struct FogLayer: Identifiable {
-    let id = UUID()
+    let id: Int
     var offset: CGFloat
     let speed: CGFloat
     let opacity: Double

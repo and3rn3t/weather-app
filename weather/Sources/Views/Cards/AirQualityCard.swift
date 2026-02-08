@@ -25,6 +25,12 @@ struct AirQualityCard: View {
         airQualityData?.current.usAqi
     }
     
+    /// Cached category to avoid recomputing in every subview
+    private var cachedCategory: (name: String, color: Color, description: String)? {
+        guard let aqi = aqi else { return nil }
+        return aqiCategory(for: aqi)
+    }
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
@@ -33,13 +39,13 @@ struct AirQualityCard: View {
                 
                 Spacer()
                 
-                if let aqi = aqi {
-                    Text(aqiCategory(for: aqi).name)
+                if let category = cachedCategory {
+                    Text(category.name)
                         .font(.caption.weight(.semibold))
-                        .foregroundStyle(aqiCategory(for: aqi).color)
+                        .foregroundStyle(category.color)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(aqiCategory(for: aqi).color.opacity(0.2), in: Capsule())
+                        .background(category.color.opacity(0.2), in: Capsule())
                 } else {
                     Text("Unavailable")
                         .font(.caption.weight(.semibold))
@@ -50,7 +56,7 @@ struct AirQualityCard: View {
                 }
             }
             
-            if let aqi = aqi, let data = airQualityData?.current {
+            if let aqi = aqi, let data = airQualityData?.current, let category = cachedCategory {
                 HStack(spacing: 20) {
                     // AQI gauge
                     ZStack {
@@ -61,7 +67,7 @@ struct AirQualityCard: View {
                         Circle()
                             .trim(from: 0, to: min(CGFloat(aqi) / 200.0, 1.0))
                             .stroke(
-                                aqiCategory(for: aqi).color.gradient,
+                                category.color.gradient,
                                 style: StrokeStyle(lineWidth: 12, lineCap: .round)
                             )
                             .frame(width: 100, height: 100)
@@ -70,7 +76,7 @@ struct AirQualityCard: View {
                         VStack(spacing: 4) {
                             Text("\(aqi)")
                                 .font(.title.weight(.bold))
-                                .foregroundStyle(aqiCategory(for: aqi).color)
+                                .foregroundStyle(category.color)
                                 .contentTransition(.numericText())
                             Text("AQI")
                                 .font(.caption2.weight(.medium))
@@ -92,7 +98,7 @@ struct AirQualityCard: View {
                     }
                 }
                 
-                Text(aqiCategory(for: aqi).description)
+                Text(category.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.top, 4)
@@ -110,7 +116,7 @@ struct AirQualityCard: View {
                         HStack(alignment: .top, spacing: 8) {
                             Image(systemName: recommendation.icon)
                                 .font(.caption)
-                                .foregroundStyle(aqiCategory(for: aqi).color)
+                                .foregroundStyle(category.color)
                                 .frame(width: 16)
                             Text(recommendation.text)
                                 .font(.caption)

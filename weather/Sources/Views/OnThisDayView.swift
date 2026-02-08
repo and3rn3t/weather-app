@@ -9,13 +9,13 @@ import SwiftUI
 
 // MARK: - Historical Weather Models
 
-struct HistoricalWeatherData: Codable, Sendable {
+struct HistoricalWeatherData: Codable, Sendable, Equatable {
     let latitude: Double
     let longitude: Double
     let daily: HistoricalDailyWeather
 }
 
-struct HistoricalDailyWeather: Codable, Sendable {
+struct HistoricalDailyWeather: Codable, Sendable, Equatable {
     let time: [String]
     let temperature2mMax: [Double]
     let temperature2mMin: [Double]
@@ -146,6 +146,11 @@ struct OnThisDayCard: View {
     
     @ViewBuilder
     private var expandedContent: some View {
+        let sortedData = historicalData.sorted(by: { $0.year > $1.year })
+        let allTemps = historicalData.flatMap { [$0.high, $0.low] } + [currentWeather.temperature2m]
+        let overallMinTemp = (allTemps.min() ?? 0) - 5
+        let overallMaxTemp = (allTemps.max() ?? 100) + 5
+        
         VStack(spacing: 14) {
             // Today vs average comparison
             if let avgHigh = averageHistoricalHigh, let avgLow = averageHistoricalLow {
@@ -155,10 +160,10 @@ struct OnThisDayCard: View {
             Divider()
             
             // Year-by-year breakdown
-            ForEach(historicalData.sorted(by: { $0.year > $1.year })) { year in
-                yearRow(year)
+            ForEach(sortedData) { year in
+                yearRow(year, minTemp: overallMinTemp, maxTemp: overallMaxTemp)
                 
-                if year.year != historicalData.sorted(by: { $0.year > $1.year }).last?.year {
+                if year.year != sortedData.last?.year {
                     Divider().opacity(0.5)
                 }
             }
@@ -238,7 +243,7 @@ struct OnThisDayCard: View {
         .accessibilityLabel("Today is \(settings.formatTemperature(abs(highDiff))) \(highDiff >= 0 ? "warmer" : "cooler") than the \(yearsToFetch)-year average high of \(settings.formatTemperature(avgHigh))")
     }
     
-    private func yearRow(_ comparison: YearComparison) -> some View {
+    private func yearRow(_ comparison: YearComparison, minTemp: Double, maxTemp: Double) -> some View {
         HStack(spacing: 12) {
             Text("\(String(comparison.year))")
                 .font(.subheadline.weight(.semibold))
@@ -251,7 +256,7 @@ struct OnThisDayCard: View {
                 .frame(width: 24)
             
             // Temperature bar
-            temperatureBar(high: comparison.high, low: comparison.low)
+            temperatureBar(high: comparison.high, low: comparison.low, minTemp: minTemp, maxTemp: maxTemp)
             
             VStack(alignment: .trailing, spacing: 2) {
                 Text("H: \(settings.formatTemperature(comparison.high))")
@@ -266,11 +271,8 @@ struct OnThisDayCard: View {
         .accessibilityLabel("\(comparison.year): \(comparison.condition.description), high \(settings.formatTemperature(comparison.high)), low \(settings.formatTemperature(comparison.low))")
     }
     
-    private func temperatureBar(high: Double, low: Double) -> some View {
+    private func temperatureBar(high: Double, low: Double, minTemp: Double, maxTemp: Double) -> some View {
         GeometryReader { geo in
-            let allTemps = historicalData.flatMap { [$0.high, $0.low] } + [currentWeather.temperature2m]
-            let minTemp = (allTemps.min() ?? 0) - 5
-            let maxTemp = (allTemps.max() ?? 100) + 5
             let range = maxTemp - minTemp
             
             let lowFraction = (low - minTemp) / range

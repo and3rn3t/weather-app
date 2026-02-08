@@ -21,6 +21,12 @@ class NotificationManager: NSObject {
     private static let rainLookAheadInterval: TimeInterval = 2 * 60 * 60
     /// Minimum precipitation probability to trigger rain alert (%)
     private static let rainProbabilityThreshold = 50
+    /// Cached date formatter — creating formatters is expensive
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
     
     override init() {
         super.init()
@@ -124,12 +130,9 @@ class NotificationManager: NSObject {
         let now = Date()
         let lookAheadEnd = now.addingTimeInterval(Self.rainLookAheadInterval)
         
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        
         var willRain = false
         for (index, timeString) in weather.hourly.time.enumerated() {
-            guard let time = formatter.date(from: timeString) else { continue }
+            guard let time = Self.isoFormatter.date(from: timeString) else { continue }
             
             if time > now && time <= lookAheadEnd {
                 let precipProb = weather.hourly.precipitationProbability?[index] ?? 0

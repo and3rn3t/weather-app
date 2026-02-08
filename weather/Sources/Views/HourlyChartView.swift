@@ -17,6 +17,10 @@ struct HourlyChartView: View {
     @State private var selectedChart: ChartType = .temperature
     @State private var selectedDataPoint: HourlyDataPoint?
     @State private var cachedDataPoints: [HourlyDataPoint] = []
+    @State private var cachedMinTemp: Double = 0
+    @State private var cachedMaxTemp: Double = 100
+    @State private var cachedMaxPrecipitation: Int = 0
+    @State private var cachedMaxWind: Double = 0
     
     // Static date formatter to avoid creating new ones repeatedly
     private static let isoFormatter: ISO8601DateFormatter = {
@@ -57,9 +61,13 @@ struct HourlyChartView: View {
             .navigationTitle("Hourly Forecast")
             .navigationBarTitleDisplayMode(.inline)
             .onAppear {
-                // Pre-compute data points once
+                // Pre-compute data points and stats once
                 if cachedDataPoints.isEmpty {
                     cachedDataPoints = computeHourlyDataPoints()
+                    cachedMinTemp = cachedDataPoints.map(\.temperature).min() ?? 0
+                    cachedMaxTemp = cachedDataPoints.map(\.temperature).max() ?? 100
+                    cachedMaxPrecipitation = cachedDataPoints.map(\.precipitationProbability).max() ?? 0
+                    cachedMaxWind = cachedDataPoints.map(\.windSpeed).max() ?? 0
                 }
             }
         }
@@ -429,19 +437,19 @@ struct HourlyChartView: View {
     }
     
     private var minTemp: Double {
-        hourlyDataPoints.map(\.temperature).min() ?? 0
+        cachedMinTemp
     }
     
     private var maxTemp: Double {
-        hourlyDataPoints.map(\.temperature).max() ?? 100
+        cachedMaxTemp
     }
     
     private var maxPrecipitation: Int {
-        hourlyDataPoints.map(\.precipitationProbability).max() ?? 0
+        cachedMaxPrecipitation
     }
     
     private var maxWind: Double {
-        hourlyDataPoints.map(\.windSpeed).max() ?? 0
+        cachedMaxWind
     }
     
     private var temperatureGradient: LinearGradient {
@@ -483,7 +491,7 @@ enum ChartType: String, CaseIterable, Identifiable {
     }
 }
 
-struct HourlyDataPoint: Identifiable {
+struct HourlyDataPoint: Identifiable, Equatable {
     let id: Int
     let date: Date
     let temperature: Double
@@ -553,6 +561,10 @@ struct SummaryItem: View {
 struct HourlyRow: View {
     let point: HourlyDataPoint
     
+    private var condition: WeatherCondition {
+        WeatherCondition(code: point.weatherCode)
+    }
+    
     var body: some View {
         HStack {
             // Time
@@ -561,9 +573,9 @@ struct HourlyRow: View {
                 .frame(width: 50, alignment: .leading)
             
             // Weather icon
-            Image(systemName: WeatherCondition(code: point.weatherCode).symbolName)
+            Image(systemName: condition.symbolName)
                 .font(.title3)
-                .foregroundStyle(WeatherCondition(code: point.weatherCode).iconColor)
+                .foregroundStyle(condition.iconColor)
                 .frame(width: 30)
             
             // Temperature
@@ -624,6 +636,7 @@ private extension Array {
 
 // MARK: - Preview Helper
 
+#if DEBUG
 private extension WeatherData {
     static var preview: WeatherData {
         // Create sample data for preview
@@ -667,3 +680,4 @@ private extension WeatherData {
         return try! JSONDecoder().decode(WeatherData.self, from: json.data(using: .utf8)!)
     }
 }
+#endif
