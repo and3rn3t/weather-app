@@ -36,4 +36,14 @@ extension Logger {
     
     /// Logs related to notifications.
     static let notifications = Logger(subsystem: subsystem, category: "Notifications")
+    
+    /// Logs related to app startup performance.
+    static let startup = Logger(subsystem: subsystem, category: "Startup")
+}
+
+import os.signpost
+
+/// Signpost log for profiling startup phases in Instruments.
+enum StartupSignpost {
+    static let log = OSLog(subsystem: Bundle.main.bundleIdentifier ?? "dev.andernet.weather", category: .pointsOfInterest)
 }

@@ -8,6 +8,8 @@
 import SwiftUI
 import CoreLocation
 import SwiftData
+import OSLog
+import os.signpost
 
 struct ContentView: View {
     @State private var locationManager = LocationManager()
@@ -59,12 +61,45 @@ struct ContentView: View {
                 }
             }
             .task {
-                // Priority 1: Get weather on screen as fast as possible
+                // MARK: - Instant Startup: Restore cached data immediately
+                let startTime = CFAbsoluteTimeGetCurrent()
+                os_signpost(.begin, log: StartupSignpost.log, name: "AppStartup")
+                
+                // Step 1: Show cached weather data instantly (typically <50ms)
+                if weatherService.weatherData == nil,
+                   let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
+                    let cachedName = SharedDataManager.shared.lastKnownLocation()?.name
+                    weatherService.weatherData = cached
+                    weatherService.currentLocationName = cachedName
+                    let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+                    Logger.startup.info("Restored cached weather in \(elapsed, format: .fixed(precision: 0))ms")
+                }
+                
+                os_signpost(.event, log: StartupSignpost.log, name: "CacheRestored")
+                
+                // Step 2: Start fresh data fetch in background
+                // Use last-known coordinates for a speculative fetch while CLLocationManager warms up
+                if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
+                    // Fire speculative fetch using cached coordinates (doesn't wait for CLLocationManager)
+                    Logger.startup.info("Speculative fetch using last coordinates: \(lastLocation.latitude), \(lastLocation.longitude)")
+                    await weatherService.fetchWeather(
+                        latitude: lastLocation.latitude,
+                        longitude: lastLocation.longitude,
+                        locationName: lastLocation.name,
+                        forceRefresh: true
+                    )
+                    os_signpost(.event, log: StartupSignpost.log, name: "SpeculativeFetchDone")
+                }
+                
+                // Step 3: Also request fresh location (will trigger .onChange when ready)
                 await checkAndFetchWeather()
+                
+                let totalElapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
+                Logger.startup.info("Startup sequence complete in \(totalElapsed, format: .fixed(precision: 0))ms")
+                os_signpost(.end, log: StartupSignpost.log, name: "AppStartup")
             }
             .task {
-                // Priority 2: Deferred non-critical setup after first frame
-                // Small delay so the weather UI renders before we do background work
+                // Priority 2: Deferred non-critical setup after weather is visible
                 try? await Task.sleep(for: .milliseconds(300))
                 
                 // Initialize favorites manager (SwiftData fetch)

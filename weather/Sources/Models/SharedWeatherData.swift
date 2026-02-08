@@ -56,6 +56,20 @@ class SharedDataManager {
     
     private let weatherDataKey = "sharedWeatherData"
     
+    // MARK: - Full WeatherData cache for instant startup
+    
+    /// Keys for last-known location (persisted in standard UserDefaults for speed)
+    private let lastLatitudeKey = "lastWeatherLatitude"
+    private let lastLongitudeKey = "lastWeatherLongitude"
+    private let lastLocationNameKey = "lastWeatherLocationName"
+    
+    /// File URL for the cached full WeatherData (in Caches, not backed up)
+    private var cachedWeatherFileURL: URL? {
+        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
+            .first?
+            .appendingPathComponent("cachedWeatherData.json")
+    }
+    
     private init() {}
     
     /// Save weather data to the shared container
@@ -115,6 +129,54 @@ class SharedDataManager {
             Logger.sharedData.error("Failed to decode weather data: \(error.localizedDescription)")
             return nil
         }
+    }
+    
+    // MARK: - Full WeatherData Cache (for instant app startup)
+    
+    /// Cache the full WeatherData to disk + save last coordinates.
+    /// Called after every successful API fetch.
+    func cacheFullWeatherData(_ weatherData: WeatherData, locationName: String?) {
+        // Persist last-known coordinates (UserDefaults is fine for 3 small values)
+        let ud = UserDefaults.standard
+        ud.set(weatherData.latitude, forKey: lastLatitudeKey)
+        ud.set(weatherData.longitude, forKey: lastLongitudeKey)
+        ud.set(locationName, forKey: lastLocationNameKey)
+        
+        // Write full WeatherData to Caches directory (not backed up, fast)
+        guard let fileURL = cachedWeatherFileURL else { return }
+        do {
+            let data = try JSONEncoder().encode(weatherData)
+            try data.write(to: fileURL, options: .atomic)
+        } catch {
+            Logger.sharedData.error("Failed to cache full weather data: \(error.localizedDescription)")
+        }
+    }
+    
+    /// Load the previously cached full WeatherData from disk.
+    /// Returns nil on first launch or if cache is corrupt/missing.
+    func loadCachedFullWeatherData() -> WeatherData? {
+        guard let fileURL = cachedWeatherFileURL,
+              FileManager.default.fileExists(atPath: fileURL.path) else {
+            return nil
+        }
+        do {
+            let data = try Data(contentsOf: fileURL)
+            return try JSONDecoder().decode(WeatherData.self, from: data)
+        } catch {
+            Logger.sharedData.error("Failed to load cached weather data: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
+    /// Returns the last-known location coordinates and name, if available.
+    func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
+        let ud = UserDefaults.standard
+        // latitude/longitude default to 0.0 if not set; check both are non-zero
+        let lat = ud.double(forKey: lastLatitudeKey)
+        let lon = ud.double(forKey: lastLongitudeKey)
+        guard lat != 0.0 || lon != 0.0 else { return nil }
+        let name = ud.string(forKey: lastLocationNameKey)
+        return (lat, lon, name)
     }
 }
 

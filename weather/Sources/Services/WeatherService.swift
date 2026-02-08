@@ -115,8 +115,9 @@ class WeatherService {
                 self.isLoading = false
             }
             
-            // Save to shared storage for widgets
+            // Save to shared storage for widgets + cache full data for instant startup
             SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
+            SharedDataManager.shared.cacheFullWeatherData(weather, locationName: currentLocationName)
             
             // Await air quality completion (already running in parallel)
             await airQualityTask
