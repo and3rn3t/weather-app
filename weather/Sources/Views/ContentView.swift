@@ -43,6 +43,7 @@ struct ContentView: View {
                         locationName: displayLocationName,
                         onRefresh: refreshWeather,
                         onSearchTapped: { showingSearch = true },
+                        onShareCardTapped: { showingShareCard = true },
                         airQualityData: weatherService.airQualityData,
                         settings: settings
                     )
@@ -258,15 +259,6 @@ struct ContentView: View {
                             Image(systemName: "chart.xyaxis.line")
                         }
                         .buttonStyle(.glass)
-                        
-                        // Share weather card button
-                        Button {
-                            showingShareCard = true
-                        } label: {
-                            Image(systemName: "square.and.arrow.up")
-                        }
-                        .buttonStyle(.glass)
-                        .help("Share weather card")
                     }
                     
                     // Settings button

@@ -14,6 +14,7 @@ struct WeatherDetailView: View {
     let locationName: String?
     let onRefresh: () async -> Void
     let onSearchTapped: () -> Void
+    let onShareCardTapped: () -> Void
     let airQualityData: AirQualityData?
     
     @Namespace private var glassNamespace
@@ -30,7 +31,8 @@ struct WeatherDetailView: View {
                     LocationHeader(
                         locationName: locationName,
                         weatherData: weatherData,
-                        onSearchTapped: onSearchTapped
+                        onSearchTapped: onSearchTapped,
+                        onShareCardTapped: onShareCardTapped
                     )
                         .environment(settings)
                     
@@ -1089,6 +1091,7 @@ struct LocationHeader: View {
     let locationName: String?
     let weatherData: WeatherData
     let onSearchTapped: () -> Void
+    var onShareCardTapped: (() -> Void)? = nil
     @Environment(SettingsManager.self) var settings
     
     private var shareText: String {
@@ -1152,6 +1155,23 @@ struct LocationHeader: View {
                         .background(.secondary.opacity(0.15), in: Circle())
                 }
                 .buttonStyle(.plain)
+                
+                // Share weather card button
+                if let onShareCardTapped {
+                    Button(action: {
+                        HapticFeedback.impact()
+                        onShareCardTapped()
+                    }) {
+                        Image(systemName: "photo.on.rectangle.angled")
+                            .font(.title3)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.blue.gradient)
+                            .frame(width: 44, height: 44)
+                            .background(.secondary.opacity(0.15), in: Circle())
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("Share weather card")
+                }
                 
                 // Search button
                 Button(action: {

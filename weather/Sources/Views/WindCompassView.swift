@@ -279,16 +279,9 @@ struct DirectionLabel: View {
         Text(text)
             .font(isCardinal ? .caption.weight(.bold) : .system(size: 9, weight: .medium))
             .foregroundStyle(isNorth ? .red : (isCardinal ? .primary.opacity(0.8) : .secondary))
-            .offset(y: -radius)
-            .rotationEffect(.degrees(angle))
-            // Counter-rotate so text stays upright
-            .rotationEffect(.degrees(-angle), anchor: .center)
-            .transformEffect(.identity) // Force re-render for correct positioning
-            // Re-apply the position
-            .position(x: 0, y: 0)
             .offset(
-                x: radius * sin(angle * .pi / 180),
-                y: -radius * cos(angle * .pi / 180)
+                x: radius * CGFloat(sin(angle * .pi / 180)),
+                y: -radius * CGFloat(cos(angle * .pi / 180))
             )
     }
 }
