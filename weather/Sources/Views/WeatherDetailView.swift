@@ -20,6 +20,8 @@ struct WeatherDetailView: View {
     @Namespace private var glassNamespace
     var settings: SettingsManager
     
+    @State private var showMoreDetails = false
+    
     var body: some View {
         ZStack {
             // Weather background
@@ -57,6 +59,9 @@ struct WeatherDetailView: View {
                         timezone: weatherData.timezone
                     )
                     
+                    // MARK: - Forecast Section
+                    SectionLabel(title: "Forecast", icon: "calendar")
+                    
                     // Hourly Forecast with interactive chart
                     HourlyForecastCard(hourly: weatherData.hourly, timezone: weatherData.timezone)
                         .environment(settings)
@@ -65,24 +70,13 @@ struct WeatherDetailView: View {
                     DailyForecastCard(daily: weatherData.daily)
                         .environment(settings)
                     
-                    // Wind Compass
-                    WindCompassCard(current: weatherData.current)
-                        .environment(settings)
-                    
-                    // On This Day - Historical Weather
-                    OnThisDayCard(
-                        currentWeather: weatherData.current,
-                        latitude: weatherData.latitude,
-                        longitude: weatherData.longitude
+                    // MARK: - More Details (Collapsible)
+                    MoreDetailsSection(
+                        isExpanded: $showMoreDetails,
+                        weatherData: weatherData,
+                        airQualityData: airQualityData,
+                        settings: settings
                     )
-                        .environment(settings)
-                    
-                    // Air Quality Index
-                    AirQualityCard(airQualityData: airQualityData)
-                    
-                    // Additional Details
-                    WeatherDetailsCard(current: weatherData.current)
-                        .environment(settings)
                 }
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
@@ -155,6 +149,158 @@ struct WeatherDetailView: View {
             base[0].opacity(0.9), base[1].opacity(0.7), base[1].opacity(0.9),
             base[1], base[1].opacity(0.8), base[0]
         ]
+    }
+}
+
+// MARK: - Section Label
+
+struct SectionLabel: View {
+    let title: String
+    let icon: String
+    
+    var body: some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(title.uppercased())
+                .font(.caption.weight(.bold))
+                .foregroundStyle(.secondary)
+                .tracking(1.2)
+            
+            Rectangle()
+                .fill(.secondary.opacity(0.3))
+                .frame(height: 0.5)
+        }
+        .padding(.top, 8)
+        .padding(.horizontal, 4)
+    }
+}
+
+// MARK: - Collapsible More Details Section
+
+struct MoreDetailsSection: View {
+    @Binding var isExpanded: Bool
+    let weatherData: WeatherData
+    let airQualityData: AirQualityData?
+    var settings: SettingsManager
+    
+    var body: some View {
+        VStack(spacing: 16) {
+            // Expand/collapse button
+            Button {
+                HapticFeedback.impact()
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                    isExpanded.toggle()
+                }
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.blue)
+                    
+                    Text("More Details")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.primary)
+                    
+                    Spacer()
+                    
+                    // Compact preview when collapsed
+                    if !isExpanded {
+                        moreDetailsPreview
+                    }
+                    
+                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
+                        .font(.caption.weight(.bold))
+                        .foregroundStyle(.secondary)
+                        .contentTransition(.symbolEffect(.replace))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isExpanded ? "Collapse details" : "Show more details")
+            .accessibilityHint("Shows wind, air quality, historical weather, and current conditions")
+            
+            // Expanded cards
+            if isExpanded {
+                VStack(spacing: 16) {
+                    // Wind Compass
+                    WindCompassCard(current: weatherData.current)
+                        .environment(settings)
+                    
+                    // Air Quality Index
+                    AirQualityCard(airQualityData: airQualityData)
+                    
+                    // On This Day - Historical Weather
+                    OnThisDayCard(
+                        currentWeather: weatherData.current,
+                        latitude: weatherData.latitude,
+                        longitude: weatherData.longitude
+                    )
+                        .environment(settings)
+                    
+                    // Additional Details
+                    WeatherDetailsCard(current: weatherData.current)
+                        .environment(settings)
+                }
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .move(edge: .top)).combined(with: .scale(scale: 0.95, anchor: .top)),
+                    removal: .opacity.combined(with: .scale(scale: 0.95, anchor: .top))
+                ))
+            }
+        }
+    }
+    
+    /// Compact inline preview showing key stats when collapsed
+    private var moreDetailsPreview: some View {
+        HStack(spacing: 10) {
+            // Wind speed pill
+            HStack(spacing: 3) {
+                Image(systemName: "wind")
+                    .font(.caption2)
+                Text("\(Int(weatherData.current.windSpeed10m))")
+                    .font(.caption.weight(.medium))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(.cyan)
+            
+            // AQI pill
+            if let aqi = airQualityData?.current.usAqi {
+                HStack(spacing: 3) {
+                    Image(systemName: "aqi.low")
+                        .font(.caption2)
+                    Text("\(aqi)")
+                        .font(.caption.weight(.medium))
+                        .monospacedDigit()
+                }
+                .foregroundStyle(aqiColor(for: aqi))
+            }
+            
+            // Humidity pill
+            HStack(spacing: 3) {
+                Image(systemName: "humidity.fill")
+                    .font(.caption2)
+                Text("\(weatherData.current.relativeHumidity2m)%")
+                    .font(.caption.weight(.medium))
+                    .monospacedDigit()
+            }
+            .foregroundStyle(.blue)
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(.secondary.opacity(0.1), in: Capsule())
+    }
+    
+    private func aqiColor(for aqi: Int) -> Color {
+        switch aqi {
+        case 0..<51: return .green
+        case 51..<101: return .yellow
+        case 101..<151: return .orange
+        case 151..<201: return .red
+        default: return .purple
+        }
     }
 }
 

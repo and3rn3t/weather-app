@@ -232,33 +232,31 @@ struct ContentView: View {
                 }
                 
                 ToolbarItemGroup(placement: .topBarTrailing) {
-                    // Comparison button
+                    // Explore menu — groups Map, Chart, and Comparison
                     if weatherService.weatherData != nil {
-                        Button {
-                            showingComparison = true
+                        Menu {
+                            Button {
+                                showingMap = true
+                            } label: {
+                                Label("Weather Map", systemImage: "map")
+                            }
+                            
+                            Button {
+                                showingHourlyChart = true
+                            } label: {
+                                Label("Hourly Chart", systemImage: "chart.xyaxis.line")
+                            }
+                            
+                            Button {
+                                showingComparison = true
+                            } label: {
+                                Label("Compare Locations", systemImage: "square.grid.2x2")
+                            }
                         } label: {
                             Image(systemName: "square.grid.2x2")
                         }
                         .buttonStyle(.glass)
-                        .help("Compare weather across locations")
-                    }
-                    
-                    // Map button
-                    if weatherService.weatherData != nil {
-                        Button {
-                            showingMap = true
-                        } label: {
-                            Image(systemName: "map")
-                        }
-                        .buttonStyle(.glass)
-                        
-                        // Chart button
-                        Button {
-                            showingHourlyChart = true
-                        } label: {
-                            Image(systemName: "chart.xyaxis.line")
-                        }
-                        .buttonStyle(.glass)
+                        .accessibilityLabel("Explore")
                     }
                     
                     // Settings button
