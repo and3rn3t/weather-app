@@ -14,7 +14,7 @@ import os.signpost
 struct ContentView: View {
     /// Passed in from App so we never block the main thread on SQLite init.
     /// Nil until the background container setup completes (~100-500ms in).
-    let modelContainer: ModelContainer?
+    @Binding var modelContainer: ModelContainer?
 
     @Environment(LocationManager.self) private var locationManager
     @Environment(WeatherService.self) private var weatherService
@@ -39,8 +39,8 @@ struct ContentView: View {
     @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
 
-    init(modelContainer: ModelContainer?) {
-        self.modelContainer = modelContainer
+    init(modelContainer: Binding<ModelContainer?>) {
+        self._modelContainer = modelContainer
         startupLog("ContentView.init")
     }
 
@@ -110,6 +110,13 @@ struct ContentView: View {
                 // Priority 2: Deferred non-critical setup after weather is visible
                 os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.deferredSetup")
                 try? await Task.sleep(for: .milliseconds(300))
+
+                // Initialize ModelContainer off the critical path if not yet ready
+                if modelContainer == nil {
+                    modelContainer = await Task.detached(priority: .utility) {
+                        try? ModelContainer(for: SavedLocation.self)
+                    }.value
+                }
 
                 // Initialize favorites manager (SwiftData fetch)
                 if favoritesManager == nil, let container = modelContainer {

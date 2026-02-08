@@ -34,22 +34,6 @@ struct WeatherApp: App {
         let preMainMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
 
-        // Kick off ModelContainer creation on a background thread immediately.
-        // By the time the user taps Favorites it will long be ready.
-        Task.detached(priority: .utility) {
-            let container: ModelContainer
-            do {
-                container = try ModelContainer(for: SavedLocation.self)
-            } catch {
-                // Non-fatal: favorites just won't work.
-                Logger.startup.error("ModelContainer failed: \(error)")
-                return
-            }
-            await MainActor.run {
-                self.modelContainer = container
-            }
-        }
-
         let appInitMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
         startupLog("App.init total: \(String(format: "%.0f", appInitMs))ms")
@@ -57,7 +41,7 @@ struct WeatherApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView(modelContainer: modelContainer)
+            ContentView(modelContainer: $modelContainer)
                 .environment(themeManager)
                 .environment(locationManager)
                 .environment(weatherService)
