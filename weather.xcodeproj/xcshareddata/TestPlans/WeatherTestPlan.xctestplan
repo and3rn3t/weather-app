@@ -26,6 +26,40 @@
       "options" : {
         "threadSanitizerEnabled" : true
       }
+    },
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000004",
+      "name" : "Arabic (RTL)",
+      "options" : {
+        "language" : "ar",
+        "region" : "SA"
+      }
+    },
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000005",
+      "name" : "Double-Length Pseudo-Locale",
+      "options" : {
+        "language" : "en",
+        "region" : "US",
+        "commandLineArgumentEntries" : [
+          {
+            "argument" : "-NSDoubleLocalizedStrings YES"
+          }
+        ]
+      }
+    },
+    {
+      "id" : "3D103500-2F34-3251-00E7-6DAE00000006",
+      "name" : "Accessibility (XXL Text)",
+      "options" : {
+        "language" : "en",
+        "region" : "US",
+        "commandLineArgumentEntries" : [
+          {
+            "argument" : "-UIPreferredContentSizeCategoryName UICTContentSizeCategoryAccessibilityXXL"
+          }
+        ]
+      }
     }
   ],
   "defaultOptions" : {

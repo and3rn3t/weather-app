@@ -2,10 +2,11 @@
 // Release.xcconfig
 // Andernet Weather - Release Build Configuration
 //
-// Usage: Set in Xcode Project > Info > Configurations > Release
+// Usage: Assigned to Project > Info > Configurations > Release
+// Includes Warnings.xcconfig for shared warning/analyzer settings
 //
 
-#include? "Warnings.xcconfig"
+#include "Warnings.xcconfig"
 
 // MARK: - Compilation Optimization
 
@@ -13,51 +14,49 @@
 SWIFT_OPTIMIZATION_LEVEL = -O
 GCC_OPTIMIZATION_LEVEL = s
 
-// Whole module optimization for better performance
+// Whole module optimization for better cross-module inlining
 SWIFT_COMPILATION_MODE = wholemodule
 
-// Build all architectures
+// Build all architectures for distribution
 ONLY_ACTIVE_ARCH = NO
 
 // MARK: - Link-Time Optimization (LTO)
 
-// Enable LTO for smaller, faster binaries (increases build time)
-// Options: NO, YES (Monolithic), YES_THIN (Incremental - recommended)
+// Incremental LTO for smaller, faster binaries
 LLVM_LTO = YES_THIN
 
 // MARK: - Binary Size Optimization
 
-// Strip debug symbols
+// Strip debug symbols from installed product
 STRIP_INSTALLED_PRODUCT = YES
 STRIP_STYLE = non-global
 COPY_PHASE_STRIP = YES
 
-// Dead code stripping
+// Dead code stripping removes unused code
 DEAD_CODE_STRIPPING = YES
 
-// Strip Swift symbols
+// Strip Swift symbols to reduce binary size
 STRIP_SWIFT_SYMBOLS = YES
 
 // MARK: - Debug Symbols (for crash reports)
 
-// Generate dSYM for symbolication
+// Generate dSYM for crash symbolication
 DEBUG_INFORMATION_FORMAT = dwarf-with-dsym
 
-// Disable Metal debug info
+// No Metal debug info in Release
 MTL_ENABLE_DEBUG_INFO = NO
 
 // MARK: - Assertions
 
-// Disable assertions in release
+// Disable assertions in production
 ENABLE_NS_ASSERTIONS = NO
 GCC_PREPROCESSOR_DEFINITIONS = NDEBUG=1 $(inherited)
 
 // MARK: - Validation
 
-// Validate the product
 VALIDATE_PRODUCT = YES
 
 // MARK: - Asset Catalog
 
-// Optimize assets for size
+// Optimize asset catalog for smaller binary size
 ASSETCATALOG_COMPILER_OPTIMIZATION = space

@@ -1,0 +1,30 @@
+# Xcode project files - use union merge to reduce conflicts
+*.pbxproj merge=union
+
+# Swift files - ensure consistent line endings
+*.swift text diff=swift
+
+# Ensure consistent line endings for config files
+*.xcconfig text
+*.plist text
+*.xctestplan text
+*.xcscheme text
+
+# Binary files that should not be diffed
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.car binary
+
+# Xcode asset catalogs
+*.xcassets binary
+
+# Provisioning profiles
+*.mobileprovision binary
+*.p12 binary
+
+# dSYM files
+*.dSYM binary

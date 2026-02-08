@@ -1,24 +1,34 @@
 //
 // Warnings.xcconfig
-// Andernet Weather - Shared Warning Configuration
+// Andernet Weather - Shared Warning & Static Analysis Configuration
 //
 // Included by Debug.xcconfig and Release.xcconfig
 //
 
 // MARK: - Swift Warnings
 
-// Treat warnings as errors (optional, uncomment for strict mode)
-// SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
-
-// Enable strict concurrency checking
+// Enable strict concurrency checking (Swift 6 level)
 SWIFT_STRICT_CONCURRENCY = complete
+
+// Swift 6 Concurrency Model
+// MainActor isolation by default — all code is MainActor unless explicitly opted out
+SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor
+
+// Approachable concurrency — better diagnostics for concurrency migration
+SWIFT_APPROACHABLE_CONCURRENCY = YES
+
+// Upcoming Swift features
+SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES
+
+// Treat warnings as errors (enable for strict mode before releases)
+// SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
 
 // MARK: - Clang Warnings
 
-// Treat warnings as errors for C/ObjC (optional)
+// Treat C/ObjC warnings as errors (enable for strict mode)
 // GCC_TREAT_WARNINGS_AS_ERRORS = YES
 
-// Enable all reasonable warnings
+// Comprehensive Clang warning flags
 CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES
 CLANG_WARN_BOOL_CONVERSION = YES
 CLANG_WARN_COMMA = YES
@@ -55,3 +65,8 @@ GCC_WARN_UNUSED_VARIABLE = YES
 CLANG_ANALYZER_NONNULL = YES
 CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE
 CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES
+
+// MARK: - Security & Sandboxing
+
+// Sandbox build phase scripts (App Store requirement)
+ENABLE_USER_SCRIPT_SANDBOXING = YES

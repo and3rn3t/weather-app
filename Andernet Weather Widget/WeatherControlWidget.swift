@@ -85,9 +85,9 @@ private func conditionName(for code: Int) -> String {
 // MARK: - Open App Intent
 
 struct OpenWeatherAppIntent: AppIntent {
-    static var title: LocalizedStringResource = "Open Weather"
-    static var description = IntentDescription("Opens the Weather app")
-    static var openAppWhenRun: Bool = true
+    static let title: LocalizedStringResource = "Open Weather"
+    static let description = IntentDescription("Opens the Weather app")
+    static let openAppWhenRun: Bool = true
     
     func perform() async throws -> some IntentResult {
         return .result()
