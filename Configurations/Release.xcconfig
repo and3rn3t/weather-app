@@ -85,6 +85,17 @@ FUSE_BUILD_SCRIPT_PHASES = YES
 // Optimize asset catalog for smaller binary size
 ASSETCATALOG_COMPILER_OPTIMIZATION = space
 
+// MARK: - Previews
+
+// Disable SwiftUI preview injection in Release builds
+ENABLE_PREVIEWS = NO
+
+// MARK: - Warnings as Errors
+
+// Enforce zero warnings in distribution builds
+SWIFT_TREAT_WARNINGS_AS_ERRORS = YES
+GCC_TREAT_WARNINGS_AS_ERRORS = YES
+
 // MARK: - Compiler Flags
 
 // Clear debug-only Swift flags (type-check warnings slow Release compilation)
