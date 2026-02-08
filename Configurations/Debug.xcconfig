@@ -42,6 +42,12 @@ ENABLE_NS_ASSERTIONS = YES
 // Eager linking speeds up incremental Debug builds
 EAGER_LINKING = YES
 
+// Disable index-while-building (Xcode indexes in background separately)
+COMPILER_INDEX_STORE_ENABLE = NO
+
+// Fuse build script phases — run eligible script phases in parallel
+FUSE_BUILD_SCRIPT_PHASES = YES
+
 // MARK: - Diagnostics
 
 // Sanitizers (disabled by default, enabled in Sanitizer scheme)

@@ -56,7 +56,36 @@ GCC_PREPROCESSOR_DEFINITIONS = NDEBUG=1 $(inherited)
 
 VALIDATE_PRODUCT = YES
 
+// Verify module interfaces are well-formed before shipping
+ENABLE_MODULE_VERIFIER = YES
+
+// MARK: - Cross-Module Optimization
+
+// Allow optimizer to inline and specialize across module boundaries
+SWIFT_CROSS_MODULE_OPTIMIZATION = YES
+
+// MARK: - Binary Metadata Reduction
+
+// Strip Swift reflection metadata — smaller binary, no runtime Mirror usage needed
+SWIFT_REFLECTION_METADATA_LEVEL = none
+
+// Don't serialize debug options into the binary
+SWIFT_SERIALIZE_DEBUGGING_OPTIONS = NO
+
+// MARK: - Build Speed
+
+// Disable index store in Release/CI builds — not needed for distribution
+COMPILER_INDEX_STORE_ENABLE = NO
+
+// Fuse script phases for faster builds
+FUSE_BUILD_SCRIPT_PHASES = YES
+
 // MARK: - Asset Catalog
 
 // Optimize asset catalog for smaller binary size
 ASSETCATALOG_COMPILER_OPTIMIZATION = space
+
+// MARK: - Compiler Flags
+
+// Clear debug-only Swift flags (type-check warnings slow Release compilation)
+OTHER_SWIFT_FLAGS = $(inherited)
