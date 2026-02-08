@@ -64,23 +64,28 @@ class SharedDataManager {
     private let lastLongitudeKey = "lastWeatherLongitude"
     private let lastLocationNameKey = "lastWeatherLocationName"
     
-    /// File URL for the cached full WeatherData.
+    /// File URL for the cached full WeatherData — computed once and reused.
     /// Uses Application Support (durable) instead of Caches (purge-able by iOS).
-    private var cachedWeatherFileURL: URL? {
+    private let cachedWeatherFileURL: URL? = {
         guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
-        // Ensure directory exists (Application Support isn't auto-created)
+        // Ensure directory exists (Application Support isn't auto-created).
+        // Done once at init time so repeated URL accesses don't hit the FS.
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
         return dir.appendingPathComponent("cachedWeatherData.json")
-    }
+    }()
     
     /// Legacy Caches location — used as fallback for migration
-    private var legacyCachedWeatherFileURL: URL? {
-        FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
-            .first?
-            .appendingPathComponent("cachedWeatherData.json")
-    }
+    private let legacyCachedWeatherFileURL: URL? = FileManager.default.urls(
+        for: .cachesDirectory, in: .userDomainMask
+    ).first?.appendingPathComponent("cachedWeatherData.json")
+    
+    /// Shared decoder — reused across all cache reads to avoid repeated alloc.
+    private static let decoder = JSONDecoder()
+    
+    /// Shared encoder — reused across all cache writes to avoid repeated alloc.
+    private static let encoder = JSONEncoder()
     
     private init() {}
     
@@ -118,7 +123,7 @@ class SharedDataManager {
         )
         
         do {
-            let data = try JSONEncoder().encode(sharedData)
+            let data = try Self.encoder.encode(sharedData)
             sharedDefaults.set(data, forKey: weatherDataKey)
             
             // Tell widgets to refresh
@@ -136,7 +141,7 @@ class SharedDataManager {
         }
         
         do {
-            return try JSONDecoder().decode(SharedWeatherData.self, from: data)
+            return try Self.decoder.decode(SharedWeatherData.self, from: data)
         } catch {
             Logger.sharedData.error("Failed to decode weather data: \(error.localizedDescription)")
             return nil
@@ -158,7 +163,7 @@ class SharedDataManager {
         guard let fileURL = cachedWeatherFileURL else { return }
         do {
             os_signpost(.begin, log: StartupSignpost.log, name: "CacheWrite")
-            let data = try JSONEncoder().encode(weatherData)
+            let data = try Self.encoder.encode(weatherData)
             try data.write(to: fileURL, options: .atomic)
             os_signpost(.end, log: StartupSignpost.log, name: "CacheWrite")
             startupLog("Cache write: \(data.count / 1024)KB")
@@ -178,7 +183,7 @@ class SharedDataManager {
         if let data = loadWeatherFile(at: legacyCachedWeatherFileURL) {
             // Migrate to durable location for next time
             if let fileURL = cachedWeatherFileURL {
-                try? JSONEncoder().encode(data).write(to: fileURL, options: .atomic)
+                try? Self.encoder.encode(data).write(to: fileURL, options: .atomic)
             }
             return data
         }
@@ -193,7 +198,7 @@ class SharedDataManager {
         do {
             os_signpost(.begin, log: StartupSignpost.log, name: "CacheRead")
             let data = try Data(contentsOf: fileURL)
-            let decoded = try JSONDecoder().decode(WeatherData.self, from: data)
+            let decoded = try Self.decoder.decode(WeatherData.self, from: data)
             os_signpost(.end, log: StartupSignpost.log, name: "CacheRead")
             startupLog("Cache read: \(data.count / 1024)KB")
             return decoded

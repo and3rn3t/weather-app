@@ -13,40 +13,19 @@ import os.signpost
 
 @main
 struct WeatherApp: App {
-    let modelContainer: ModelContainer
     @State private var themeManager = ThemeManager()
     
     init() {
         #if DEBUG
         resetStartupLog()
         #endif
-        let appInitStart = CFAbsoluteTimeGetCurrent()
         os_signpost(.begin, log: StartupSignpost.log, name: "App.init")
 
         // Log time elapsed since process launch (includes pre-main dylib loading)
-        let preMainMs = (appInitStart - StartupSignpost.processStart) * 1_000
+        let preMainMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
 
-        // MARK: - ModelContainer Initialization
-        os_signpost(.begin, log: StartupSignpost.log, name: "ModelContainer.init")
-        let containerStart = CFAbsoluteTimeGetCurrent()
-        do {
-            let config = ModelConfiguration(
-                isStoredInMemoryOnly: false,
-                allowsSave: true
-            )
-            modelContainer = try ModelContainer(
-                for: SavedLocation.self,
-                configurations: config
-            )
-        } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
-        }
-        let containerMs = (CFAbsoluteTimeGetCurrent() - containerStart) * 1_000
-        os_signpost(.end, log: StartupSignpost.log, name: "ModelContainer.init")
-        startupLog("ModelContainer.init: \(String(format: "%.0f", containerMs))ms")
-
-        let appInitMs = (CFAbsoluteTimeGetCurrent() - appInitStart) * 1_000
+        let appInitMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
         startupLog("App.init total: \(String(format: "%.0f", appInitMs))ms")
     }
@@ -54,13 +33,15 @@ struct WeatherApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .modelContainer(modelContainer)
                 .environment(themeManager)
                 .task {
                     // Defer non-critical initialization to after first render
                     await deferredInitialization()
                 }
         }
+        // ModelContainer is created lazily by the scene modifier — after the
+        // first view appears — so it no longer blocks App.init on the main thread.
+        .modelContainer(for: SavedLocation.self)
     }
     
     // MARK: - Deferred Initialization

@@ -26,6 +26,7 @@ struct ContentView: View {
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
     @State private var autoRefreshTask: Task<Void, Never>?
+    @State private var lastLocationFetchTime: Date?
     
     @State private var settings = SettingsManager()
     @State private var notificationManager: NotificationManager?
@@ -130,6 +131,13 @@ struct ContentView: View {
                 os_signpost(.end, log: StartupSignpost.log, name: "GPSRequest")
                 let gpsMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
                 startupLog("GPS fix received — \(String(format: "%.0f", gpsMs))ms since process start")
+
+                // Debounce: CLLocationManager often fires multiple fixes in quick
+                // succession. Only act on one every 5 seconds to avoid redundant
+                // network fetches racing each other.
+                let now = Date()
+                if let last = lastLocationFetchTime, now.timeIntervalSince(last) < 5 { return }
+                lastLocationFetchTime = now
 
                 // Only use location manager if no manual location selected
                 if selectedCoordinate == nil, let location = newLocation {
