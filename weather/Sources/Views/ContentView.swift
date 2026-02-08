@@ -21,6 +21,7 @@ struct ContentView: View {
     @State private var showingComparison = false
     @State private var showingMap = false
     @State private var showingHourlyChart = false
+    @State private var showingShareCard = false
     @State private var showingOnboarding = !OnboardingChecker.hasCompletedOnboarding
     @State private var selectedCoordinate: CLLocationCoordinate2D?
     @State private var selectedLocationName: String?
@@ -206,6 +207,15 @@ struct ContentView: View {
                         .environment(settings)
                 }
             }
+            .sheet(isPresented: $showingShareCard) {
+                if let weatherData = weatherService.weatherData {
+                    ShareableWeatherCardSheet(
+                        weatherData: weatherData,
+                        locationName: displayLocationName
+                    )
+                    .environment(settings)
+                }
+            }
             .fullScreenCover(isPresented: $showingOnboarding) {
                 OnboardingView(isPresented: $showingOnboarding)
                     .environment(locationManager)
@@ -248,6 +258,15 @@ struct ContentView: View {
                             Image(systemName: "chart.xyaxis.line")
                         }
                         .buttonStyle(.glass)
+                        
+                        // Share weather card button
+                        Button {
+                            showingShareCard = true
+                        } label: {
+                            Image(systemName: "square.and.arrow.up")
+                        }
+                        .buttonStyle(.glass)
+                        .help("Share weather card")
                     }
                     
                     // Settings button

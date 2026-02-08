@@ -50,46 +50,6 @@
 		};
 /* End PBXCopyFilesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		3DA00001AAAA000300000001 /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    echo \"Skipping SwiftLint in Release build\"\n    exit 0\nfi\n\nif which swiftlint > /dev/null; then\n    cd \"${SRCROOT}\"\n    swiftlint --config .swiftlint.yml 2>/dev/null || true\nelse\n    echo \"warning: SwiftLint not installed. Install with: brew install swiftlint\"\nfi\n";
-		};
-		3DA00001AAAA000300000002 /* TODO Warnings */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "TODO Warnings";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    exit 0\nfi\n\nKEYWORDS=\"TODO|FIXME|HACK|XXX\"\nSEARCH_PATH=\"${SRCROOT}/weather/Sources\"\n\nfind \"$SEARCH_PATH\" -name \"*.swift\" -print0 2>/dev/null | while IFS= read -r -d \"\" file; do\n    grep -nE \"//\\s*($KEYWORDS)\" \"$file\" 2>/dev/null | while read -r line; do\n        LINE_NUM=$(echo \"$line\" | cut -d: -f1)\n        CONTENT=$(echo \"$line\" | cut -d: -f2-)\n        echo \"$file:$LINE_NUM: warning: $CONTENT\"\n    done\ndone\n";
-		};
-/* End PBXShellScriptBuildPhase section */
 /* Begin PBXFileReference section */
 		3D10350C2F34325100E76DAE /* weather.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = weather.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3D10351D2F34325200E76DAE /* weatherTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = weatherTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -402,6 +362,47 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		3DA00001AAAA000300000001 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    echo \"Skipping SwiftLint in Release build\"\n    exit 0\nfi\n\nif which swiftlint > /dev/null; then\n    cd \"${SRCROOT}\"\n    swiftlint --config .swiftlint.yml 2>/dev/null || true\nelse\n    echo \"warning: SwiftLint not installed. Install with: brew install swiftlint\"\nfi\n";
+		};
+		3DA00001AAAA000300000002 /* TODO Warnings */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "TODO Warnings";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ]; then\n    exit 0\nfi\n\nKEYWORDS=\"TODO|FIXME|HACK|XXX\"\nSEARCH_PATH=\"${SRCROOT}/weather/Sources\"\n\nfind \"$SEARCH_PATH\" -name \"*.swift\" -print0 2>/dev/null | while IFS= read -r -d \"\" file; do\n    grep -nE \"//\\s*($KEYWORDS)\" \"$file\" 2>/dev/null | while read -r line; do\n        LINE_NUM=$(echo \"$line\" | cut -d: -f1)\n        CONTENT=$(echo \"$line\" | cut -d: -f2-)\n        echo \"$file:$LINE_NUM: warning: $CONTENT\"\n    done\ndone\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		3D1035082F34325100E76DAE /* Sources */ = {

@@ -63,6 +63,18 @@ struct WeatherDetailView: View {
                     DailyForecastCard(daily: weatherData.daily)
                         .environment(settings)
                     
+                    // Wind Compass
+                    WindCompassCard(current: weatherData.current)
+                        .environment(settings)
+                    
+                    // On This Day - Historical Weather
+                    OnThisDayCard(
+                        currentWeather: weatherData.current,
+                        latitude: weatherData.latitude,
+                        longitude: weatherData.longitude
+                    )
+                        .environment(settings)
+                    
                     // Air Quality Index
                     AirQualityCard(airQualityData: airQualityData)
                     
