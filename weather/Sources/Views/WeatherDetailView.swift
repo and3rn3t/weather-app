@@ -1290,17 +1290,16 @@ struct LocationHeader: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             
-            HStack(spacing: 8) {
+            HStack(spacing: 12) {
                 // Share button
                 ShareLink(item: shareText) {
                     Image(systemName: "square.and.arrow.up")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.blue.gradient)
-                        .frame(width: 44, height: 44)
-                        .background(.secondary.opacity(0.15), in: Circle())
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.blue)
+                        .frame(width: 36, height: 36)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Share weather text")
                 
                 // Share weather card button
                 if let onShareCardTapped {
@@ -1309,11 +1308,9 @@ struct LocationHeader: View {
                         onShareCardTapped()
                     }) {
                         Image(systemName: "photo.on.rectangle.angled")
-                            .font(.title3)
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.blue.gradient)
-                            .frame(width: 44, height: 44)
-                            .background(.secondary.opacity(0.15), in: Circle())
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(.blue)
+                            .frame(width: 36, height: 36)
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Share weather card")
@@ -1325,13 +1322,12 @@ struct LocationHeader: View {
                     onSearchTapped()
                 }) {
                     Image(systemName: "magnifyingglass")
-                        .font(.title3)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.blue.gradient)
-                        .frame(width: 44, height: 44)
-                        .background(.secondary.opacity(0.15), in: Circle())
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.blue)
+                        .frame(width: 36, height: 36)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("Search locations")
             }
         }
         .padding(.vertical, 12)

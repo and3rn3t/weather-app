@@ -228,7 +228,7 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "list.bullet")
                     }
-                    .buttonStyle(.glass)
+                    .accessibilityLabel("Favorites")
                 }
                 
                 ToolbarItemGroup(placement: .topBarTrailing) {
@@ -255,7 +255,6 @@ struct ContentView: View {
                         } label: {
                             Image(systemName: "square.grid.2x2")
                         }
-                        .buttonStyle(.glass)
                         .accessibilityLabel("Explore")
                     }
                     
@@ -265,7 +264,6 @@ struct ContentView: View {
                     } label: {
                         Image(systemName: "gear")
                     }
-                    .buttonStyle(.glass)
                     .accessibilityIdentifier("settingsButton")
                 }
             }
