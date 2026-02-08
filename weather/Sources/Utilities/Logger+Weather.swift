@@ -54,3 +54,56 @@ enum StartupSignpost: Sendable {
 nonisolated func makeStartupSignpostLog() -> OSLog {
     StartupSignpost.log
 }
+
+// MARK: - Startup Timing Log Helper
+
+/// Logs a startup timing message via `Logger.startup` (for Xcode console)
+/// and appends to a file readable via `simctl get_app_container`.
+nonisolated func startupLog(_ message: String) {
+    let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
+    let line = "⏱ [+\(String(format: "%.0f", elapsed))ms] \(message)"
+    Logger.startup.notice("\(line)")
+    #if DEBUG
+    StartupTimingDisk.append(line + "\n")
+    #endif
+}
+
+/// Call once at app launch to clear the previous run's timing entries.
+nonisolated func resetStartupLog() {
+    #if DEBUG
+    StartupTimingDisk.reset()
+    #endif
+}
+
+/// Uses POSIX file I/O (fully nonisolated, no Foundation isolation issues)
+/// to write timing data to Documents/startup_timing.log.
+nonisolated enum StartupTimingDisk: Sendable {
+    // Use C-level file I/O to avoid any Swift concurrency / MainActor issues.
+
+    private static var filePath: String {
+        // NSHomeDirectory() is a C-bridged function, always safe to call.
+        let home = NSHomeDirectory()
+        return home + "/Documents/startup_timing.log"
+    }
+
+    static func reset() {
+        let path = filePath
+        path.withCString { cPath in
+            // Truncate / create the file
+            let fd = open(cPath, O_WRONLY | O_CREAT | O_TRUNC, 0o644)
+            if fd >= 0 { close(fd) }
+        }
+    }
+
+    static func append(_ text: String) {
+        let path = filePath
+        path.withCString { cPath in
+            let fd = open(cPath, O_WRONLY | O_CREAT | O_APPEND, 0o644)
+            guard fd >= 0 else { return }
+            text.withCString { cText in
+                _ = write(fd, cText, strlen(cText))
+            }
+            close(fd)
+        }
+    }
+}

@@ -187,7 +187,7 @@ class SettingsManager {
 
         let elapsed = (CFAbsoluteTimeGetCurrent() - initStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "SettingsManager.init")
-        Logger.startup.info("SettingsManager.init: \(elapsed, format: .fixed(precision: 0))ms")
+        startupLog("SettingsManager.init: \(String(format: "%.0f", elapsed))ms")
     }
     
     func resetToDefaults() {

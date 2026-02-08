@@ -30,6 +30,7 @@ struct ContentView: View {
     @State private var settings = SettingsManager()
     @State private var notificationManager: NotificationManager?
     @State private var liveActivityManager: LiveActivityManager?
+    @State private var hasLoggedFirstData = false
     @Environment(\.modelContext) private var modelContext
     @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
@@ -83,7 +84,7 @@ struct ContentView: View {
                         )
                         os_signpost(.end, log: StartupSignpost.log, name: "BackgroundRefresh")
                         let refreshMs = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
-                        Logger.startup.info("Background refresh complete: \(refreshMs, format: .fixed(precision: 0))ms since task start")
+                        startupLog("Background refresh complete: \(String(format: "%.0f", refreshMs))ms since task start")
                     }
                 }
 
@@ -93,7 +94,7 @@ struct ContentView: View {
 
                 let task1Ms = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
                 os_signpost(.end, log: StartupSignpost.log, name: "ContentView.task1")
-                Logger.startup.info("ContentView.task1 synchronous: \(task1Ms, format: .fixed(precision: 0))ms")
+                startupLog("ContentView.task1 synchronous: \(String(format: "%.0f", task1Ms))ms")
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible
@@ -104,7 +105,7 @@ struct ContentView: View {
                 if favoritesManager == nil {
                     let t = CFAbsoluteTimeGetCurrent()
                     favoritesManager = FavoritesManager(modelContext: modelContext)
-                    Logger.startup.info("FavoritesManager.init: \((CFAbsoluteTimeGetCurrent() - t) * 1_000, format: .fixed(precision: 0))ms")
+                    startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - t) * 1_000))ms")
                 }
 
                 // Restore any existing Live Activity (only if enabled)
@@ -117,10 +118,18 @@ struct ContentView: View {
                 startAutoRefreshTimer()
                 os_signpost(.end, log: StartupSignpost.log, name: "ContentView.deferredSetup")
             }
+            .onChange(of: weatherService.weatherData != nil) { _, hasData in
+                guard hasData, !hasLoggedFirstData else { return }
+                hasLoggedFirstData = true
+                let totalMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
+                os_signpost(.event, log: StartupSignpost.log, name: "FirstDataVisible")
+                startupLog("⛅ STARTUP COMPLETE — First weather data visible: \(String(format: "%.0f", totalMs))ms since process start")
+            }
             .onChange(of: locationManager.location) { _, newLocation in
                 // GPS fix received — end the signpost started in task1
                 os_signpost(.end, log: StartupSignpost.log, name: "GPSRequest")
-                Logger.startup.info("GPS fix received")
+                let gpsMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
+                startupLog("GPS fix received — \(String(format: "%.0f", gpsMs))ms since process start")
 
                 // Only use location manager if no manual location selected
                 if selectedCoordinate == nil, let location = newLocation {

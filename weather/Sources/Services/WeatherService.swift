@@ -58,7 +58,7 @@ class WeatherService {
         // Load the cached weather file on a background thread, then publish
         // the result on the main actor — the view will update automatically.
         os_signpost(.event, log: StartupSignpost.log, name: "WeatherService.init")
-        Logger.startup.info("WeatherService.init — dispatching cache load")
+        startupLog("WeatherService.init — dispatching cache load")
         Task { await self.loadCacheInBackground() }
     }
 
@@ -76,9 +76,11 @@ class WeatherService {
         }.value
         os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")
         let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
-        Logger.startup.info("WeatherService cache load: \(elapsed, format: .fixed(precision: 0))ms")
+        startupLog("WeatherService cache load: \(String(format: "%.0f", elapsed))ms")
 
         guard let cached else { return }
+        // Don't overwrite if a network fetch already provided fresh data
+        guard self.weatherData == nil else { return }
         // Back on main actor (this function is called from a Task started on MainActor)
         self.weatherData = cached
         self.currentLocationName = locationMeta?.name
@@ -122,6 +124,9 @@ class WeatherService {
     private var lastFetchTime: Date?
     private let minimumFetchInterval: TimeInterval = 60 // 1 minute minimum between fetches
     
+    /// Coordinates of the currently in-flight fetch (prevents redundant concurrent requests)
+    private var activeFetchCoordinate: (latitude: Double, longitude: Double)?
+    
     // MARK: - Public Methods
     
     func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
@@ -133,6 +138,18 @@ class WeatherService {
            weatherData != nil {
             return
         }
+        
+        // Skip if another fetch is already in flight for a nearby location.
+        // Weather data at kilometer accuracy doesn't change between ~0.01° differences.
+        if let active = activeFetchCoordinate,
+           abs(active.latitude - latitude) < 0.05,
+           abs(active.longitude - longitude) < 0.05,
+           !forceRefresh {
+            return
+        }
+        
+        activeFetchCoordinate = (latitude, longitude)
+        defer { activeFetchCoordinate = nil }
         
         await MainActor.run {
             // Only show loading spinner when there's NO data to display yet.
@@ -225,7 +242,7 @@ class WeatherService {
         defer {
             let fetchMs = (CFAbsoluteTimeGetCurrent() - fetchStart) * 1_000
             os_signpost(.end, log: StartupSignpost.log, name: "NetworkFetch")
-            Logger.startup.info("Network fetch: \(fetchMs, format: .fixed(precision: 0))ms")
+            startupLog("Network fetch: \(String(format: "%.0f", fetchMs))ms")
         }
         var components = URLComponents(string: baseURL)
         components?.queryItems = [

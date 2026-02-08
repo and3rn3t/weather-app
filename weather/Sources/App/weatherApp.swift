@@ -17,12 +17,15 @@ struct WeatherApp: App {
     @State private var themeManager = ThemeManager()
     
     init() {
+        #if DEBUG
+        resetStartupLog()
+        #endif
         let appInitStart = CFAbsoluteTimeGetCurrent()
         os_signpost(.begin, log: StartupSignpost.log, name: "App.init")
 
         // Log time elapsed since process launch (includes pre-main dylib loading)
         let preMainMs = (appInitStart - StartupSignpost.processStart) * 1_000
-        Logger.startup.info("Pre-main elapsed: \(preMainMs, format: .fixed(precision: 0))ms")
+        startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
 
         // MARK: - ModelContainer Initialization
         os_signpost(.begin, log: StartupSignpost.log, name: "ModelContainer.init")
@@ -41,11 +44,11 @@ struct WeatherApp: App {
         }
         let containerMs = (CFAbsoluteTimeGetCurrent() - containerStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "ModelContainer.init")
-        Logger.startup.info("ModelContainer.init: \(containerMs, format: .fixed(precision: 0))ms")
+        startupLog("ModelContainer.init: \(String(format: "%.0f", containerMs))ms")
 
         let appInitMs = (CFAbsoluteTimeGetCurrent() - appInitStart) * 1_000
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
-        Logger.startup.info("App.init total: \(appInitMs, format: .fixed(precision: 0))ms")
+        startupLog("App.init total: \(String(format: "%.0f", appInitMs))ms")
     }
     
     var body: some Scene {

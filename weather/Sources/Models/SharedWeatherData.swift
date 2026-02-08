@@ -161,7 +161,7 @@ class SharedDataManager {
             let data = try JSONEncoder().encode(weatherData)
             try data.write(to: fileURL, options: .atomic)
             os_signpost(.end, log: StartupSignpost.log, name: "CacheWrite")
-            Logger.startup.info("Cache write: \(data.count / 1024)KB")
+            startupLog("Cache write: \(data.count / 1024)KB")
         } catch {
             Logger.sharedData.error("Failed to cache full weather data: \(error.localizedDescription)")
         }
@@ -195,7 +195,7 @@ class SharedDataManager {
             let data = try Data(contentsOf: fileURL)
             let decoded = try JSONDecoder().decode(WeatherData.self, from: data)
             os_signpost(.end, log: StartupSignpost.log, name: "CacheRead")
-            Logger.startup.info("Cache read: \(data.count / 1024)KB")
+            startupLog("Cache read: \(data.count / 1024)KB")
             return decoded
         } catch {
             Logger.sharedData.error("Failed to load cached weather data: \(error.localizedDescription)")
