@@ -54,68 +54,69 @@ class WeatherService {
     private(set) var restoredFromCache = false
 
     init() {
-        // Do NOT block the main thread with synchronous disk I/O here.
-        // Load the cached weather file on a background thread, then publish
-        // the result on the main actor — the view will update automatically.
+        // Load the cached weather file in the background, then publish on
+        // the main actor so the view updates automatically.
         //
-        // IMPORTANT: Use Task.detached — a plain Task inherits MainActor
-        // isolation from the call site (@State init in WeatherApp) and would
-        // be blocked until SwiftUI finishes scene setup (~5s). Detaching lets
-        // cache I/O and the background refresh run truly in parallel.
+        // Architecture note: @Observable makes WeatherService @MainActor-
+        // isolated. WeatherData's synthesized Decodable conformance is also
+        // @MainActor-isolated (strict concurrency). So we can't decode off
+        // the main actor. Instead we:
+        //   1. Read raw bytes off-main-actor (Task.detached) — the slow part
+        //   2. Decode + publish on MainActor — fast (~1-2ms for 16KB)
+        //   3. Fire background network refresh
         os_signpost(.event, log: StartupSignpost.log, name: "WeatherService.init")
         startupLog("WeatherService.init — dispatching cache load")
-        Task.detached(priority: .userInitiated) { [self] in
-            await self.loadCacheInBackground()
-        }
-    }
 
-    /// Reads the cached weather file off the main thread, then updates
-    /// observable state back on the main actor.
-    private func loadCacheInBackground() async {
-        let start = CFAbsoluteTimeGetCurrent()
-        os_signpost(.begin, log: StartupSignpost.log, name: "CacheLoad")
-
-        // Read last-known location from UserDefaults.
-        let locationMeta = SharedDataManager.lastKnownLocation()
-
-        // Capture URLs before the detached task to avoid any actor-isolation
-        // inference on the static let properties inside the closure.
+        // Capture static URLs before entering the closure.
         let primaryURL = SharedDataManager.cachedWeatherFilePrimaryURL
         let legacyURL = SharedDataManager.cachedWeatherFileLegacyURL
 
-        // Hop off the main actor for the file read + JSON decode.
-        let cached: WeatherData? = await Task.detached(priority: .userInitiated) {
-            await SharedDataManager.loadWeatherFileDetached(primary: primaryURL, legacy: legacyURL)
-        }.value
+        // Step 1: Read raw bytes off the main actor.
+        Task.detached(priority: .userInitiated) {
+            let start = CFAbsoluteTimeGetCurrent()
+            os_signpost(.begin, log: StartupSignpost.log, name: "CacheLoad")
 
-        os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")
-        let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
-        startupLog("WeatherService cache load: \(String(format: "%.0f", elapsed))ms")
+            let locationMeta = SharedDataManager.lastKnownLocation()
 
-        guard let cached else {
-            // No cache — try an eager network fetch with last-known coords
-            if let loc = locationMeta {
-                startupLog("No cache — eager fetch with last-known coords")
-                await fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
-                                   locationName: loc.name, forceRefresh: true)
+            // Read raw file data — pure I/O, no Decodable involved.
+            let rawData: Data? = {
+                for url in [primaryURL, legacyURL].compactMap({ $0 }) {
+                    guard FileManager.default.fileExists(atPath: url.path) else { continue }
+                    if let data = try? Data(contentsOf: url) {
+                        startupLog("Cache read: \(data.count / 1024)KB")
+                        return data
+                    }
+                }
+                return nil
+            }()
+
+            os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")
+            let elapsed = (CFAbsoluteTimeGetCurrent() - start) * 1_000
+            startupLog("Cache file I/O: \(String(format: "%.0f", elapsed))ms")
+
+            // Step 2: Hop to MainActor for decode + publish.
+            await MainActor.run { [self] in
+                if let rawData {
+                    do {
+                        let cached = try SharedDataManager.decoder.decode(WeatherData.self, from: rawData)
+                        guard self.weatherData == nil else { return }
+                        self.weatherData = cached
+                        self.currentLocationName = locationMeta?.name
+                        self.restoredFromCache = true
+                        let totalMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
+                        startupLog("Cache decoded + published: \(String(format: "%.0f", totalMs))ms since launch")
+                    } catch {
+                        Logger.sharedData.error("Failed to decode cached weather: \(error.localizedDescription)")
+                    }
+                }
             }
-            return
-        }
-        // Don't overwrite if a network fetch already provided fresh data.
-        // Publish on the main actor so SwiftUI picks up the change immediately.
-        await MainActor.run {
-            guard self.weatherData == nil else { return }
-            self.weatherData = cached
-            self.currentLocationName = locationMeta?.name
-            self.restoredFromCache = true
-        }
 
-        // Immediately kick off a background refresh so the user gets fresh
-        // data without waiting for ContentView's .task (~3-4s later).
-        if let loc = locationMeta {
-            startupLog("Eager background refresh from WeatherService")
-            await fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
-                               locationName: loc.name, forceRefresh: true)
+            // Step 3: Background refresh with last-known coordinates.
+            if let loc = locationMeta {
+                startupLog(rawData == nil ? "No cache — eager fetch" : "Eager background refresh")
+                await self.fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
+                                        locationName: loc.name, forceRefresh: true)
+            }
         }
     }
     
