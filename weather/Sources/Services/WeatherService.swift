@@ -78,7 +78,7 @@ class WeatherService {
 
         // Hop off the main actor for the file read + JSON decode.
         let cached: WeatherData? = await Task.detached(priority: .userInitiated) {
-            SharedDataManager.loadWeatherFileDetached(primary: primaryURL, legacy: legacyURL)
+            await SharedDataManager.loadWeatherFileDetached(primary: primaryURL, legacy: legacyURL)
         }.value
 
         os_signpost(.end, log: StartupSignpost.log, name: "CacheLoad")

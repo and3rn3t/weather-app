@@ -182,8 +182,8 @@ class SharedDataManager {
         Self.loadWeatherFileDetached(primary: Self.cachedWeatherFilePrimaryURL, legacy: Self.cachedWeatherFileLegacyURL)
     }
     
-    /// Pure file I/O — safe to call from any thread.
-    nonisolated static func loadWeatherFileDetached(primary: URL?, legacy: URL?) -> WeatherData? {
+    /// Pure file I/O — reads and decodes cached weather data.
+    static func loadWeatherFileDetached(primary: URL?, legacy: URL?) -> WeatherData? {
         for url in [primary, legacy].compactMap({ $0 }) {
             guard FileManager.default.fileExists(atPath: url.path) else { continue }
             do {
