@@ -896,7 +896,7 @@ struct DailyWeatherRow: View {
             HStack(alignment: .center, spacing: 12) {
                 // Day name
                 Text(formattedDate)
-                    .frame(width: 60, alignment: .leading)
+                    .frame(width: 80, alignment: .leading)
                     .font(.body.weight(.medium))
                 
                 // Weather icon
@@ -940,7 +940,7 @@ struct DailyWeatherRow: View {
             // Additional info row with modern capsule design
             HStack(spacing: 10) {
                 Spacer()
-                    .frame(width: 60)
+                    .frame(width: 80)
                 
                 HStack(spacing: 4) {
                     Image(systemName: "wind")

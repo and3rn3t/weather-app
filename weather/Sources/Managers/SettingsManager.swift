@@ -263,6 +263,13 @@ extension SettingsManager {
         return formatter
     }()
     
+    /// Day name + short date formatter (e.g., "Mon 2/10")
+    private static let dayAndDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "EEE M/d"
+        return formatter
+    }()
+    
     /// Hour formatter (e.g., "3PM")
     private static let hourFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -408,10 +415,20 @@ extension SettingsManager {
         return Self.hourFormatter.string(from: date)
     }
     
-    /// Format a date string to day abbreviation (e.g., "Mon")
+    /// Format a date string to a contextual day label:
+    /// - "Today" for the current day
+    /// - "Tomorrow" for the next day  
+    /// - "Mon 2/10" style for all other days
     static func formatDayName(_ dateString: String) -> String {
         let parser = Self.isoDateOnlyParser
         guard let date = parser.date(from: dateString) else { return "" }
-        return Self.dayNameFormatter.string(from: date)
+        let calendar = Calendar.current
+        if calendar.isDateInToday(date) {
+            return "Today"
+        } else if calendar.isDateInTomorrow(date) {
+            return "Tmrw"
+        } else {
+            return Self.dayAndDateFormatter.string(from: date)
+        }
     }
 }
