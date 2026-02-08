@@ -63,8 +63,19 @@ class SharedDataManager {
     private let lastLongitudeKey = "lastWeatherLongitude"
     private let lastLocationNameKey = "lastWeatherLocationName"
     
-    /// File URL for the cached full WeatherData (in Caches, not backed up)
+    /// File URL for the cached full WeatherData.
+    /// Uses Application Support (durable) instead of Caches (purge-able by iOS).
     private var cachedWeatherFileURL: URL? {
+        guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
+            return nil
+        }
+        // Ensure directory exists (Application Support isn't auto-created)
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir.appendingPathComponent("cachedWeatherData.json")
+    }
+    
+    /// Legacy Caches location — used as fallback for migration
+    private var legacyCachedWeatherFileURL: URL? {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)
             .first?
             .appendingPathComponent("cachedWeatherData.json")
@@ -155,7 +166,23 @@ class SharedDataManager {
     /// Load the previously cached full WeatherData from disk.
     /// Returns nil on first launch or if cache is corrupt/missing.
     func loadCachedFullWeatherData() -> WeatherData? {
-        guard let fileURL = cachedWeatherFileURL,
+        // Try primary location (Application Support)
+        if let data = loadWeatherFile(at: cachedWeatherFileURL) {
+            return data
+        }
+        // Fallback: try legacy Caches location (migration path)
+        if let data = loadWeatherFile(at: legacyCachedWeatherFileURL) {
+            // Migrate to durable location for next time
+            if let fileURL = cachedWeatherFileURL {
+                try? JSONEncoder().encode(data).write(to: fileURL, options: .atomic)
+            }
+            return data
+        }
+        return nil
+    }
+    
+    private func loadWeatherFile(at url: URL?) -> WeatherData? {
+        guard let fileURL = url,
               FileManager.default.fileExists(atPath: fileURL.path) else {
             return nil
         }

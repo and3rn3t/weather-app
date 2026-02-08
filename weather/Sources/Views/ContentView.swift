@@ -68,39 +68,51 @@ struct ContentView: View {
                 os_signpost(.begin, log: StartupSignpost.log, name: "AppStartup")
                 
                 // Step 1: Show cached weather data instantly (typically <50ms)
-                let hasCachedData: Bool
                 if weatherService.weatherData == nil,
                    let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
                     let cachedName = SharedDataManager.shared.lastKnownLocation()?.name
                     weatherService.weatherData = cached
                     weatherService.currentLocationName = cachedName
-                    hasCachedData = true
                     let elapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
                     Logger.startup.info("Restored cached weather in \(elapsed, format: .fixed(precision: 0))ms")
-                } else {
-                    hasCachedData = false
                 }
                 
                 os_signpost(.event, log: StartupSignpost.log, name: "CacheRestored")
                 
-                // Step 2: Fire background refresh WITHOUT blocking the UI
-                // The user already sees cached data, so the network fetch runs silently
-                if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
-                    Logger.startup.info("Background refresh using last coordinates: \(lastLocation.latitude), \(lastLocation.longitude)")
-                    Task {
-                        await weatherService.fetchWeather(
-                            latitude: lastLocation.latitude,
-                            longitude: lastLocation.longitude,
-                            locationName: lastLocation.name,
-                            forceRefresh: true,
-                            silentRefresh: hasCachedData
-                        )
-                        os_signpost(.event, log: StartupSignpost.log, name: "BackgroundRefreshDone")
+                if weatherService.weatherData != nil {
+                    // FAST PATH: We have cached data visible.
+                    // Refresh silently in background (won't show LoadingView).
+                    if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
+                        Logger.startup.info("Background refresh using cached coordinates")
+                        Task {
+                            await weatherService.fetchWeather(
+                                latitude: lastLocation.latitude,
+                                longitude: lastLocation.longitude,
+                                locationName: lastLocation.name,
+                                forceRefresh: true
+                            )
+                        }
                     }
+                    // Also request fresh GPS location (will update via .onChange when ready)
+                    checkAndFetchWeather()
+                } else if let lastLocation = SharedDataManager.shared.lastKnownLocation() {
+                    // NO CACHE but we know the last coordinates.
+                    // Fetch directly (shows LoadingView only during the ~1-2s API call,
+                    // NOT the 5-8s GPS wait).
+                    Logger.startup.info("No cache — fetching with last-known coordinates")
+                    await weatherService.fetchWeather(
+                        latitude: lastLocation.latitude,
+                        longitude: lastLocation.longitude,
+                        locationName: lastLocation.name,
+                        forceRefresh: true
+                    )
+                    // Also start GPS for future accuracy
+                    checkAndFetchWeather()
+                } else {
+                    // COLD START: No cache, no last location. Must wait for GPS.
+                    Logger.startup.info("Cold start — waiting for location")
+                    checkAndFetchWeather()
                 }
-                
-                // Step 3: Request fresh location (will trigger .onChange when ready)
-                checkAndFetchWeather()
                 
                 let totalElapsed = (CFAbsoluteTimeGetCurrent() - startTime) * 1000
                 Logger.startup.info("Startup sequence complete in \(totalElapsed, format: .fixed(precision: 0))ms")
