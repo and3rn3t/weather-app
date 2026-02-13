@@ -7,6 +7,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Map
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import com.andernet.weather.ui.components.CurrentWeatherCard
 import com.andernet.weather.ui.components.DailyForecastSection
 import com.andernet.weather.ui.components.HourlyForecastSection
 import com.andernet.weather.ui.components.WeatherDetailsGrid
+import com.andernet.weather.ui.components.charts.HourlyChartSection
 import com.andernet.weather.ui.viewmodel.MainViewModel
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -34,7 +36,8 @@ import com.google.accompanist.swiperefresh.rememberSwipeRefreshState
 @Composable
 fun HomeScreen(
     viewModel: MainViewModel = hiltViewModel(),
-    onNavigateToSearch: () -> Unit
+    onNavigateToSearch: () -> Unit,
+    onNavigateToRadar: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val locationPermissionState = rememberPermissionState(Manifest.permission.ACCESS_COARSE_LOCATION)
@@ -67,6 +70,9 @@ fun HomeScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onNavigateToRadar) {
+                        Icon(Icons.Default.Map, contentDescription = "Weather Radar")
+                    }
                     IconButton(onClick = { viewModel.refresh() }) {
                         Icon(Icons.Default.Refresh, contentDescription = "Refresh")
                     }
@@ -248,6 +254,18 @@ fun WeatherContent(
                 currentWeather = current,
                 windSpeedUnit = uiState.windSpeedUnit,
                 precipitationUnit = uiState.precipitationUnit
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        // Interactive hourly charts
+        val hourlyForecast = viewModel.getHourlyForecast(24)
+        if (hourlyForecast.isNotEmpty()) {
+            HourlyChartSection(
+                hourlyData = hourlyForecast,
+                temperatureUnit = uiState.temperatureUnit,
+                windSpeedUnit = uiState.windSpeedUnit
             )
         }
         

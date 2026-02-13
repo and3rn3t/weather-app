@@ -24,15 +24,15 @@ data class WeatherData(
 @JsonClass(generateAdapter = true)
 data class CurrentWeather(
     val time: String,
-    val temperature: Double,
+    @Json(name = "temperature_2m") val temperature: Double,
     @Json(name = "apparent_temperature") val apparentTemperature: Double,
     @Json(name = "weather_code") val weatherCode: Int,
-    @Json(name = "wind_speed") val windSpeed: Double,
-    @Json(name = "wind_direction") val windDirection: Double,
-    @Json(name = "wind_gusts") val windGusts: Double?,
-    val humidity: Int,
-    @Json(name = "dew_point") val dewPoint: Double?,
-    val pressure: Double,
+    @Json(name = "wind_speed_10m") val windSpeed: Double,
+    @Json(name = "wind_direction_10m") val windDirection: Double,
+    @Json(name = "wind_gusts_10m") val windGusts: Double?,
+    @Json(name = "relative_humidity_2m") val humidity: Int,
+    @Json(name = "dew_point_2m") val dewPoint: Double?,
+    @Json(name = "pressure_msl") val pressure: Double,
     @Json(name = "cloud_cover") val cloudCover: Int,
     val visibility: Double?,
     @Json(name = "uv_index") val uvIndex: Double?,
@@ -46,12 +46,12 @@ data class CurrentWeather(
 @JsonClass(generateAdapter = true)
 data class HourlyWeather(
     val time: List<String>,
-    val temperature: List<Double>,
+    @Json(name = "temperature_2m") val temperature: List<Double>,
     @Json(name = "weather_code") val weatherCode: List<Int>,
     @Json(name = "precipitation_probability") val precipitationProbability: List<Int>?,
-    @Json(name = "wind_speed") val windSpeed: List<Double>,
-    @Json(name = "wind_gusts") val windGusts: List<Double>?,
-    val humidity: List<Int>,
+    @Json(name = "wind_speed_10m") val windSpeed: List<Double>,
+    @Json(name = "wind_gusts_10m") val windGusts: List<Double>?,
+    @Json(name = "relative_humidity_2m") val humidity: List<Int>,
     @Json(name = "uv_index") val uvIndex: List<Double>?
 )
 

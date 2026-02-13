@@ -3,6 +3,7 @@ package com.andernet.weather.di
 import android.content.Context
 import android.location.Geocoder
 import com.andernet.weather.data.remote.WeatherApiService
+import com.andernet.weather.data.remote.RainViewerApiService
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 import com.squareup.moshi.Moshi
@@ -105,5 +106,20 @@ object AppModule {
     @Singleton
     fun provideGeocoder(@ApplicationContext context: Context): Geocoder {
         return Geocoder(context, Locale.getDefault())
+    }
+    
+    /**
+     * Provide RainViewer API service for weather radar
+     */
+    @Provides
+    @Singleton
+    fun provideRainViewerApiService(okHttpClient: OkHttpClient, moshi: Moshi): RainViewerApiService {
+        val rainViewerRetrofit = Retrofit.Builder()
+            .baseUrl(RainViewerApiService.BASE_URL)
+            .client(okHttpClient)
+            .addConverterFactory(MoshiConverterFactory.create(moshi))
+            .build()
+        
+        return rainViewerRetrofit.create(RainViewerApiService::class.java)
     }
 }

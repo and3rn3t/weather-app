@@ -25,6 +25,8 @@ import com.andernet.weather.ui.screen.FavoritesScreen
 import com.andernet.weather.ui.screen.HomeScreen
 import com.andernet.weather.ui.screen.SearchScreen
 import com.andernet.weather.ui.screen.SettingsScreen
+import com.andernet.weather.ui.screen.WeatherMapScreen
+import com.google.android.gms.maps.model.LatLng
 
 /**
  * Navigation destinations
@@ -34,6 +36,7 @@ sealed class Screen(val route: String, val title: String) {
     data object Search : Screen("search", "Search")
     data object Favorites : Screen("favorites", "Favorites")
     data object Settings : Screen("settings", "Settings")
+    data object WeatherMap : Screen("weather_map", "Weather Radar")
 }
 
 /**
@@ -86,6 +89,9 @@ fun WeatherApp() {
                 HomeScreen(
                     onNavigateToSearch = {
                         navController.navigate(Screen.Search.route)
+                    },
+                    onNavigateToRadar = {
+                        navController.navigate(Screen.WeatherMap.route)
                     }
                 )
             }
@@ -97,6 +103,13 @@ fun WeatherApp() {
             }
             composable(Screen.Settings.route) {
                 SettingsScreen()
+            }
+            composable(Screen.WeatherMap.route) {
+                WeatherMapScreen(
+                    onNavigateBack = {
+                        navController.popBackStack()
+                    }
+                )
             }
         }
     }

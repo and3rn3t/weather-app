@@ -28,7 +28,7 @@ fun SettingsScreen(
     val use24HourFormat by viewModel.use24HourFormat.collectAsStateWithLifecycle()
     val dailyForecastEnabled by viewModel.dailyForecastEnabled.collectAsStateWithLifecycle()
     val rainAlertsEnabled by viewModel.rainAlertsEnabled.collectAsStateWithLifecycle()
-    
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -49,7 +49,7 @@ fun SettingsScreen(
                 text = "Units",
                 style = MaterialTheme.typography.titleLarge
             )
-            
+
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
                     // Temperature Unit
@@ -60,9 +60,9 @@ fun SettingsScreen(
                         onOptionSelected = { viewModel.setTemperatureUnit(it) },
                         optionLabel = { "${it.name} (${it.symbol})" }
                     )
-                    
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    
+
                     // Wind Speed Unit
                     SettingDropdown(
                         label = "Wind Speed",
@@ -71,9 +71,9 @@ fun SettingsScreen(
                         onOptionSelected = { viewModel.setWindSpeedUnit(it) },
                         optionLabel = { it.symbol }
                     )
-                    
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    
+
                     // Precipitation Unit
                     SettingDropdown(
                         label = "Precipitation",
@@ -84,13 +84,13 @@ fun SettingsScreen(
                     )
                 }
             }
-            
+
             // Display Section
             Text(
                 text = "Display",
                 style = MaterialTheme.typography.titleLarge
             )
-            
+
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SettingSwitch(
@@ -100,13 +100,13 @@ fun SettingsScreen(
                     )
                 }
             }
-            
+
             // Notifications Section
             Text(
                 text = "Notifications",
                 style = MaterialTheme.typography.titleLarge
             )
-            
+
             Card {
                 Column(modifier = Modifier.padding(16.dp)) {
                     SettingSwitch(
@@ -115,9 +115,9 @@ fun SettingsScreen(
                         checked = dailyForecastEnabled,
                         onCheckedChange = { viewModel.setDailyForecastEnabled(it) }
                     )
-                    
+
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                    
+
                     SettingSwitch(
                         label = "Rain alerts",
                         description = "Get notified when rain is expected",
@@ -130,6 +130,7 @@ fun SettingsScreen(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> SettingDropdown(
     label: String,
@@ -139,7 +140,7 @@ fun <T> SettingDropdown(
     optionLabel: (T) -> String
 ) {
     var expanded by remember { mutableStateOf(false) }
-    
+
     Column {
         Text(
             text = label,
@@ -147,7 +148,7 @@ fun <T> SettingDropdown(
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(4.dp))
-        
+
         ExposedDropdownMenuBox(
             expanded = expanded,
             onExpandedChange = { expanded = it }
@@ -161,7 +162,7 @@ fun <T> SettingDropdown(
                     .menuAnchor(),
                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
             )
-            
+
             ExposedDropdownMenu(
                 expanded = expanded,
                 onDismissRequest = { expanded = false }
