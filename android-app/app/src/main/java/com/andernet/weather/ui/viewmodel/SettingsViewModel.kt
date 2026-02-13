@@ -64,6 +64,20 @@ class SettingsViewModel @Inject constructor(
             initialValue = true
         )
     
+    val dailyForecastHour: StateFlow<Int> = settingsRepository.getDailyForecastHour()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 7
+        )
+    
+    val rainAlertThreshold: StateFlow<Int> = settingsRepository.getRainAlertThreshold()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 50
+        )
+    
     fun setTemperatureUnit(unit: TemperatureUnit) {
         viewModelScope.launch {
             settingsRepository.setTemperatureUnit(unit)
@@ -97,6 +111,18 @@ class SettingsViewModel @Inject constructor(
     fun setRainAlertsEnabled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setRainAlertsEnabled(enabled)
+        }
+    }
+    
+    fun setDailyForecastHour(hour: Int) {
+        viewModelScope.launch {
+            settingsRepository.setDailyForecastHour(hour)
+        }
+    }
+    
+    fun setRainAlertThreshold(threshold: Int) {
+        viewModelScope.launch {
+            settingsRepository.setRainAlertThreshold(threshold)
         }
     }
 }

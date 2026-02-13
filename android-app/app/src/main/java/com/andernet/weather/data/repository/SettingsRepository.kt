@@ -35,7 +35,9 @@ class SettingsRepository @Inject constructor(
         private val PRECIPITATION_UNIT = stringPreferencesKey("precipitation_unit")
         private val USE_24_HOUR_FORMAT = booleanPreferencesKey("use_24_hour_format")
         private val DAILY_FORECAST_ENABLED = booleanPreferencesKey("daily_forecast_enabled")
+        private val DAILY_FORECAST_HOUR = stringPreferencesKey("daily_forecast_hour")
         private val RAIN_ALERTS_ENABLED = booleanPreferencesKey("rain_alerts_enabled")
+        private val RAIN_ALERT_THRESHOLD = stringPreferencesKey("rain_alert_threshold")
         private val LAST_LATITUDE = doublePreferencesKey("last_latitude")
         private val LAST_LONGITUDE = doublePreferencesKey("last_longitude")
     }
@@ -120,6 +122,40 @@ class SettingsRepository @Inject constructor(
             preferences[RAIN_ALERTS_ENABLED] = enabled
         }
     }
+    
+    /**
+     * Daily forecast notification hour (7 AM default)
+     */
+    fun getDailyForecastHour(): Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[DAILY_FORECAST_HOUR]?.toIntOrNull() ?: 7
+    }
+    
+    suspend fun setDailyForecastHour(hour: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[DAILY_FORECAST_HOUR] = hour.toString()
+        }
+    }
+    
+    /**
+     * Rain alert threshold percentage (50% default)
+     */
+    fun getRainAlertThreshold(): Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[RAIN_ALERT_THRESHOLD]?.toIntOrNull() ?: 50
+    }
+    
+    suspend fun setRainAlertThreshold(threshold: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[RAIN_ALERT_THRESHOLD] = threshold.coerceIn(30, 80).toString()
+        }
+    }
+    
+    /**
+     * Convenience methods for compatibility with existing code
+     */
+    fun getDailyForecastEnabled(): Flow<Boolean> = dailyForecastEnabled
+    fun getRainAlertsEnabled(): Flow<Boolean> = rainAlertsEnabled
+    fun getTemperatureUnit(): Flow<TemperatureUnit> = temperatureUnit
+    fun getWindSpeedUnit(): Flow<WindSpeedUnit> = windSpeedUnit
     
     /**
      * Last known location

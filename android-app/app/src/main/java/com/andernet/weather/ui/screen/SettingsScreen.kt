@@ -27,7 +27,9 @@ fun SettingsScreen(
     val precipitationUnit by viewModel.precipitationUnit.collectAsStateWithLifecycle()
     val use24HourFormat by viewModel.use24HourFormat.collectAsStateWithLifecycle()
     val dailyForecastEnabled by viewModel.dailyForecastEnabled.collectAsStateWithLifecycle()
+    val dailyForecastHour by viewModel.dailyForecastHour.collectAsStateWithLifecycle()
     val rainAlertsEnabled by viewModel.rainAlertsEnabled.collectAsStateWithLifecycle()
+    val rainAlertThreshold by viewModel.rainAlertThreshold.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
@@ -115,6 +117,26 @@ fun SettingsScreen(
                         checked = dailyForecastEnabled,
                         onCheckedChange = { viewModel.setDailyForecastEnabled(it) }
                     )
+                    
+                    if (dailyForecastEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Forecast time picker
+                        SettingDropdown(
+                            label = "Notification time",
+                            options = (0..23).toList(),
+                            selectedOption = dailyForecastHour,
+                            onOptionSelected = { viewModel.setDailyForecastHour(it) },
+                            optionLabel = { hour ->
+                                when (hour) {
+                                    0 -> "12:00 AM"
+                                    12 -> "12:00 PM"
+                                    in 1..11 -> "$hour:00 AM"
+                                    else -> "${hour - 12}:00 PM"
+                                }
+                            }
+                        )
+                    }
 
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -124,6 +146,26 @@ fun SettingsScreen(
                         checked = rainAlertsEnabled,
                         onCheckedChange = { viewModel.setRainAlertsEnabled(it) }
                     )
+                    
+                    if (rainAlertsEnabled) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        
+                        // Rain threshold slider
+                        Column {
+                            Text(
+                                text = "Alert when probability ≥ $rainAlertThreshold%",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Slider(
+                                value = rainAlertThreshold.toFloat(),
+                                onValueChange = { viewModel.setRainAlertThreshold(it.toInt()) },
+                                valueRange = 30f..80f,
+                                steps = 9,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
                 }
             }
         }

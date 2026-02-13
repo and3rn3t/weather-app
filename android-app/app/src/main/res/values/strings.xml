@@ -79,4 +79,9 @@
     <!-- Loading -->
     <string name="loading">Loading…</string>
     <string name="refreshing">Refreshing…</string>
+    
+    <!-- Widgets -->
+    <string name="small_widget_description">Current weather at a glance</string>
+    <string name="medium_widget_description">Weather with key stats</string>
+    <string name="large_widget_description">Weather with hourly forecast</string>
 </resources>
