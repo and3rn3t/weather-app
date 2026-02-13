@@ -101,7 +101,9 @@ data class HourlyForecastItem(
     val temperature: Double,
     val weatherCode: Int,
     val precipitationProbability: Int,
-    val windSpeed: Double
+    val windSpeed: Double,
+    val uvIndex: Double? = null,
+    val humidity: Int? = null
 )
 
 /**

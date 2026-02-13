@@ -3,6 +3,7 @@ package com.andernet.weather.workers
 import android.content.Context
 import androidx.hilt.work.HiltWorker
 import androidx.work.*
+import com.andernet.weather.data.repository.LocationRepository
 import com.andernet.weather.data.repository.SettingsRepository
 import com.andernet.weather.data.repository.WeatherRepository
 import com.andernet.weather.notification.WeatherNotificationManager
@@ -20,6 +21,7 @@ class DailyForecastWorker @AssistedInject constructor(
     @Assisted private val context: Context,
     @Assisted workerParams: WorkerParameters,
     private val weatherRepository: WeatherRepository,
+    private val locationRepository: LocationRepository,
     private val settingsRepository: SettingsRepository,
     private val notificationManager: WeatherNotificationManager
 ) : CoroutineWorker(context, workerParams) {
@@ -27,20 +29,33 @@ class DailyForecastWorker @AssistedInject constructor(
     override suspend fun doWork(): Result {
         return try {
             // Check if notifications are enabled
-            val notificationsEnabled = settingsRepository.getDailyForecastEnabled().first()
+            val notificationsEnabled = settingsRepository.dailyForecastEnabled.first()
             if (!notificationsEnabled) {
                 return Result.success()
             }
             
-            // Get weather data
-            val weatherData = weatherRepository.getCachedWeatherData()
-            val location = weatherRepository.getCurrentLocation()
+            // Get weather data and location
+            val weatherData = weatherRepository.getCachedData()
+            val locationResult = locationRepository.getCurrentLocation()
             
-            if (weatherData != null && location != null) {
-                val today = weatherData.daily.firstOrNull()
-                if (today != null) {
+            if (weatherData != null && weatherData.daily != null && locationResult.isSuccess) {
+                val location = locationResult.getOrNull()
+                val daily = weatherData.daily
+                
+                // Get today's forecast (first day in arrays)
+                if (daily.time.isNotEmpty()) {
+                    val today = com.andernet.weather.data.model.DailyForecastItem(
+                        date = daily.time[0],
+                        weatherCode = daily.weatherCode[0],
+                        temperatureMax = daily.temperatureMax[0],
+                        temperatureMin = daily.temperatureMin[0],
+                        precipitationProbability = daily.precipitationProbabilityMax?.getOrNull(0) ?: 0,
+                        sunrise = daily.sunrise[0],
+                        sunset = daily.sunset[0]
+                    )
+                    
                     notificationManager.showDailyForecast(
-                        locationName = location.displayName ?: "Your Location",
+                        locationName = location?.displayName ?: "Your Location",
                         todayForecast = today,
                         currentWeather = weatherData.current
                     )

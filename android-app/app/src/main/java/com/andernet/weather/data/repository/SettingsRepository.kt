@@ -150,14 +150,6 @@ class SettingsRepository @Inject constructor(
     }
     
     /**
-     * Convenience methods for compatibility with existing code
-     */
-    fun getDailyForecastEnabled(): Flow<Boolean> = dailyForecastEnabled
-    fun getRainAlertsEnabled(): Flow<Boolean> = rainAlertsEnabled
-    fun getTemperatureUnit(): Flow<TemperatureUnit> = temperatureUnit
-    fun getWindSpeedUnit(): Flow<WindSpeedUnit> = windSpeedUnit
-    
-    /**
      * Last known location
      */
     suspend fun saveLastLocation(latitude: Double, longitude: Double) {

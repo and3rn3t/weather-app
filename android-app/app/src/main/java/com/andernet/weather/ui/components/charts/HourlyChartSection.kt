@@ -6,7 +6,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.andernet.weather.data.model.HourlyWeatherData
+import com.andernet.weather.data.model.HourlyForecastItem
 import com.andernet.weather.data.model.TemperatureUnit
 import com.andernet.weather.data.model.WindSpeedUnit
 
@@ -34,7 +34,7 @@ enum class ChartType {
  */
 @Composable
 fun HourlyChartSection(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     temperatureUnit: TemperatureUnit,
     windSpeedUnit: WindSpeedUnit,
     modifier: Modifier = Modifier

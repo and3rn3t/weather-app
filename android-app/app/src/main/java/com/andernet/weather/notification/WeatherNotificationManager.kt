@@ -7,8 +7,8 @@ import android.content.Intent
 import androidx.core.app.NotificationCompat
 import com.andernet.weather.MainActivity
 import com.andernet.weather.R
-import com.andernet.weather.data.model.CurrentWeatherData
-import com.andernet.weather.data.model.DailyWeatherData
+import com.andernet.weather.data.model.CurrentWeather
+import com.andernet.weather.data.model.DailyForecastItem
 import com.andernet.weather.data.model.WeatherCondition
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -32,10 +32,10 @@ class WeatherNotificationManager @Inject constructor(
      */
     fun showDailyForecast(
         locationName: String,
-        todayForecast: DailyWeatherData,
-        currentWeather: CurrentWeatherData?
+        todayForecast: DailyForecastItem,
+        currentWeather: CurrentWeather?
     ) {
-        val condition = WeatherCondition(todayForecast.weatherCode)
+        val condition = WeatherCondition.fromCode(todayForecast.weatherCode)
         
         val contentIntent = PendingIntent.getActivity(
             context,
@@ -47,7 +47,7 @@ class WeatherNotificationManager @Inject constructor(
         val notification = NotificationCompat.Builder(context, NotificationChannels.DAILY_FORECAST_CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle("Today in $locationName")
-            .setContentText("${condition.description} • High ${todayForecast.maxTemp.toInt()}° Low ${todayForecast.minTemp.toInt()}°")
+            .setContentText("${condition.description} • High ${todayForecast.temperatureMax.toInt()}° Low ${todayForecast.temperatureMin.toInt()}°")
             .setStyle(
                 NotificationCompat.BigTextStyle()
                     .bigText(buildDailyForecastText(todayForecast, currentWeather, condition))
@@ -113,14 +113,14 @@ class WeatherNotificationManager @Inject constructor(
     }
     
     private fun buildDailyForecastText(
-        todayForecast: DailyWeatherData,
-        currentWeather: CurrentWeatherData?,
+        todayForecast: DailyForecastItem,
+        currentWeather: CurrentWeather?,
         condition: WeatherCondition
     ): String {
         val parts = mutableListOf<String>()
         
         // Condition and temperatures
-        parts.add("${condition.description} with a high of ${todayForecast.maxTemp.toInt()}° and low of ${todayForecast.minTemp.toInt()}°")
+        parts.add("${condition.description} with a high of ${todayForecast.temperatureMax.toInt()}° and low of ${todayForecast.temperatureMin.toInt()}°")
         
         // Current temperature if available
         currentWeather?.let {
@@ -132,10 +132,7 @@ class WeatherNotificationManager @Inject constructor(
             parts.add("${todayForecast.precipitationProbability}% chance of precipitation")
         }
         
-        // Wind
-        if (todayForecast.maxWindSpeed > 15) {
-            parts.add("Wind gusts up to ${todayForecast.maxWindSpeed.toInt()} mph")
-        }
+        // Wind - not available in DailyForecastItem
         
         return parts.joinToString(". ") + "."
     }

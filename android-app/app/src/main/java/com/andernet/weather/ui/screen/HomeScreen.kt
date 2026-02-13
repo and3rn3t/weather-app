@@ -259,7 +259,7 @@ fun WeatherContent(
         
         Spacer(modifier = Modifier.height(16.dp))
         
-        // Interactive hourly charts
+        // Interactive hourly charts and forecast
         val hourlyForecast = viewModel.getHourlyForecast(24)
         if (hourlyForecast.isNotEmpty()) {
             HourlyChartSection(
@@ -272,7 +272,6 @@ fun WeatherContent(
         Spacer(modifier = Modifier.height(16.dp))
         
         // Hourly forecast
-        val hourlyForecast = viewModel.getHourlyForecast(24)
         if (hourlyForecast.isNotEmpty()) {
             HourlyForecastSection(
                 hourlyForecast = hourlyForecast,

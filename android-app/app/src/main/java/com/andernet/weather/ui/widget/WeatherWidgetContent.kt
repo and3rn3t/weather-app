@@ -1,6 +1,7 @@
 package com.andernet.weather.ui.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -13,8 +14,8 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.andernet.weather.MainActivity
-import com.andernet.weather.data.model.CurrentWeatherData
-import com.andernet.weather.data.model.HourlyWeatherData
+import com.andernet.weather.data.model.CurrentWeather
+import com.andernet.weather.data.model.HourlyForecastItem
 import com.andernet.weather.data.model.TemperatureUnit
 import com.andernet.weather.data.model.WeatherCondition
 
@@ -25,17 +26,18 @@ import com.andernet.weather.data.model.WeatherCondition
 @Composable
 fun SmallWidgetContent(
     locationName: String,
-    currentWeather: CurrentWeatherData?,
+    currentWeather: CurrentWeather?,
     temperatureUnit: TemperatureUnit
 ) {
-    val condition = currentWeather?.let { WeatherCondition(it.weatherCode) }
+    val condition = currentWeather?.let { WeatherCondition.fromCode(it.weatherCode) }
+    val context = LocalContext.current
     
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(ImageProvider(android.R.drawable.screen_background_dark))
             .padding(12.dp)
-            .clickable(actionStartActivity<MainActivity>()),
+            .clickable(actionStartActivity(Intent(context, MainActivity::class.java))),
         contentAlignment = Alignment.Center
     ) {
         if (currentWeather != null) {
@@ -95,17 +97,18 @@ fun SmallWidgetContent(
 @Composable
 fun MediumWidgetContent(
     locationName: String,
-    currentWeather: CurrentWeatherData?,
+    currentWeather: CurrentWeather?,
     temperatureUnit: TemperatureUnit
 ) {
-    val condition = currentWeather?.let { WeatherCondition(it.weatherCode) }
+    val condition = currentWeather?.let { WeatherCondition.fromCode(it.weatherCode) }
+    val context = LocalContext.current
     
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(ImageProvider(android.R.drawable.screen_background_dark))
             .padding(16.dp)
-            .clickable(actionStartActivity<MainActivity>())
+            .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
     ) {
         if (currentWeather != null) {
             Row(
@@ -181,18 +184,19 @@ fun MediumWidgetContent(
 @Composable
 fun LargeWidgetContent(
     locationName: String,
-    currentWeather: CurrentWeatherData?,
-    hourlyForecast: List<HourlyWeatherData>,
+    currentWeather: CurrentWeather?,
+    hourlyForecast: List<HourlyForecastItem>,
     temperatureUnit: TemperatureUnit
 ) {
-    val condition = currentWeather?.let { WeatherCondition(it.weatherCode) }
+    val condition = currentWeather?.let { WeatherCondition.fromCode(it.weatherCode) }
+    val context = LocalContext.current
     
     Box(
         modifier = GlanceModifier
             .fillMaxSize()
             .background(ImageProvider(android.R.drawable.screen_background_dark))
             .padding(16.dp)
-            .clickable(actionStartActivity<MainActivity>())
+            .clickable(actionStartActivity(Intent(context, MainActivity::class.java)))
     ) {
         if (currentWeather != null) {
             Column(modifier = GlanceModifier.fillMaxSize()) {
@@ -303,15 +307,14 @@ private fun StatRow(label: String, value: String) {
  * Helper: Hourly forecast item for large widget
  */
 @Composable
-private fun HourlyItem(hour: HourlyWeatherData, temperatureUnit: TemperatureUnit) {
+private fun HourlyItem(hour: HourlyForecastItem, temperatureUnit: TemperatureUnit) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = GlanceModifier.width(50.dp)
     ) {
-        // Time
-        val timeText = android.text.format.DateFormat.format("ha", hour.time).toString()
+        // Time - already formatted as string
         Text(
-            text = timeText,
+            text = hour.time,
             style = TextStyle(
                 fontSize = 10.sp,
                 color = ColorProvider(android.R.color.white)

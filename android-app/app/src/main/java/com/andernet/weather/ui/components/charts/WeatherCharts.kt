@@ -6,7 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import com.andernet.weather.data.model.HourlyWeatherData
+import com.andernet.weather.data.model.HourlyForecastItem
 import com.andernet.weather.data.model.TemperatureUnit
 import com.andernet.weather.data.model.WindSpeedUnit
 import com.github.mikephil.charting.charts.BarChart
@@ -18,7 +18,7 @@ import com.github.mikephil.charting.data.*
  */
 @Composable
 fun TemperatureChart(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     temperatureUnit: TemperatureUnit,
     modifier: Modifier = Modifier
 ) {
@@ -61,7 +61,7 @@ fun TemperatureChart(
  */
 @Composable
 fun PrecipitationChart(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     modifier: Modifier = Modifier
 ) {
     AndroidView(
@@ -104,7 +104,7 @@ fun PrecipitationChart(
  */
 @Composable
 fun UVIndexChart(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     modifier: Modifier = Modifier
 ) {
     AndroidView(
@@ -152,7 +152,7 @@ fun UVIndexChart(
  */
 @Composable
 fun WindSpeedChart(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     windSpeedUnit: WindSpeedUnit,
     modifier: Modifier = Modifier
 ) {
@@ -197,7 +197,7 @@ fun WindSpeedChart(
  */
 @Composable
 fun HumidityChart(
-    hourlyData: List<HourlyWeatherData>,
+    hourlyData: List<HourlyForecastItem>,
     modifier: Modifier = Modifier
 ) {
     AndroidView(
@@ -215,7 +215,7 @@ fun HumidityChart(
         },
         update = { chart ->
             val entries = hourlyData.mapIndexed { index, data ->
-                Entry(index.toFloat(), data.humidity.toFloat())
+                Entry(index.toFloat(), (data.humidity ?: 0).toFloat())
             }
             
             val dataSet = ChartFactory.createLineDataSet(
