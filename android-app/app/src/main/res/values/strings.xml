@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Weather</string>
+    
+    <!-- Weather Conditions -->
+    <string name="condition_clear">Clear</string>
+    <string name="condition_partly_cloudy">Partly Cloudy</string>
+    <string name="condition_cloudy">Cloudy</string>
+    <string name="condition_overcast">Overcast</string>
+    <string name="condition_fog">Fog</string>
+    <string name="condition_drizzle">Drizzle</string>
+    <string name="condition_rain">Rain</string>
+    <string name="condition_snow">Snow</string>
+    <string name="condition_thunderstorm">Thunderstorm</string>
+    <string name="condition_unknown">Unknown</string>
+    
+    <!-- Navigation -->
+    <string name="nav_home">Home</string>
+    <string name="nav_search">Search</string>
+    <string name="nav_favorites">Favorites</string>
+    <string name="nav_settings">Settings</string>
+    
+    <!-- Weather Details -->
+    <string name="feels_like">Feels like %1$s</string>
+    <string name="humidity">Humidity</string>
+    <string name="wind">Wind</string>
+    <string name="pressure">Pressure</string>
+    <string name="visibility">Visibility</string>
+    <string name="uv_index">UV Index</string>
+    <string name="sunrise">Sunrise</string>
+    <string name="sunset">Sunset</string>
+    <string name="precipitation">Precipitation</string>
+    
+    <!-- Location -->
+    <string name="current_location">Current Location</string>
+    <string name="search_location">Search location…</string>
+    <string name="location_permission_required">Location permission required</string>
+    <string name="location_permission_rationale">We need location access to show you weather for your current location</string>
+    <string name="grant_permission">Grant Permission</string>
+    
+    <!-- Forecast -->
+    <string name="hourly_forecast">Hourly Forecast</string>
+    <string name="daily_forecast">14-Day Forecast</string>
+    <string name="today">Today</string>
+    <string name="tomorrow">Tomorrow</string>
+    
+    <!-- Settings -->
+    <string name="temperature_unit">Temperature Unit</string>
+    <string name="wind_speed_unit">Wind Speed Unit</string>
+    <string name="precipitation_unit">Precipitation Unit</string>
+    <string name="use_24_hour_format">24-hour format</string>
+    <string name="notifications">Notifications</string>
+    <string name="daily_forecast_notification">Daily forecast</string>
+    <string name="rain_alerts">Rain alerts</string>
+    
+    <!-- Units -->
+    <string name="unit_celsius">Celsius (°C)</string>
+    <string name="unit_fahrenheit">Fahrenheit (°F)</string>
+    <string name="unit_mph">mph</string>
+    <string name="unit_kmh">km/h</string>
+    <string name="unit_ms">m/s</string>
+    <string name="unit_knots">knots</string>
+    <string name="unit_inches">inches</string>
+    <string name="unit_mm">mm</string>
+    
+    <!-- Favorites -->
+    <string name="no_favorites">No saved locations</string>
+    <string name="add_to_favorites">Add to favorites</string>
+    <string name="remove_from_favorites">Remove from favorites</string>
+    <string name="delete">Delete</string>
+    
+    <!-- Errors -->
+    <string name="error_network">Network error. Please check your connection.</string>
+    <string name="error_location">Unable to get your location</string>
+    <string name="error_generic">Something went wrong</string>
+    <string name="retry">Retry</string>
+    <string name="offline_mode">Offline - Showing cached data</string>
+    
+    <!-- Loading -->
+    <string name="loading">Loading…</string>
+    <string name="refreshing">Refreshing…</string>
+</resources>
