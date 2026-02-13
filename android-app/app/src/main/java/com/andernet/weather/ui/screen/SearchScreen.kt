@@ -25,7 +25,8 @@ import com.andernet.weather.ui.viewmodel.SearchViewModel
 @Composable
 fun SearchScreen(
     searchViewModel: SearchViewModel = hiltViewModel(),
-    mainViewModel: MainViewModel = hiltViewModel()
+    mainViewModel: MainViewModel = hiltViewModel(),
+    onNavigateToHome: () -> Unit
 ) {
     val searchUiState by searchViewModel.uiState.collectAsStateWithLifecycle()
     
@@ -107,6 +108,7 @@ fun SearchScreen(
                                 location = location,
                                 onClick = {
                                     mainViewModel.loadWeatherForLocation(location)
+                                    onNavigateToHome()
                                 }
                             )
                         }

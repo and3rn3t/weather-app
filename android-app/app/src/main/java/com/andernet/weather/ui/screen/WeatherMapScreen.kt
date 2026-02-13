@@ -68,13 +68,15 @@ fun WeatherMapScreen(
                 .padding(paddingValues)
         ) {
             // Google Map with radar overlay
-            WeatherMapView(
-                cameraPositionState = cameraPositionState,
-                radarTiles = uiState.radarTiles,
-                currentFrameIndex = uiState.currentFrameIndex,
-                mapLayerType = uiState.mapLayerType,
-                radarOpacity = uiState.radarOpacity
-            )
+            if (!uiState.isLoading) {
+                WeatherMapView(
+                    cameraPositionState = cameraPositionState,
+                    radarTiles = uiState.radarTiles,
+                    currentFrameIndex = uiState.currentFrameIndex,
+                    mapLayerType = uiState.mapLayerType,
+                    radarOpacity = uiState.radarOpacity
+                )
+            }
             
             // Loading indicator
             if (uiState.isLoading) {
@@ -178,7 +180,7 @@ fun WeatherMapView(
             val currentTile = radarTiles[currentFrameIndex]
             
             // Note: Tile overlay requires additional setup
-            // For now, we'll use a marker to demonstrate the data is available
+            // For now, we'''ll use a marker to demonstrate the data is available
             // In a full implementation, you would use TileOverlayOptions
             // with a custom TileProvider that fetches tiles from the URL
         }

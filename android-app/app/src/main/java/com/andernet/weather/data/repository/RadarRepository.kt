@@ -34,8 +34,8 @@ class RadarRepository @Inject constructor(
             val response = rainViewerApi.getRadarMaps()
             val tiles = mutableListOf<RadarTile>()
             
-            // Process past frames (radar history)
-            response.radar.past.forEach { frame ->
+            // Process past frames (radar history) - take the last 5
+            response.radar.past.takeLast(5).forEach { frame ->
                 val tileUrl = RainViewerApiService.buildTileUrl(
                     host = response.host,
                     path = frame.path
@@ -49,8 +49,8 @@ class RadarRepository @Inject constructor(
                 )
             }
             
-            // Process nowcast frames (radar forecast)
-            response.radar.nowcast.forEach { frame ->
+            // Process nowcast frames (radar forecast) - take the first 5
+            response.radar.nowcast.take(5).forEach { frame ->
                 val tileUrl = RainViewerApiService.buildTileUrl(
                     host = response.host,
                     path = frame.path

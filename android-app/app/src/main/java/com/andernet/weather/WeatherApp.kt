@@ -96,7 +96,11 @@ fun WeatherApp() {
                 )
             }
             composable(Screen.Search.route) {
-                SearchScreen()
+                SearchScreen(
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route)
+                    }
+                )
             }
             composable(Screen.Favorites.route) {
                 FavoritesScreen()
