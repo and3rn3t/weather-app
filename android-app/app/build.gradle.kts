@@ -123,7 +123,7 @@ dependencies {
     implementation("androidx.datastore:datastore-preferences:1.0.0")
 
     // Location Services
-    implementation("com.google.android.gms:play-services-location:21.1.0")
+    implementation("com.google.android.gms:play-services-location:21.3.0")
 
     // Accompanist - Utilities
     implementation("com.google.accompanist:accompanist-permissions:0.34.0")
