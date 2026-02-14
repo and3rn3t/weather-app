@@ -210,6 +210,22 @@ See [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) for d
 
 ---
 
+## 📚 Documentation
+
+Additional documentation can be found in the [docs](docs/) directory:
+
+- **[Multi-Platform Guide](docs/README_MULTIPLATFORM.md)** - iOS + Android development
+- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands and workflows
+- **[Optimization Summary](docs/OPTIMIZATION_SUMMARY.md)** - Performance optimizations
+- **[AI Optimization Guide](docs/AI_OPTIMIZATION_SUMMARY.md)** - AI agent configuration
+- **[Recent Features](docs/FEATURES_ADDED_FEB_14_2026.md)** - Latest feature additions
+- **[Privacy Policy](docs/PRIVACY_POLICY.md)** - Privacy information
+- **[Support](docs/SUPPORT.md)** - Support resources
+
+For complete architecture documentation, see [ARCHITECTURE.md](../ARCHITECTURE.md).
+
+---
+
 ## 🤝 Contributing
 
 We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for:
