@@ -123,6 +123,30 @@ final class WeatherService {
 "\(Int((temp - 32) * 5/9))°C"
 ```
 
+## Recent Features
+
+### Severe Weather Alerts (NEW)
+
+- **Service**: `WeatherAlertService.swift` - NWS API integration
+- **UI**: `WeatherAlertsCard.swift` - Alert display component
+- **API**: National Weather Service (<https://api.weather.gov/alerts/active>)
+- **Coverage**: US locations only
+- **Severity Levels**: Extreme, Severe, Moderate, Minor
+- **Integration**: Alerts automatically fetched with weather data
+
+### Weather Radar Map (ENHANCED)
+
+- **View**: `RadarMapView.swift`
+- **Service**: `RainViewerService.swift`
+- **Integration**: RainViewer API for animated radar tiles
+- **Features**: Interactive map with precipitation overlay, animation controls
+
+### Swift 6 Compatibility (UPDATED)
+
+- Updated error handling to use `any Error` syntax
+- Addressed strict concurrency warnings
+- Modern async/await patterns throughout
+
 ## When Making Changes
 
 ### Adding New Features
@@ -191,6 +215,54 @@ make profile              # Build for Instruments profiling
 make setup-tools        # Install xcbeautify, swiftlint
 make install-hooks      # Install git pre-commit hooks
 ```
+
+### CI/CD Integration
+
+The project includes comprehensive CI/CD automation:
+
+#### GitHub Actions Workflows
+
+- **iOS CI** (`ci.yml`) - Build, test, security scan (2-device matrix)
+- **Android CI** (`android.yml`) - Build, lint, test for companion Android app
+- **TestFlight Deployment** (`deploy-testflight.yml`) - Automated iOS releases
+- **Play Store Deployment** (`deploy-playstore.yml`) - Automated Android releases
+- **Code Coverage** (`coverage.yml`) - LLVM (iOS) + JaCoCo (Android)
+- **PR Auto-Labeling** (`pr-labeler.yml`) - Automatic PR categorization
+- **Build Performance** (`build-performance.yml`) - Build time tracking
+- **Nightly Builds** (`nightly.yml`) - Scheduled full builds
+- **Stale Management** (`stale.yml`) - Auto-close inactive issues
+- **Changelog** (`changelog.yml`) - Automatic changelog generation
+
+#### Fastlane
+
+- **iOS**: `fastlane ios beta` - TestFlight deployment
+- **Android**: `fastlane android beta` - Play Store beta deployment
+- **Configuration**: `fastlane/Fastfile`, `fastlane/Appfile`
+
+#### Runner Cost Optimizations
+
+- Reduced iOS test matrix from 3 devices to 2 (33% savings)
+- SwiftLint runs on Linux runner instead of macOS (10x cheaper)
+- Path filtering prevents unnecessary workflow runs
+- **Total savings: ~23% on CI/CD runner costs**
+
+### Multi-Platform Project
+
+This is a **cross-platform project** with both iOS and Android implementations:
+
+**iOS** (main directory):
+
+- Swift 5.9+, SwiftUI, iOS 17.0+
+- MVVM + Observable pattern
+- SwiftData, URLSession, CoreLocation
+
+**Android** (`android-app/` directory):
+
+- Kotlin, Jetpack Compose, Android 8.0+
+- MVVM + Clean Architecture
+- Room, Retrofit, Hilt DI, Fused Location Provider
+
+**Shared APIs**: Open-Meteo (weather), RainViewer (radar), NWS (severe alerts)
 
 ### Xcode Schemes
 
@@ -274,17 +346,21 @@ The codebase follows these performance patterns:
 
 ## Common Issues & Solutions
 
-### Build Errors
+### Build Errors (`@ObservableObject`, `@Published` - use `@Observable`)
 
-- **Missing manager**: Check environment setup in `weatherApp.swift`
-- **SwiftData errors**: Ensure `@Model` classes are properly defined
-- **Async errors**: Wrap in `Task { }` when called from sync context
+❌ Do not break existing tests
+❌ Do not create formatters inside loops or computed properties
+❌ Do not skip the Makefile for builds
+❌ Do not use bare `Error` protocol (use `any Error` for Swift 6 compatibility)
 
-### Runtime Issues
-
-- **No weather data**: Check location permissions
-- **Blank screen**: Verify environment objects are injected
-- **Chart not updating**: Ensure data model conforms to `Identifiable`
+✅ Do use Apple frameworks only
+✅ Do follow existing patterns
+✅ Do maintain dark mode support
+✅ Do add documentation for new features
+✅ Do write tests for new code
+✅ Do use cached formatters and sessions
+✅ Do use `make build` instead of `xcodebuild` directly
+✅ Do consider both iOS and Android implementations for shared features
 
 ## Testing Guidance
 

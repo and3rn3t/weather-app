@@ -307,6 +307,77 @@ Install with: `make install-hooks`
 5. **Dark Mode**: All UI should work in both light and dark modes
 6. **Performance**: Use cached formatters and sessions, debounce requests
 
+## Recent Features
+
+### Severe Weather Alerts (NEW)
+- **Service**: `WeatherAlertService.swift` - NWS API integration
+- **UI**: `WeatherAlertsCard.swift` - Alert display component
+- **API**: National Weather Service (https://api.weather.gov/alerts/active)
+- **Coverage**: US locations only
+- **Severity Levels**: Extreme, Severe, Moderate, Minor
+- **Usage**: Automatically fetched with weather data, displayed in card
+
+### Weather Radar Map (ENHANCED)
+- **View**: `RadarMapView.swift`
+- **Service**: `RainViewerService.swift`
+- **Integration**: RainViewer API for animated radar tiles
+- **Features**: Interactive map, precipitation overlay, animation controls
+- **Usage**: Accessible from main weather view
+
+### Swift 6 Compatibility (UPDATED)
+- Updated error handling to use `any Error` syntax
+- Addressed strict concurrency warnings
+- Modern async/await patterns throughout
+- Locations: `WeatherService.swift`, `WeatherAlertService.swift`, `RainViewerService.swift`
+
+## CI/CD Integration
+
+### GitHub Actions Workflows
+The project includes comprehensive CI/CD automation:
+
+- **iOS CI** (`ci.yml`) - Build, test, security scan (2-device matrix)
+- **Android CI** (`android.yml`) - Build, lint, test, assemble APK
+- **TestFlight Deployment** (`deploy-testflight.yml`) - Automated iOS releases
+- **Play Store Deployment** (`deploy-playstore.yml`) - Automated Android releases
+- **Code Coverage** (`coverage.yml`) - LLVM (iOS) + JaCoCo (Android)
+- **PR Auto-Labeling** (`pr-labeler.yml`) - Automatic PR categorization
+- **Build Performance** (`build-performance.yml`) - Build time tracking
+- **Nightly Builds** (`nightly.yml`) - Scheduled full builds
+- **Stale Management** (`stale.yml`) - Auto-close inactive issues
+- **Changelog** (`changelog.yml`) - Automatic changelog generation
+
+### Fastlane
+- **iOS**: `fastlane ios beta` - TestFlight deployment
+- **Android**: `fastlane android beta` - Play Store beta deployment
+- **Configuration**: `fastlane/Fastfile`, `fastlane/Appfile`
+
+### Runner Cost Optimizations
+- Reduced iOS test matrix from 3 devices to 2 (33% savings)
+- SwiftLint runs on Linux runner instead of macOS (10x cheaper)
+- Path filtering prevents unnecessary workflow runs
+- **Total savings: ~23% on CI/CD runner costs**
+
+## Multi-Platform Architecture
+
+This is a **cross-platform project** with both iOS and Android implementations:
+
+### iOS (This Codebase)
+- Swift 5.9+, SwiftUI, iOS 17.0+
+- Architecture: MVVM + Observable
+- Data: SwiftData, URLSession
+- Location: CoreLocation
+
+### Android (Companion App in `android-app/`)
+- Kotlin, Jetpack Compose, Android 8.0+
+- Architecture: MVVM + Clean Architecture
+- Data: Room, Retrofit, Hilt DI
+- Location: Fused Location Provider
+
+### Shared Concepts
+- Same APIs: Open-Meteo (weather), RainViewer (radar), NWS (alerts)
+- Similar UI structure: Current, Hourly, Daily, Favorites, Settings
+- Parallel features: Severe alerts (iOS implemented, Android planned)
+
 ## Debugging Tips
 
 - Check `LocationManager.authorizationStatus` for location issues
@@ -332,7 +403,8 @@ Test poor network conditions with Network Link Conditioner profiles in `NetworkP
 - Add third-party dependencies without approval
 - Remove existing accessibility labels
 - Hardcode API keys or secrets
-- Use deprecated SwiftUI APIs
+- Use deprecated SwiftUI APIs (`@ObservableObject`, `@Published` - use `@Observable` instead)
 - Break existing functionality when adding features
 - Create new formatters inside loops or computed properties
 - Skip the Makefile for builds (use `make build` not `xcodebuild` directly)
+- Use bare `Error` protocol (use `any Error` for Swift 6 compatibility)
