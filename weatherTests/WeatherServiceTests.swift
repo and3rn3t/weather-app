@@ -14,7 +14,22 @@ import Foundation
 @MainActor
 struct WeatherServiceTests {
     
+    /// Clear cached weather data and UserDefaults before each test
+    func clearCache() {
+        // Clear UserDefaults keys
+        let ud = UserDefaults.standard
+        ud.removeObject(forKey: "lastWeatherLatitude")
+        ud.removeObject(forKey: "lastWeatherLongitude")
+        ud.removeObject(forKey: "lastWeatherLocationName")
+        
+        // Clear cached file
+        if let fileURL = SharedDataManager.cachedWeatherFilePrimaryURL {
+            try? FileManager.default.removeItem(at: fileURL)
+        }
+    }
+    
     @Test func initialState() {
+        clearCache()
         let service = WeatherService()
         
         #expect(service.weatherData == nil)
@@ -26,6 +41,7 @@ struct WeatherServiceTests {
     }
     
     @Test func fetchWeatherUpdatesLoadingState() async {
+        clearCache()
         let service = WeatherService()
         
         // Start a fetch (will fail without network, but tests loading state)
@@ -41,6 +57,7 @@ struct WeatherServiceTests {
     }
     
     @Test func locationNameIsSaved() async {
+        clearCache()
         let service = WeatherService()
         let testName = "Test Location"
         
