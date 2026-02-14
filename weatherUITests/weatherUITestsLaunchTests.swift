@@ -7,6 +7,7 @@
 
 import XCTest
 
+nonisolated(unsafe)
 final class weatherUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
@@ -17,7 +18,6 @@ final class weatherUITestsLaunchTests: XCTestCase {
         continueAfterFailure = false
     }
 
-    @MainActor
     func testLaunch() throws {
         let app = XCUIApplication()
         app.launch()

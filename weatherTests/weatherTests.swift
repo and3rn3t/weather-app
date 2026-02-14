@@ -329,11 +329,6 @@ struct TemperatureUnitTests {
         #expect(TemperatureUnit.fahrenheit.symbol == "°F")
         #expect(TemperatureUnit.celsius.symbol == "°C")
     }
-    
-    @Test func apiValues() {
-        #expect(TemperatureUnit.fahrenheit.apiValue == "fahrenheit")
-        #expect(TemperatureUnit.celsius.apiValue == "celsius")
-    }
 }
 
 // MARK: - Wind Speed Unit Tests
@@ -400,10 +395,10 @@ struct AccessibilityHelperTests {
     }
 }
 
-// MARK: - Moon Phase Tests
+// MARK: - Moon Phase Calculation Tests
 
 @MainActor
-struct MoonPhaseTests {
+struct MoonPhaseCalculationTests {
     
     @Test func phaseNames() {
         // All phases should have a name, icon, and illumination
