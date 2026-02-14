@@ -6,8 +6,18 @@ name: Build & Test
 on:
   push:
     branches: [main]
+    paths:
+      - 'weather/**'
+      - '.github/workflows/ci.yml'
+      - '!weather/Documentation/**'
+      - '!**.md'
   pull_request:
     branches: [main]
+    paths:
+      - 'weather/**'
+      - '.github/workflows/ci.yml'
+      - '!weather/Documentation/**'
+      - '!**.md'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -20,9 +30,16 @@ env:
 
 jobs:
   build:
-    name: Build & Test
+    name: Build & Test (${{ matrix.device }})
     runs-on: macos-15
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        device:
+          - 'iPhone 16 Pro'
+          - 'iPhone SE (3rd generation)'
+          - 'iPad Pro (13-inch) (M4)'
 
     steps:
       - name: Checkout
@@ -41,6 +58,16 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deriveddata-
 
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/xcbeautify
+          key: ${{ runner.os }}-homebrew-xcbeautify
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
       - name: Install xcbeautify
         run: brew install xcbeautify
 
@@ -49,7 +76,7 @@ jobs:
           xcodebuild build \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
@@ -60,11 +87,20 @@ jobs:
           xcodebuild test \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
             -parallel-testing-enabled YES \
+            -resultBundlePath TestResults.xcresult \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.device }}
+          path: TestResults.xcresult
+          retention-days: 7
 
   lint:
     name: SwiftLint
@@ -75,15 +111,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Run SwiftLint
-        run: |
-          brew install swiftlint
-          swiftlint --config .swiftlint.yml --reporter github-actions-logging
-
-  build-release:
-    name: Build Release
-    runs-on: macos-15
-    needs: [build, lint]
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/swiftlint
+          key: ${{ runner.os }}-homebrew-swiftlint
+          restore-keys: |
+            ${{ runner., security-scan]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
 
@@ -95,6 +131,78 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: '16.0'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-release-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-release-
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/xcbeautify
+          key: ${{ runner.os }}-homebrew-xcbeautify
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Build Release
+        run: |
+          xcodebuild build \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME }} \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Analyze Build Size
+        id: build-size
+        run: |
+          # Get the build product path
+          BUILD_DIR=$(xcodebuild -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME }} \
+            -showBuildSettings \
+            -configuration Release \
+            | grep -m 1 "BUILT_PRODUCTS_DIR" \
+            | awk '{print $3}')
+          
+          if [ -d "$BUILD_DIR/weather.app" ]; then
+            SIZE=$(du -sh "$BUILD_DIR/weather.app" | awk '{print $1}')
+            echo "📦 App Bundle Size: $SIZE"
+            echo "size=$SIZE" >> $GITHUB_OUTPUT
+            
+            # Create size breakdown
+            echo "### 📊 Build Size Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Component | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Total App Bundle | $SIZE |" >> $GITHUB_STEP_SUMMARY
+            
+            # Show largest files
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Largest Files:**" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            du -h "$BUILD_DIR/weather.app" | sort -rh | head -10 >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Build Performance Metrics
+        run: |
+          echo "### ⚡ Build Performance" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Build completed successfully on macOS 15 with Xcode 16.0" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Configuration:** Release" >> $GITHUB_STEP_SUMMARY
+          echo "**Target:** iOS Simulator" >> $GITHUB_STEP_SUMMARYode-version: '16.0'
 
       - name: Cache DerivedData
         uses: actions/cache@v4

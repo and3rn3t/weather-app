@@ -1,0 +1,103 @@
+# Dependabot configuration for automated dependency updates
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates/configuration-options-for-the-dependabot.yml-file
+
+version: 2
+updates:
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "ci"
+      include: "scope"
+    open-pull-requests-limit: 5
+
+  # Swift Package Manager (iOS)
+  - package-ecosystem: "swift"
+    directory: "/weather"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "swift"
+      - "ios"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 5
+    # Group minor and patch updates
+    groups:
+      swift-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Gradle (Android)
+  - package-ecosystem: "gradle"
+    directory: "/android-app"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "gradle"
+      - "android"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 10
+    # Group dependencies by type
+    groups:
+      androidx:
+        patterns:
+          - "androidx.*"
+        update-types:
+          - "minor"
+          - "patch"
+      kotlin:
+        patterns:
+          - "org.jetbrains.kotlin*"
+          - "org.jetbrains.kotlinx*"
+        update-types:
+          - "minor"
+          - "patch"
+      compose:
+        patterns:
+          - "*compose*"
+        update-types:
+          - "minor"
+          - "patch"
+
+  # Bundler (Fastlane/Ruby dependencies)
+  - package-ecosystem: "bundler"
+    directory: "/fastlane"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    labels:
+      - "dependencies"
+      - "ruby"
+      - "fastlane"
+    commit-message:
+      prefix: "deps"
+      include: "scope"
+    open-pull-requests-limit: 5
+    groups:
+      fastlane-plugins:
+        patterns:
+          - "fastlane*"
+        update-types:
+          - "minor"
+          - "patch"

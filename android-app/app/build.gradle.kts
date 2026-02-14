@@ -7,6 +7,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("com.google.dagger.hilt.android")
     id("com.google.devtools.ksp")
+    id("jacoco")
 }
 
 // Read local.properties for API keys
@@ -37,6 +38,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -143,7 +148,47 @@ dependencies {
     implementation("androidx.glance:glance-material3:1.0.0")
 
     // Testing
-    testImplementation("junit:junit:4.13.2")
+ 
+
+// JaCoCo Code Coverage Configuration
+tasks.register<JacocoReport>("jacocoTestReport") {
+    dependsOn("testDebugUnitTest")
+
+    reports {
+        xml.required.set(true)
+        html.required.set(true)
+        csv.required.set(false)
+    }
+
+    val fileFilter = listOf(
+        "**/R.class",
+        "**/R\$*.class",
+        "**/BuildConfig.*",
+        "**/Manifest*.*",
+        "**/*Test*.*",
+        "android/**/*.*",
+        "**/*\$Lambda$*.*",
+        "**/*\$inlined$*.*",
+        "**/*Module.*",
+        "**/*Module\$*.*",
+        "**/*Dagger*.*",
+        "**/*Hilt*.*",
+        "**/*_Factory.*",
+        "**/*_MembersInjector.*",
+        "**/*_Provide*Factory.*"
+    )
+
+    val debugTree = fileTree("${project.buildDir}/tmp/kotlin-classes/debug") {
+        exclude(fileFilter)
+    }
+    val mainSrc = "${project.projectDir}/src/main/java"
+
+    sourceDirectories.setFrom(files(mainSrc))
+    classDirectories.setFrom(files(debugTree))
+    executionData.setFrom(fileTree(project.buildDir) {
+        include("jacoco/testDebugUnitTest.exec")
+    })
+}   testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")

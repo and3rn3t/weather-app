@@ -1,0 +1,134 @@
+# Code Coverage
+# Runs tests with coverage reporting and uploads to Codecov
+
+name: Code Coverage
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+  PROJECT_NAME: weather
+  SCHEME: weather
+
+jobs:
+  ios-coverage:
+    name: iOS Coverage
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-coverage-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-coverage-
+
+      - name: Run Tests with Coverage
+        run: |
+          xcodebuild test \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME }} \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -enableCodeCoverage YES \
+            -derivedDataPath DerivedData \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Generate Coverage Report
+        run: |
+          xcrun llvm-cov export \
+            -format="lcov" \
+            DerivedData/Build/Products/Debug-iphonesimulator/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }} \
+            -instr-profile DerivedData/Build/ProfileData/*/Coverage.profdata \
+            > coverage.lcov
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: coverage.lcov
+          flags: ios
+          name: ios-coverage
+          fail_ci_if_error: false
+
+      - name: Upload Coverage Artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-coverage
+          path: coverage.lcov
+          retention-days: 7
+
+  android-coverage:
+    name: Android Coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Create local.properties
+        working-directory: android-app
+        run: |
+          echo "MAPS_API_KEY=dummy_key_for_ci" > local.properties
+
+      - name: Run Tests with Coverage
+        working-directory: android-app
+        run: ./gradlew testDebugUnitTest jacocoTestReport
+
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: android-app/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          flags: android
+          name: android-coverage
+          fail_ci_if_error: false
+
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-coverage
+          path: android-app/app/build/reports/jacoco/
+          retention-days: 7
+
+      - name: Comment Coverage on PR
+        if: github.event_name == 'pull_request'
+        uses: madrapps/jacoco-report@v1.6.1
+        with:
+          paths: android-app/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
+          token: ${{ secrets.GITHUB_TOKEN }}
+          min-coverage-overall: 40
+          min-coverage-changed-files: 60
+          title: Android Code Coverage

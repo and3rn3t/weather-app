@@ -1,0 +1,183 @@
+# TestFlight Deployment
+# Manually triggered workflow to deploy iOS app to TestFlight
+
+name: Deploy to TestFlight
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.1) - leave empty to auto-increment'
+        required: false
+        type: string
+      skip_tests:
+        description: 'Skip running tests before deployment'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+  PROJECT_NAME: weather
+  SCHEME: weather
+
+jobs:
+  deploy:
+    name: Deploy to TestFlight
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Need full history for version bumping
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.2'
+          bundler-cache: true
+
+      - name: Install Fastlane
+        run: |
+          gem install fastlane
+          fastlane --version
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-release-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-release-
+
+      - name: Run Tests
+        if: ${{ !inputs.skip_tests }}
+        run: |
+          xcodebuild test \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME }} \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -parallel-testing-enabled YES \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Install App Store Connect API Key
+        env:
+          ASC_API_KEY_CONTENT: ${{ secrets.ASC_API_KEY_CONTENT }}
+        run: |
+          mkdir -p ~/.appstoreconnect/private_keys
+          echo "$ASC_API_KEY_CONTENT" > ~/.appstoreconnect/private_keys/AuthKey_${{ secrets.ASC_API_KEY_ID }}.p8
+
+      - name: Import Code Signing Certificates
+        env:
+          CERTIFICATE_P12: ${{ secrets.APPLE_CERTIFICATE_P12 }}
+          CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          # Decode certificate
+          echo "$CERTIFICATE_P12" | base64 -d > certificate.p12
+          
+          # Create temporary keychain
+          security create-keychain -p "${{ secrets.KEYCHAIN_PASSWORD || 'temp_password' }}" build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "${{ secrets.KEYCHAIN_PASSWORD || 'temp_password' }}" build.keychain
+          security set-keychain-settings -t 3600 -u build.keychain
+          
+          # Import certificate
+          security import certificate.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple: -s -k "${{ secrets.KEYCHAIN_PASSWORD || 'temp_password' }}" build.keychain
+          
+          # Clean up
+          rm certificate.p12
+
+      - name: Download Provisioning Profiles
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          # This would download provisioning profiles from App Store Connect
+          # For now, assuming they're managed via Fastlane Match or manual upload
+
+      - name: Set Custom Version
+        if: ${{ inputs.version != '' }}
+        run: |
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString ${{ inputs.version }}" ${{ env.PROJECT_NAME }}/Info.plist
+
+      - name: Increment Build Number
+        run: |
+          BUILD_NUMBER=$(($(date +%Y%m%d%H%M)))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" ${{ env.PROJECT_NAME }}/Info.plist
+          echo "BUILD_NUMBER=$BUILD_NUMBER" >> $GITHUB_ENV
+
+      - name: Build & Archive
+        run: |
+          xcodebuild archive \
+            -project ${{ env.PROJECT_NAME }}.xcodeproj \
+            -scheme ${{ env.SCHEME }} \
+            -configuration Release \
+            -archivePath ${{ github.workspace }}/build/${{ env.PROJECT_NAME }}.xcarchive \
+            -destination 'generic/platform=iOS' \
+            -allowProvisioningUpdates
+
+      - name: Export IPA
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath ${{ github.workspace }}/build/${{ env.PROJECT_NAME }}.xcarchive \
+            -exportPath ${{ github.workspace }}/build \
+            -exportOptionsPlist ExportOptions.plist \
+            -allowProvisioningUpdates
+
+      - name: Upload to TestFlight
+        env:
+          ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+        run: |
+          xcrun altool --upload-app \
+            --type ios \
+            --file "${{ github.workspace }}/build/${{ env.PROJECT_NAME }}.ipa" \
+            --apiKey $ASC_API_KEY_ID \
+            --apiIssuer $ASC_ISSUER_ID
+
+      - name: Upload Build Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-${{ env.BUILD_NUMBER }}
+          path: |
+            build/*.ipa
+            build/*.xcarchive
+          retention-days: 30
+
+      - name: Create Git Tag
+        if: success()
+        run: |
+          VERSION=$(defaults read "$(pwd)/${{ env.PROJECT_NAME }}/Info.plist" CFBundleShortVersionString)
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "v${VERSION}-${BUILD_NUMBER}" -m "Release v${VERSION} build ${BUILD_NUMBER}"
+          git push origin "v${VERSION}-${BUILD_NUMBER}"
+
+      - name: Cleanup
+        if: always()
+        run: |
+          security delete-keychain build.keychain || true
+          rm -rf ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision
+
+      - name: Notify Success
+        if: success()
+        run: |
+          echo "✅ Successfully deployed to TestFlight!"
+          echo "Build number: $BUILD_NUMBER"
+
+      - name: Notify Failure
+        if: failure()
+        run: |
+          echo "❌ TestFlight deployment failed!"
+          echo "Check the workflow logs for details."
