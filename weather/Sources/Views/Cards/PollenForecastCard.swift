@@ -15,10 +15,12 @@ struct PollenForecastCard: View {
     let latitude: Double
     let longitude: Double
     
-    @State private var pollenData: PollenData?
+    @State private var pollenData: UnifiedPollenData?
     @State private var isLoading = false
     @State private var error: String?
     @State private var selectedPollenType: PollenType?
+    @State private var dataSource: String = ""
+    @Environment(SettingsManager.self) private var settings
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -31,11 +33,14 @@ struct PollenForecastCard: View {
                 if isLoading {
                     ProgressView()
                         .scaleEffect(0.8)
+                } else if !dataSource.isEmpty {
+                    Text(dataSource)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                 }
             }
             
-            if let hourly = pollenData?.hourly,
-               let maxPollen = hourly.maxPollenInRange(start: 0, count: 24) {
+            if let maxPollen = pollenData?.maxPollenInRange(start: 0, count: 24) {
                 
                 VStack(spacing: 16) {
                     // Current pollen level
@@ -172,11 +177,11 @@ struct PollenForecastCard: View {
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(.secondary)
             
-            if let hourly = pollenData?.hourly {
+            if let data = pollenData {
                 Chart {
-                    ForEach(0..<min(168, hourly.time.count), id: \.self) { index in
+                    ForEach(0..<min(data.dates.count, 168), id: \.self) { index in
                         if let concentration = getConcentration(for: type, at: index),
-                           let date = parseDate(hourly.time[index]) {
+                           let date = parseDate(data.dates[index]) {
                             LineMark(
                                 x: .value("Time", date),
                                 y: .value("Concentration", concentration)
@@ -253,10 +258,17 @@ struct PollenForecastCard: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
             
-            Text("Pollen forecasts are primarily available for Europe")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-                .multilineTextAlignment(.center)
+            if isInUS {
+                Text("Configure Tomorrow.io API key in Settings for US pollen data")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            } else {
+                Text("Pollen forecasts are primarily available for Europe and North America")
+                    .font(.caption2)
+                    .foregroundStyle(.tertiary)
+                    .multilineTextAlignment(.center)
+            }
         }
         .padding(.vertical, 20)
         .frame(maxWidth: .infinity)
@@ -264,36 +276,43 @@ struct PollenForecastCard: View {
     
     // MARK: - Helper Functions
     
+    private var isInUS: Bool {
+        // Rough bounding box for continental US
+        return latitude >= 24.0 && latitude <= 50.0 &&
+               longitude >= -125.0 && longitude <= -66.0
+    }
+    
+    private var isInEurope: Bool {
+        // Rough bounding box for Europe
+        return latitude >= 35.0 && latitude <= 71.0 &&
+               longitude >= -10.0 && longitude <= 40.0
+    }
+    
     private func getCurrentConcentration(for type: PollenType) -> Double {
-        guard let hourly = pollenData?.hourly,
-              !hourly.time.isEmpty else {
+        guard let data = pollenData, !data.dates.isEmpty else {
             return 0
         }
         
         switch type {
         case .grass:
-            return hourly.grassPollen?.first ?? 0
-        case .birch:
-            return hourly.birchPollen?.first ?? 0
-        case .olive:
-            return hourly.olivePollen?.first ?? 0
+            return data.grassLevels.first ?? 0
+        case .birch, .olive:
+            return data.treeLevels.first ?? 0
         case .ragweed:
-            return hourly.ragweedPollen?.first ?? 0
+            return data.weedLevels.first ?? 0
         }
     }
     
     private func getConcentration(for type: PollenType, at index: Int) -> Double? {
-        guard let hourly = pollenData?.hourly else { return nil }
+        guard let data = pollenData else { return nil }
         
         switch type {
         case .grass:
-            return hourly.grassPollen?[safe: index]
-        case .birch:
-            return hourly.birchPollen?[safe: index]
-        case .olive:
-            return hourly.olivePollen?[safe: index]
+            return data.grassLevels[safe: index]
+        case .birch, .olive:
+            return data.treeLevels[safe: index]
         case .ragweed:
-            return hourly.ragweedPollen?[safe: index]
+            return data.weedLevels[safe: index]
         }
     }
     
@@ -310,19 +329,55 @@ struct PollenForecastCard: View {
         error = nil
         
         do {
-            let data = try await WeatherService.fetchPollenForecast(
-                latitude: latitude,
-                longitude: longitude
-            )
-            
-            await MainActor.run {
-                self.pollenData = data
-                self.isLoading = false
+            // Determine which API to use based on location
+            if isInUS {
+                // Use Tomorrow.io for US locations
+                guard !settings.tomorrowIOAPIKey.isEmpty else {
+                    await MainActor.run {
+                        self.error = "API key required for US pollen data"
+                        self.isLoading = false
+                    }
+                    return
+                }
                 
-                // Auto-select the highest pollen type if available
-                if let hourly = data.hourly,
-                   let maxPollen = hourly.maxPollenInRange(start: 0, count: 24) {
-                    self.selectedPollenType = maxPollen.type
+                let tomorrowData = try await TomorrowIOService.fetchPollenForecast(
+                    latitude: latitude,
+                    longitude: longitude,
+                    apiKey: settings.tomorrowIOAPIKey
+                )
+                
+                await MainActor.run {
+                    self.pollenData = UnifiedPollenData.from(tomorrowIO: tomorrowData)
+                    self.dataSource = "Tomorrow.io"
+                    self.isLoading = false
+                    
+                    // Auto-select the highest pollen type
+                    if let maxPollen = self.pollenData?.maxPollenInRange(start: 0, count: 7) {
+                        self.selectedPollenType = maxPollen.type
+                    }
+                }
+            } else if isInEurope {
+                // Use Open-Meteo for European locations
+                let openMeteoData = try await WeatherService.fetchPollenForecast(
+                    latitude: latitude,
+                    longitude: longitude
+                )
+                
+                await MainActor.run {
+                    self.pollenData = UnifiedPollenData.from(openMeteo: openMeteoData)
+                    self.dataSource = "Open-Meteo"
+                    self.isLoading = false
+                    
+                    // Auto-select the highest pollen type
+                    if let maxPollen = self.pollenData?.maxPollenInRange(start: 0, count: 24) {
+                        self.selectedPollenType = maxPollen.type
+                    }
+                }
+            } else {
+                // Location not supported
+                await MainActor.run {
+                    self.error = "Pollen data not available for this region"
+                    self.isLoading = false
                 }
             }
         } catch {

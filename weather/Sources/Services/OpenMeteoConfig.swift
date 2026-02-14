@@ -38,7 +38,7 @@ enum OpenMeteoConfig {
     static let airQualityParameters = "us_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide"
     
     /// Pollen parameters (European Air Quality Index)
-    static let pollenParameters = "alder_pollen,birch_pollen,grass_pollen,ragweed_pollen"
+    static let pollenParameters = "grass_pollen,birch_pollen,olive_pollen,ragweed_pollen"
     
     /// Historical weather parameters
     static let historicalDailyParameters = "weather_code,temperature_2m_max,temperature_2m_min," +

@@ -44,35 +44,42 @@ struct ContentView: View {
         startupLog("ContentView.init")
         #endif
     }
+    
+    // MARK: - Main Content View
+    
+    @ViewBuilder
+    private var mainContent: some View {
+        Group {
+            if let weatherData = weatherService.weatherData {
+                WeatherDetailView(
+                    weatherData: weatherData,
+                    locationName: displayLocationName,
+                    onRefresh: refreshWeather,
+                    onSearchTapped: { showingSearch = true },
+                    onShareCardTapped: { showingShareCard = true },
+                    airQualityData: weatherService.airQualityData,
+                    settings: settings
+                )
+            } else if weatherService.isLoading {
+                LoadingView()
+            } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
+                ErrorView(
+                    message: errorMessage,
+                    error: weatherService.lastError,
+                    retryAction: fetchWeather
+                )
+            } else {
+                WelcomeView(
+                    requestLocationAction: requestLocation,
+                    authorizationStatus: locationManager.authorizationStatus
+                )
+            }
+        }
+    }
 
     var body: some View {
         NavigationStack {
-            Group {
-                if let weatherData = weatherService.weatherData {
-                    WeatherDetailView(
-                        weatherData: weatherData,
-                        locationName: displayLocationName,
-                        onRefresh: refreshWeather,
-                        onSearchTapped: { showingSearch = true },
-                        onShareCardTapped: { showingShareCard = true },
-                        airQualityData: weatherService.airQualityData,
-                        settings: settings
-                    )
-                } else if weatherService.isLoading {
-                    LoadingView()
-                } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
-                    ErrorView(
-                        message: errorMessage,
-                        error: weatherService.lastError,
-                        retryAction: fetchWeather
-                    )
-                } else {
-                    WelcomeView(
-                        requestLocationAction: requestLocation,
-                        authorizationStatus: locationManager.authorizationStatus
-                    )
-                }
-            }
+            mainContent
             .task {
                 // MARK: - Background Refresh
                 // WeatherService.init() already loaded cache and kicked off a

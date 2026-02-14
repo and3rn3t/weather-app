@@ -646,7 +646,7 @@ struct RadarMapView: UIViewRepresentable {
             }
         }
         
-        func mapView(_ mapView: MKMapView, rendererFor overlay: MKOverlay) -> MKOverlayRenderer {
+        func mapView(_ mapView: MKMapView, rendererFor overlay: any MKOverlay) -> MKOverlayRenderer {
             if let tileOverlay = overlay as? MKTileOverlay {
                 let renderer = MKTileOverlayRenderer(tileOverlay: tileOverlay)
                 renderer.alpha = currentOpacity
@@ -655,7 +655,7 @@ struct RadarMapView: UIViewRepresentable {
             return MKOverlayRenderer(overlay: overlay)
         }
         
-        func mapView(_ mapView: MKMapView, viewFor annotation: MKAnnotation) -> MKAnnotationView? {
+        func mapView(_ mapView: MKMapView, viewFor annotation: any MKAnnotation) -> MKAnnotationView? {
             guard let weatherAnnotation = annotation as? WeatherAnnotation else { return nil }
             
             let identifier = "WeatherAnnotation"

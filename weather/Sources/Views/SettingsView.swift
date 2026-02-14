@@ -14,6 +14,7 @@ struct SettingsView: View {
     @Environment(ThemeManager.self) private var themeManager
     @State private var showingThemePicker = false
     @State private var showingResetConfirmation = false
+    @State private var showingAPIKeyInput = false
     
     init(settings: SettingsManager, notifications: NotificationManager) {
         self.settings = settings
@@ -180,6 +181,29 @@ struct SettingsView: View {
                     Text("Weather data will automatically refresh at the selected interval when the app is active.")
                 }
                 
+                // API Keys Section
+                Section {
+                    HStack {
+                        Text("Tomorrow.io API Key")
+                        Spacer()
+                        if settings.tomorrowIOAPIKey.isEmpty {
+                            Text("Not Set")
+                                .foregroundStyle(.secondary)
+                        } else {
+                            Text("••••••")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showingAPIKeyInput = true
+                    }
+                } header: {
+                    Label("API Keys", systemImage: "key.fill")
+                } footer: {
+                    Text("Required for pollen forecasts in the United States. Get your free API key at tomorrow.io/weather-api")
+                }
+                
                 // About Section
                 Section {
                     HStack {
@@ -243,6 +267,85 @@ struct SettingsView: View {
             .sheet(isPresented: $showingThemePicker) {
                 ThemePickerView()
                     .environment(themeManager)
+            }
+            .sheet(isPresented: $showingAPIKeyInput) {
+                APIKeyInputView(apiKey: $settings.tomorrowIOAPIKey)
+            }
+        }
+    }
+}
+
+// MARK: - API Key Input View
+
+struct APIKeyInputView: View {
+    @Binding var apiKey: String
+    @Environment(\.dismiss) private var dismiss
+    @State private var inputText: String = ""
+    @FocusState private var isFocused: Bool
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section {
+                    SecureField("Enter API Key", text: $inputText)
+                        .textContentType(.password)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($isFocused)
+                } header: {
+                    Text("Tomorrow.io API Key")
+                } footer: {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Get a free API key at:")
+                        Link("tomorrow.io/weather-api", destination: URL(string: "https://www.tomorrow.io/weather-api/")!)
+                            .font(.footnote.weight(.medium))
+                        
+                        Text("\nFree tier includes:")
+                            .padding(.top, 4)
+                        Text("• 500 calls per day")
+                        Text("• Pollen forecasts for US locations")
+                        Text("• No credit card required")
+                    }
+                    .font(.caption)
+                }
+                
+                if !inputText.isEmpty {
+                    Section {
+                        Button("Save API Key") {
+                            apiKey = inputText
+                            HapticFeedback.success()
+                            dismiss()
+                        }
+                        .buttonStyle(.glass)
+                        .frame(maxWidth: .infinity)
+                    }
+                }
+                
+                if !apiKey.isEmpty {
+                    Section {
+                        Button(role: .destructive) {
+                            apiKey = ""
+                            inputText = ""
+                            HapticFeedback.warning()
+                            dismiss()
+                        } label: {
+                            Text("Remove API Key")
+                        }
+                    }
+                }
+            }
+            .navigationTitle("API Configuration")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button("Cancel") {
+                        dismiss()
+                    }
+                }
+            }
+            .onAppear {
+                inputText = apiKey
+                isFocused = true
             }
         }
     }

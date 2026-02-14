@@ -67,7 +67,7 @@ class SharedDataManager {
     /// File URL for the cached full WeatherData — computed once and reused.
     /// Uses Application Support (durable) instead of Caches (purge-able by iOS).
     /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
-    nonisolated(unsafe) static let cachedWeatherFilePrimaryURL: URL? = {
+    static let cachedWeatherFilePrimaryURL: URL? = {
         guard let dir = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first else {
             return nil
         }
@@ -79,15 +79,15 @@ class SharedDataManager {
 
     /// Legacy Caches location — used as fallback for migration.
     /// Static so it can be read from nonisolated contexts (e.g. Task.detached).
-    nonisolated(unsafe) static let cachedWeatherFileLegacyURL: URL? = FileManager.default.urls(
+    static let cachedWeatherFileLegacyURL: URL? = FileManager.default.urls(
         for: .cachesDirectory, in: .userDomainMask
     ).first?.appendingPathComponent("cachedWeatherData.json")
     
     /// Shared decoder — reused across all cache reads to avoid repeated alloc.
-    nonisolated(unsafe) static let decoder = JSONDecoder()
+    static let decoder = JSONDecoder()
     
     /// Shared encoder — reused across all cache writes to avoid repeated alloc.
-    nonisolated(unsafe) static let encoder = JSONEncoder()
+    static let encoder = JSONEncoder()
     
     private init() {}
     
@@ -203,7 +203,7 @@ class SharedDataManager {
     /// Returns the last-known location coordinates and name, if available.
     /// Marked nonisolated so it can be called from any context without an
     /// actor hop — UserDefaults scalar reads are safe to call off the main actor.
-    nonisolated(unsafe) static func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
+    nonisolated static func lastKnownLocation() -> (latitude: Double, longitude: Double, name: String?)? {
         let ud = UserDefaults.standard
         let lat = ud.double(forKey: "lastWeatherLatitude")
         let lon = ud.double(forKey: "lastWeatherLongitude")

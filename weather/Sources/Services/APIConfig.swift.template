@@ -1,0 +1,22 @@
+//
+//  APIConfig.swift.template
+//  weather
+//
+//  Template for API configuration
+//  Copy this file to APIConfig.swift and add your keys
+//
+
+import Foundation
+
+enum APIConfig {
+    /// Default Tomorrow.io API key for US pollen data
+    /// Get your free key at: https://www.tomorrow.io/weather-api/
+    /// 
+    /// Steps:
+    /// 1. Copy this file to APIConfig.swift
+    /// 2. Replace "YOUR_API_KEY_HERE" with your actual API key
+    /// 3. Build and run!
+    ///
+    /// Note: APIConfig.swift is gitignored to protect your key
+    static let defaultTomorrowIOKey = "YOUR_API_KEY_HERE"
+}

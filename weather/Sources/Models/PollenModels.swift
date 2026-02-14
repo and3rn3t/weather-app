@@ -161,3 +161,110 @@ enum PollenLevel {
         }
     }
 }
+
+// MARK: - Tomorrow.io Pollen Data Models
+
+/// Pollen forecast data from Tomorrow.io API (US coverage)
+struct TomorrowIOPollenData: Codable, Sendable {
+    let data: TomorrowIOTimelineData
+    
+    struct TomorrowIOTimelineData: Codable, Sendable {
+        let timelines: [TomorrowIOTimeline]
+    }
+    
+    struct TomorrowIOTimeline: Codable, Sendable {
+        let timestep: String
+        let intervals: [TomorrowIOInterval]
+    }
+    
+    struct TomorrowIOInterval: Codable, Sendable {
+        let startTime: String
+        let values: TomorrowIOValues
+    }
+    
+    struct TomorrowIOValues: Codable, Sendable {
+        let treeIndex: Double?
+        let grassIndex: Double?
+        let weedIndex: Double?
+    }
+}
+
+// MARK: - Unified Pollen Data
+
+/// Unified pollen data structure that works with both APIs
+struct UnifiedPollenData {
+    let dates: [String]
+    let grassLevels: [Double]
+    let treeLevels: [Double]
+    let weedLevels: [Double]
+    
+    /// Convert Tomorrow.io data to unified format
+    static func from(tomorrowIO data: TomorrowIOPollenData) -> UnifiedPollenData? {
+        guard let timeline = data.data.timelines.first else { return nil }
+        
+        var dates: [String] = []
+        var grassLevels: [Double] = []
+        var treeLevels: [Double] = []
+        var weedLevels: [Double] = []
+        
+        for interval in timeline.intervals {
+            dates.append(interval.startTime)
+            // Tomorrow.io uses index 0-5, convert to concentration-like values (0-125)
+            grassLevels.append((interval.values.grassIndex ?? 0) * 25)
+            treeLevels.append((interval.values.treeIndex ?? 0) * 25)
+            weedLevels.append((interval.values.weedIndex ?? 0) * 25)
+        }
+        
+        return UnifiedPollenData(
+            dates: dates,
+            grassLevels: grassLevels,
+            treeLevels: treeLevels,
+            weedLevels: weedLevels
+        )
+    }
+    
+    /// Convert Open-Meteo data to unified format
+    static func from(openMeteo data: PollenData) -> UnifiedPollenData? {
+        guard let hourly = data.hourly else { return nil }
+        
+        return UnifiedPollenData(
+            dates: hourly.time,
+            grassLevels: hourly.grassPollen ?? [],
+            treeLevels: hourly.birchPollen ?? [], // Use birch as tree representative
+            weedLevels: hourly.ragweedPollen ?? []
+        )
+    }
+    
+    /// Get maximum pollen for display
+    func maxPollenInRange(start: Int, count: Int) -> (type: PollenType, value: Double)? {
+        let range = start..<min(start + count, dates.count)
+        var maxValue: Double = 0
+        var maxType: PollenType = .grass
+        
+        if !grassLevels.isEmpty {
+            let maxGrass = grassLevels[range].max() ?? 0
+            if maxGrass > maxValue {
+                maxValue = maxGrass
+                maxType = .grass
+            }
+        }
+        
+        if !treeLevels.isEmpty {
+            let maxTree = treeLevels[range].max() ?? 0
+            if maxTree > maxValue {
+                maxValue = maxTree
+                maxType = .birch // Use birch to represent tree
+            }
+        }
+        
+        if !weedLevels.isEmpty {
+            let maxWeed = weedLevels[range].max() ?? 0
+            if maxWeed > maxValue {
+                maxValue = maxWeed
+                maxType = .ragweed // Use ragweed to represent weed
+            }
+        }
+        
+        return maxValue > 0 ? (maxType, maxValue) : nil
+    }
+}

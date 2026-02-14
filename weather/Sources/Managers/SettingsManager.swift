@@ -114,6 +114,13 @@ class SettingsManager {
         }
     }
     
+    // API Keys
+    var tomorrowIOAPIKey: String {
+        didSet {
+            UserDefaults.standard.set(tomorrowIOAPIKey, forKey: "tomorrowIOAPIKey")
+        }
+    }
+    
     // Shared decoder for init - avoids creating 3 separate decoders
     private static let settingsDecoder = JSONDecoder()
     
@@ -186,6 +193,10 @@ class SettingsManager {
         
         // Load data settings
         self.autoRefreshInterval = ud.object(forKey: "autoRefreshInterval") as? Int ?? 30
+        
+        // Load API keys (use default if not set by user)
+        let savedKey = ud.string(forKey: "tomorrowIOAPIKey") ?? ""
+        self.tomorrowIOAPIKey = savedKey.isEmpty ? APIConfig.defaultTomorrowIOKey : savedKey
 
         os_signpost(.end, log: StartupSignpost.log, name: "SettingsManager.init")
         #if DEBUG
@@ -209,6 +220,7 @@ class SettingsManager {
         showWeatherParticles = true
         liveActivitiesEnabled = true
         autoRefreshInterval = 30
+        // Note: API key is not reset to preserve user's configuration
     }
 }
 

@@ -67,3 +67,7 @@ Thumbs.db
 *.p12
 *.mobileprovision
 Secrets/
+
+# API Keys - Don't commit your personal API keys!
+**/APIConfig.swift
+!**/APIConfig.swift.template
