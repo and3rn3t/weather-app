@@ -212,15 +212,23 @@ See [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) for d
 
 ## 📚 Documentation
 
-Additional documentation can be found in the [docs](docs/) directory:
+Additional documentation can be found in the [docs](docs/) and [weather/Documentation](weather/Documentation/) directories:
+
+**User Documentation** ([docs/](docs/)):
 
 - **[Multi-Platform Guide](docs/README_MULTIPLATFORM.md)** - iOS + Android development
-- **[Quick Reference](docs/QUICK_REFERENCE.md)** - Common commands and workflows
-- **[Optimization Summary](docs/OPTIMIZATION_SUMMARY.md)** - Performance optimizations
 - **[AI Optimization Guide](docs/AI_OPTIMIZATION_SUMMARY.md)** - AI agent configuration
-- **[Recent Features](docs/FEATURES_ADDED_FEB_14_2026.md)** - Latest feature additions
 - **[Privacy Policy](docs/PRIVACY_POLICY.md)** - Privacy information
 - **[Support](docs/SUPPORT.md)** - Support resources
+
+**Developer Documentation** ([weather/Documentation/](weather/Documentation/)):
+
+- **[Quick Start](weather/Documentation/QUICK_START.md)** - Getting started guide
+- **[Features](weather/Documentation/FEATURES.md)** - Complete feature list
+- **[Build Configuration](weather/Documentation/BUILD_CONFIGURATION.md)** - Xcode settings & diagnostics
+- **[AI Development Guide](weather/Documentation/AI_DEVELOPMENT_GUIDE.md)** - AI-assisted development
+- **[App Store Guide](weather/Documentation/APP_STORE_GUIDE.md)** - Publishing guide
+- **[Changelog](weather/Documentation/CHANGELOG.md)** - Version history
 
 For complete architecture documentation, see [ARCHITECTURE.md](../ARCHITECTURE.md).
 

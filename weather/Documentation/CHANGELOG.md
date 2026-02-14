@@ -4,6 +4,102 @@ All notable changes to the Weather App project.
 
 ---
 
+## [2.4.0] - 2026-02-14
+
+### ✨ New Features
+
+#### iOS Enhancements
+
+- **Historical Weather Comparison**
+  - Compare current weather with same date last year
+  - Temperature differential display
+  - Weather condition comparison
+  - 7-day trend chart
+  - Uses Open-Meteo Historical API (free)
+  - Located in "More Details" section
+
+- **Pollen & Allergy Forecast**
+  - 4 pollen types: Grass, Birch, Olive, Ragweed
+  - EPA-style 5-level system (None → Very High)
+  - Interactive type selector with charts
+  - 7-day trend visualization per type
+  - Health recommendations
+  - Uses Open-Meteo Air Quality API
+  - Primarily available for European locations
+
+#### Files Added
+
+- `weather/Sources/Models/HistoricalWeatherModels.swift` - Historical weather data models
+- `weather/Sources/Views/Cards/HistoricalWeatherCard.swift` - Historical comparison UI (~300 lines)
+- `weather/Sources/Models/PollenModels.swift` - Pollen data models (~150 lines)
+- `weather/Sources/Views/Cards/PollenForecastCard.swift` - Pollen forecast UI (~400 lines)
+
+### 🔧 Code Optimization
+
+#### API Configuration Consolidation
+
+- **Created** `OpenMeteoConfig.swift` - Centralized API configuration
+  - Consolidated base URLs (forecast, air quality, historical)
+  - Unified API parameter strings
+  - Shared `URLSession` instances (cached + force-refresh)
+  - Shared `JSONDecoder` instance
+
+#### Refactoring Impact
+
+- Eliminated 3 duplicate `URLSession` configurations
+- Removed 3 duplicate `JSONDecoder` instances
+- Consolidated 6+ hardcoded API parameter strings
+- Net reduction: ~55 lines of duplicate code
+- Improved maintainability and performance
+
+#### Updated Services
+
+- `WeatherService.swift` - Uses shared config, added historical and pollen methods
+- `OnThisDayView.swift` - Refactored to use `OpenMeteoConfig`
+
+### 📝 Documentation
+
+#### Fixed
+
+- Markdown linting in `android-app/IMPLEMENTATION_COMPLETE.md`
+  - Added language tags to code blocks
+  - Fixed heading syntax
+  - Corrected table spacing
+
+#### Verified Existing Features
+
+Confirmed the following were already fully implemented:
+
+- **iOS**: Real Air Quality API integration (Open-Meteo)
+- **iOS**: Precipitation probability chart (interactive bars)
+- **Android**: Weather radar maps (RainViewer + Google Maps)
+- **Android**: Widgets (Small/Medium/Large with Jetpack Glance)
+- **Android**: Push notifications (Daily forecast + Rain alerts)
+
+### 📊 Statistics
+
+- **New Code**: ~800 lines
+- **Code Removed**: ~150 lines (duplicates)
+- **Net Addition**: ~650 lines
+- **API Cost**: $0 (all free APIs)
+- **Features Requested**: 11
+- **Already Complete**: 5
+- **Newly Implemented**: 2
+
+### 🌐 APIs Used
+
+All APIs remain free with no authentication required:
+
+| API | Purpose | Rate Limit |
+|-----|---------|------------|
+| Open-Meteo Weather | Current + forecasts | 60 req/min |
+| Open-Meteo Air Quality | AQI + pollen | 60 req/min |
+| Open-Meteo Historical | Historical data | 60 req/min |
+| RainViewer | Radar imagery | Unlimited |
+| NWS (NOAA) | Severe weather alerts (US) | Per guidelines |
+
+---
+
 ## [2.3.0] - 2026-02-05
 
 ### 🏗️ Build & Xcode Configuration
