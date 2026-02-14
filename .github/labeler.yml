@@ -68,8 +68,7 @@ documentation:
   - changed-files:
     - any-glob-to-any-file: 
       - '**/*.md'
-      - 'weather/Documentation/**'
-      - 'docs/**'
+      - '../docs/**'
 
 ci-cd:
   - changed-files:

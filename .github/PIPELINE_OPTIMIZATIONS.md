@@ -78,7 +78,7 @@ This document outlines all the optimizations made to the CI/CD pipelines for cos
 ```yaml
 paths:
   - 'weather/**'
-  - '!weather/Documentation/**'
+  - '!../docs/**'
   - '!**.md'
 ```
 

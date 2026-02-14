@@ -87,18 +87,18 @@ These files help AI assistants understand the project's architecture, coding pat
 
 | Document | Description |
 | -------- | ----------- |
-| [QUICK_START.md](weather/Documentation/QUICK_START.md) | Getting started, build commands |
-| [FEATURES.md](weather/Documentation/FEATURES.md) | Complete feature documentation |
-| [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) | Xcode settings, schemes, diagnostics |
+| [QUICK_START.md](../docs/development/QUICK_START.md) | Getting started, build commands |
+| [FEATURES.md](../docs/development/FEATURES.md) | Complete feature documentation |
+| [BUILD_CONFIGURATION.md](../docs/development/BUILD_CONFIGURATION.md) | Xcode settings, schemes, diagnostics |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | Contribution guidelines |
 
 ### Reference
 
 | Document | Description |
 | -------- | ----------- |
-| [CHANGELOG.md](weather/Documentation/CHANGELOG.md) | Version history |
-| [AI_DEVELOPMENT_GUIDE.md](weather/Documentation/AI_DEVELOPMENT_GUIDE.md) | AI assistant instructions |
-| [APP_STORE_GUIDE.md](weather/Documentation/APP_STORE_GUIDE.md) | App Store metadata |
+| [CHANGELOG.md](../docs/CHANGELOG.md) | Version history |
+| [AI_DEVELOPMENT_GUIDE.md](../docs/development/AI_DEVELOPMENT_GUIDE.md) | AI assistant instructions |
+| [APP_STORE_GUIDE.md](../docs/development/APP_STORE_GUIDE.md) | App Store metadata |
 
 ---
 
@@ -206,29 +206,32 @@ The app includes several performance optimizations:
 - **Request Debouncing**: API calls are debounced to prevent excessive requests
 - **Deferred Initialization**: Non-critical init (Siri shortcuts) is deferred after first frame
 
-See [BUILD_CONFIGURATION.md](weather/Documentation/BUILD_CONFIGURATION.md) for details.
+See [BUILD_CONFIGURATION.md](../docs/development/BUILD_CONFIGURATION.md) for details.
 
 ---
 
 ## 📚 Documentation
 
-Additional documentation can be found in the [docs](docs/) and [weather/Documentation](weather/Documentation/) directories:
+All documentation is consolidated in the [docs](../docs/) directory at the repository root:
 
-**User Documentation** ([docs/](docs/)):
+**User Documentation**:
 
-- **[Multi-Platform Guide](docs/README_MULTIPLATFORM.md)** - iOS + Android development
-- **[AI Optimization Guide](docs/AI_OPTIMIZATION_SUMMARY.md)** - AI agent configuration
-- **[Privacy Policy](docs/PRIVACY_POLICY.md)** - Privacy information
-- **[Support](docs/SUPPORT.md)** - Support resources
+- **[Multi-Platform Guide](../docs/README_MULTIPLATFORM.md)** - iOS + Android development
+- **[Privacy Policy](../docs/PRIVACY_POLICY.md)** - Privacy information
+- **[Support](../docs/SUPPORT.md)** - Support resources
 
-**Developer Documentation** ([weather/Documentation/](weather/Documentation/)):
+**Developer Documentation**:
 
-- **[Quick Start](weather/Documentation/QUICK_START.md)** - Getting started guide
-- **[Features](weather/Documentation/FEATURES.md)** - Complete feature list
-- **[Build Configuration](weather/Documentation/BUILD_CONFIGURATION.md)** - Xcode settings & diagnostics
-- **[AI Development Guide](weather/Documentation/AI_DEVELOPMENT_GUIDE.md)** - AI-assisted development
-- **[App Store Guide](weather/Documentation/APP_STORE_GUIDE.md)** - Publishing guide
-- **[Changelog](weather/Documentation/CHANGELOG.md)** - Version history
+- **[Quick Start](../docs/development/QUICK_START.md)** - Getting started guide
+- **[Features](../docs/development/FEATURES.md)** - Complete feature list
+- **[Build Configuration](../docs/development/BUILD_CONFIGURATION.md)** - Xcode settings & diagnostics
+- **[AI Development Guide](../docs/development/AI_DEVELOPMENT_GUIDE.md)** - AI-assisted development
+- **[App Store Guide](../docs/development/APP_STORE_GUIDE.md)** - Publishing guide
+- **[Changelog](../docs/CHANGELOG.md)** - Version history
+
+**AI Configuration**:
+
+- **[AI Optimization Summary](../docs/AI_OPTIMIZATION_SUMMARY.md)** - AI agent setup
 
 For complete architecture documentation, see [ARCHITECTURE.md](../ARCHITECTURE.md).
 

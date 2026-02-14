@@ -9,14 +9,14 @@ on:
     paths:
       - 'weather/**'
       - '.github/workflows/ci.yml'
-      - '!weather/Documentation/**'
+      - '!../docs/**'
       - '!**.md'
   pull_request:
     branches: [main]
     paths:
       - 'weather/**'
       - '.github/workflows/ci.yml'
-      - '!weather/Documentation/**'
+      - '!../docs/**'
       - '!**.md'
 
 concurrency:
