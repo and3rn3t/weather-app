@@ -109,13 +109,13 @@ app/src/main/java/com/andernet/weather/
 1. **Clone the repository**
 
    ```bash
-   cd weather2/android
+   cd weather2/android-app
    ```
 
 2. **Open in Android Studio**
    - Open Android Studio
    - Select "Open an Existing Project"
-   - Navigate to the `android/` directory
+   - Navigate to the `android-app/` directory
    - Wait for Gradle sync to complete
 
 3. **Run the app**

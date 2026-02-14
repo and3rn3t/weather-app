@@ -31,7 +31,7 @@ This repository contains **two native weather applications** that share the same
 
 ### Android App (Kotlin + Jetpack Compose)
 
-**Location:** `/android/`  
+**Location:** `android-app/`  
 **Status:** ✅ MVP complete, ready for development  
 
 **Tech Stack:**
@@ -107,7 +107,7 @@ open weather.xcodeproj
 ### Android App
 
 ```bash
-cd android
+cd android-app
 # Open in Android Studio, or:
 ./gradlew assembleDebug
 ./gradlew installDebug
@@ -163,7 +163,7 @@ weather2/
 │   ├── Andernet Weather Widget/ # Widget extension
 │   └── Documentation/
 │
-└── android/                    # Android app (Kotlin/Compose)
+└── android-app/                # Android app (Kotlin/Compose)
     ├── app/src/main/java/com/andernet/weather/
     │   ├── data/
     │   │   ├── local/         # Room database
@@ -245,7 +245,7 @@ See LICENSE file for details.
 For bugs or feature requests:
 
 - iOS: Check `/weather/Documentation/`
-- Android: Check `/android/README.md`
+- Android: Check `android-app/README.md`
 - Open GitHub Issues for this repository
 
 ---
