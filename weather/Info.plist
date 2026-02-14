@@ -17,6 +17,10 @@
 	</array>
 	<key>CSSearchableIndex</key>
 	<true/>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>We use your location to provide accurate weather forecasts and alerts for your area.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We use your location in the background to update weather conditions and send severe weather alerts even when the app is not active.</string>
 	<key>NSWidgetWantsLocation</key>
 	<true/>
 	<key>UIBackgroundModes</key>

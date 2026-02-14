@@ -19,10 +19,36 @@ class WeatherAlertService {
     var isLoading = false
     var lastUpdateTime: Date?
     
+    // MARK: - Constants
+    
     private let nwsBaseURL = "https://api.weather.gov"
-    private let meteoAlarmBaseURL = "https://api.meteoalarm.org"
+    private static let appVersion = "2.3.0"
+    private static let repoURL = "github.com/and3rn3t/weather-app"
     
     private static let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "weather", category: "WeatherAlerts")
+    
+    // MARK: - Shared Session & Decoder
+    
+    /// Shared URLSession with caching for better performance
+    private static let session: URLSession = {
+        let config = URLSessionConfiguration.default
+        config.urlCache = URLCache(memoryCapacity: 5_000_000, diskCapacity: 20_000_000)
+        config.requestCachePolicy = .returnCacheDataElseLoad
+        config.timeoutIntervalForRequest = 30
+        return URLSession(configuration: config)
+    }()
+    
+    /// Shared JSON decoder - creating decoders is expensive
+    private static let decoder: JSONDecoder = {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        return decoder
+    }()
+    
+    /// User agent for NWS API compliance
+    private var userAgent: String {
+        "WeatherApp/\(Self.appVersion) (\(Self.repoURL))"
+    }
     
     // MARK: - Fetch Alerts
     
@@ -53,45 +79,27 @@ class WeatherAlertService {
     // MARK: - NWS API (United States)
     
     private func fetchNWSAlerts(latitude: Double, longitude: Double) async -> [WeatherAlert] {
-        // NWS requires a User-Agent header
-        let userAgent = "WeatherApp/2.3.0 (github.com/and3rn3t/weather-app)"
-        
         // First, get the grid point for this location
         guard let gridPointURL = URL(string: "\(nwsBaseURL)/points/\(latitude),\(longitude)") else {
             Self.logger.error("Invalid NWS points URL")
             return []
         }
         
-        var request = URLRequest(url: gridPointURL)
-        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-        request.setValue("application/geo+json", forHTTPHeaderField: "Accept")
-        
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse else {
-                Self.logger.error("Invalid response from NWS points API")
-                return []
-            }
-            
-            guard httpResponse.statusCode == 200 else {
-                Self.logger.error("NWS points API returned status \(httpResponse.statusCode)")
-                return []
-            }
-            
-            let pointsResponse = try JSONDecoder().decode(NWSPointsResponse.self, from: data)
+            let data = try await fetchNWSData(from: gridPointURL)
+            let pointsResponse = try Self.decoder.decode(NWSPointsResponse.self, from: data)
             
             // Get the forecast zone for alerts
-            return await fetchNWSAlertsByZone(zoneURL: pointsResponse.properties.forecastZone, userAgent: userAgent)
+            return await fetchNWSAlertsByZone(zoneURL: pointsResponse.properties.forecastZone)
             
         } catch {
             Self.logger.error("Failed to fetch NWS grid point: \(error.localizedDescription)")
             // Fallback to active alerts by point
-            return await fetchNWSAlertsByPoint(latitude: latitude, longitude: longitude, userAgent: userAgent)
+            return await fetchNWSAlertsByPoint(latitude: latitude, longitude: longitude)
         }
     }
     
-    private func fetchNWSAlertsByPoint(latitude: Double, longitude: Double, userAgent: String) async -> [WeatherAlert] {
+    private func fetchNWSAlertsByPoint(latitude: Double, longitude: Double) async -> [WeatherAlert] {
         // Fetch active alerts for this point
         guard let alertsURL = URL(string: "\(nwsBaseURL)/alerts/active?point=\(latitude),\(longitude)") else {
             Self.logger.error("Invalid NWS alerts URL")
@@ -124,7 +132,7 @@ class WeatherAlertService {
         }
     }
     
-    private func fetchNWSAlertsByZone(zoneURL: String, userAgent: String) async -> [WeatherAlert] {
+    private func fetchNWSAlertsByZone(zoneURL: String) async -> [WeatherAlert] {
         // Extract zone ID from URL
         guard let zoneId = zoneURL.split(separator: "/").last else {
             return []
@@ -135,19 +143,9 @@ class WeatherAlertService {
             return []
         }
         
-        var request = URLRequest(url: alertsURL)
-        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
-        request.setValue("application/geo+json", forHTTPHeaderField: "Accept")
-        
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                return []
-            }
-            
-            let alertsResponse = try JSONDecoder().decode(NWSAlertsResponse.self, from: data)
+            let data = try await fetchNWSData(from: alertsURL)
+            let alertsResponse = try Self.decoder.decode(NWSAlertsResponse.self, from: data)
             return alertsResponse.features.map { $0.toWeatherAlert() }
             
         } catch {
@@ -156,13 +154,35 @@ class WeatherAlertService {
         }
     }
     
+    // MARK: - Helper Methods
+    
+    /// Fetch data from NWS API with proper headers and error handling
+    private func fetchNWSData(from url: URL) async throws -> Data {
+        var request = URLRequest(url: url)
+        request.setValue(userAgent, forHTTPHeaderField: "User-Agent")
+        request.setValue("application/geo+json", forHTTPHeaderField: "Accept")
+        request.cachePolicy = .returnCacheDataElseLoad
+        
+        let (data, response) = try await Self.session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+        
+        guard httpResponse.statusCode == 200 else {
+            Self.logger.error("NWS API returned status \(httpResponse.statusCode)")
+            throw URLError(.badServerResponse)
+        }
+        
+        return data
+    }
+    
     // MARK: - MeteoAlarm API (Europe)
     
     private func fetchMeteoAlarmAlerts(latitude: Double, longitude: Double) async -> [WeatherAlert] {
-        // MeteoAlarm uses CAP (Common Alerting Protocol)
-        // Note: MeteoAlarm API requires country code, which we'd need to geocode
-        // For now, return empty array - full implementation would require geocoding service
-        Self.logger.info("MeteoAlarm integration requires geocoding - not yet implemented")
+        // Note: MeteoAlarm API requires country code and geocoding
+        // Placeholder for future European alert support
+        Self.logger.debug("European alerts not yet implemented")
         return []
     }
     

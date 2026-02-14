@@ -99,9 +99,6 @@ class WeatherService {
         }
     }
     
-    private let baseURL = "https://api.open-meteo.com/v1/forecast"
-    private let airQualityURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
-    
     // MARK: - Constants
     
     /// Last successful fetch timestamp for debouncing
@@ -236,7 +233,7 @@ class WeatherService {
             startupLog("Network fetch: \(String(format: "%.0f", fetchMs))ms")
             #endif
         }
-        var components = URLComponents(string: baseURL)
+        var components = URLComponents(string: OpenMeteoConfig.forecastURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
@@ -283,7 +280,7 @@ class WeatherService {
     }
     
     func fetchAirQuality(latitude: Double, longitude: Double) async {
-        var components = URLComponents(string: airQualityURL)
+        var components = URLComponents(string: OpenMeteoConfig.airQualityURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),

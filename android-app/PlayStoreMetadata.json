@@ -1,0 +1,158 @@
+{
+  "app_information": {
+    "name": "Andernet Weather",
+    "package_name": "com.andernet.weather",
+    "version_name": "1.0.0",
+    "version_code": 1,
+    "category": "Weather",
+    "content_rating": "Everyone",
+    "countries": "all"
+  },
+  "store_listing": {
+    "short_description": "Beautiful weather forecasts with Material You design",
+    "full_description": "Experience weather like never before with Andernet Weather — designed with Material You for a beautiful Android experience.\n\n🎨 BEAUTIFUL MATERIAL YOU DESIGN\n• Dynamic color theming that adapts to your wallpaper\n• Smooth animations and transitions\n• Native Android UI components\n\n🌦️ COMPREHENSIVE WEATHER DATA\n• Real-time temperature with \"feels like\" readings\n• Hourly and 14-day forecasts with interactive charts\n• Air Quality Index (AQI) with detailed pollutant data\n• Weather radar maps with real-time precipitation\n• Severe weather alerts for your location (US only)\n• Sunrise/sunset times with daylight duration\n• Wind speed, humidity, and precipitation data\n\n📍 POWERFUL WIDGETS\n• Glanceable home screen widgets\n• Multiple size options\n• Automatic updates\n\n⚡ SMART FEATURES\n• Save favorite locations for quick access\n• Interactive weather radar maps\n• Severe weather alert notifications\n• Customizable units (metric/imperial)\n• Background location for automatic updates\n\n🔒 PRIVACY FOCUSED\n• No tracking or advertising\n• Location used only for weather data\n• Open-source weather API (Open-Meteo, RainViewer, NWS)\n• No user accounts required\n\n📱 MODERN ANDROID FEATURES\n• Material You dynamic theming\n• Edge-to-edge display support\n• Android 14+ optimized\n• Predictive back gestures\n\nDownload Andernet Weather today and experience beautiful, accurate weather forecasts!",
+    "video_url": null,
+    "website": "https://andernet.dev/weather",
+    "email": "support@andernet.dev",
+    "phone": null,
+    "privacy_policy_url": "https://andernet.dev/weather/privacy"
+  },
+  "release_notes": {
+    "en-US": "Version 1.0.0 - Initial Release\n\n✨ NEW FEATURES\n• Beautiful Material You design\n• Interactive hourly weather charts\n• Weather radar maps with real-time data\n• Severe weather alerts (US only)\n• Air Quality Index monitoring\n• Home screen widgets\n• Customizable themes and units\n\n🌡️ WEATHER DATA\n• Current conditions with feels-like temperature\n• Hourly forecast for 24 hours\n• 14-day extended forecast\n• Detailed weather metrics\n• Weather radar visualization\n\n🎨 DESIGNED FOR ANDROID\n• Material You dynamic colors\n• Edge-to-edge display\n• Smooth animations\n• Predictive back gestures"
+  },
+  "app_category": {
+    "primary": "Weather",
+    "tags": ["weather", "forecast", "temperature", "radar", "alerts", "material you"]
+  },
+  "content_rating": {
+    "rating": "Everyone",
+    "questionnaire_answers": {
+      "violence": "No",
+      "sexual_content": "No",
+      "profanity": "No",
+      "drugs": "No",
+      "gambling": "No",
+      "discrimination": "No",
+      "user_generated_content": "No",
+      "location_sharing": "No",
+      "personal_info_sharing": "No",
+      "unrestricted_internet": "Yes"
+    }
+  },
+  "pricing_distribution": {
+    "free": true,
+    "contains_ads": false,
+    "in_app_purchases": false,
+    "countries": "all"
+  },
+  "data_safety": {
+    "collects_data": true,
+    "shares_data": false,
+    "data_types": [
+      {
+        "category": "Location",
+        "data_type": "Approximate location",
+        "purpose": "App functionality",
+        "optional": true,
+        "ephemeral": false
+      },
+      {
+        "category": "Location",
+        "data_type": "Precise location",
+        "purpose": "App functionality",
+        "optional": true,
+        "ephemeral": false
+      }
+    ],
+    "security_practices": {
+      "encrypted_in_transit": true,
+      "can_request_deletion": true,
+      "committed_to_play_families": false,
+      "independent_security_review": false
+    }
+  },
+  "graphics_assets": {
+    "feature_graphic": {
+      "size": "1024x500",
+      "format": "PNG or JPG",
+      "required": true,
+      "filename": "feature_graphic.png"
+    },
+    "icon": {
+      "size": "512x512",
+      "format": "PNG",
+      "required": true,
+      "filename": "ic_launcher-playstore.png"
+    },
+    "screenshots_phone": {
+      "size": "Min 320px, Max 3840px",
+      "aspect_ratio": "16:9 or 9:16",
+      "required": true,
+      "count": "2-8",
+      "filenames": [
+        "01-main-weather-view.png",
+        "02-hourly-charts.png",
+        "03-weather-radar.png",
+        "04-severe-alerts.png",
+        "05-widgets.png",
+        "06-favorites.png",
+        "07-air-quality.png",
+        "08-settings.png"
+      ]
+    },
+    "screenshots_7inch_tablet": {
+      "required": false,
+      "filenames": []
+    },
+    "screenshots_10inch_tablet": {
+      "required": false,
+      "filenames": []
+    },
+    "promotional_video": {
+      "youtube_url": null
+    }
+  },
+  "internal_test_track": {
+    "release_notes": "Internal test build for QA team.\n\nTEST FOCUS:\n• Weather data accuracy across different locations\n• Widget updates and display\n• Radar map functionality\n• Severe weather alerts (US locations)\n• Material You theming\n• Location permissions flow\n• Unit conversion (Celsius/Fahrenheit)\n• Network error handling\n• Offline behavior\n\nKNOWN ISSUES:\n• None at this time\n\nFEEDBACK:\nPlease report any issues to support@andernet.dev or use the in-app feedback tool.",
+    "countries": ["US", "CA", "GB"],
+    "testers": "qa-team@andernet.dev"
+  },
+  "closed_beta_track": {
+    "release_notes": "Beta release for external testers.\n\nThank you for helping test Andernet Weather!\n\nFEATURES AVAILABLE:\n• Real-time weather with hourly/14-day forecasts\n• Interactive weather radar maps\n• Severe weather alerts (US only)\n• Air Quality Index monitoring\n• Home screen widgets\n• Material You dynamic theming\n\nWHAT TO TEST:\n• Search and save favorite locations\n• Try widgets on home screen\n• Test radar maps and animations\n• Enable location for automatic updates\n• Switch between units (C/F, mph/km/h)\n• Test in different lighting (dark mode)\n\nPLEASE REPORT:\n• Crashes or freezes\n• UI layout issues on your device\n• Inaccurate weather data\n• Widget not updating\n• Performance problems\n• Feature suggestions\n\nFeedback: support@andernet.dev",
+    "countries": "all",
+    "opt_in_url": "https://play.google.com/apps/testing/com.andernet.weather"
+  },
+  "production_track": {
+    "rollout_percentage": 100,
+    "release_notes": "See release_notes section above"
+  },
+  "review_notes": {
+    "notes": "Andernet Weather is a weather forecast app using Material You design.\n\nTEST ACCOUNT: Not required\n\nKEY FEATURES:\n• Weather forecasts (current, hourly, 14-day)\n• Weather radar maps\n• Severe weather alerts (US only)\n• Air Quality Index\n• Home screen widgets\n• Favorite locations\n\nLOCATION PERMISSION:\n• Optional - can use manual search instead\n• Used only for weather forecasts\n• Background access for widget updates (optional)\n\nTHIRD-PARTY APIs:\n• Open-Meteo (free weather API)\n• RainViewer (free radar API)\n• National Weather Service (US alerts, free)\n• No tracking or analytics\n\nPRIVACY:\n• No user accounts\n• No tracking/analytics\n• Location not stored on servers\n• All data stored locally\n\nPERMISSIONS:\n• Location - for weather forecasts\n• Internet - to fetch weather data\n\nTEST INSTRUCTIONS:\n1. Grant location permission (or skip and search manually)\n2. View current weather and forecasts\n3. Try radar map (tap map icon)\n4. Add widgets from home screen\n5. Search for other cities\n6. Save favorites",
+    "special_instructions": "The app works fully without location permission by using manual city search. Severe weather alerts only available for US locations.",
+    "test_credentials": null
+  },
+  "app_access": {
+    "unrestricted": true,
+    "instructions": "Full access - no login required"
+  },
+  "ads_declaration": {
+    "contains_ads": false,
+    "ad_networks": []
+  },
+  "target_audience": {
+    "age_range": "All ages",
+    "interest_categories": ["Weather", "Lifestyle", "News"],
+    "content_labels": []
+  },
+  "news_app": false,
+  "covid_19_contact_tracing": false,
+  "tv_compatibility": false,
+  "wear_os_compatibility": false,
+  "chrome_os_compatibility": true,
+  "contacts": {
+    "developer_name": "Andernet",
+    "developer_email": "support@andernet.dev",
+    "developer_website": "https://andernet.dev",
+    "developer_address": null
+  }
+}
