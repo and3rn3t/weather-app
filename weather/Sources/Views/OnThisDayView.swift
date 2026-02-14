@@ -15,6 +15,43 @@ struct HistoricalWeatherData: Codable, Sendable, Equatable {
     let daily: HistoricalDailyWeather
 }
 
+// MARK: - Weather Comparison Result
+
+/// Comparison between current and historical weather
+struct WeatherComparison: Identifiable, Equatable {
+    let id = UUID()
+    let date: Date
+    let currentTemp: Double
+    let historicalTemp: Double
+    let difference: Double
+    let currentCondition: WeatherCondition
+    let historicalCondition: WeatherCondition
+    let currentPrecipitation: Double
+    let historicalPrecipitation: Double
+    
+    var isCooler: Bool {
+        currentTemp < historicalTemp
+    }
+    
+    var isWarmer: Bool {
+        currentTemp > historicalTemp
+    }
+    
+    var isSimilar: Bool {
+        abs(difference) < 5.0
+    }
+    
+    var comparisonText: String {
+        if isSimilar {
+            return "Similar to last year"
+        } else if isCooler {
+            return "\(Int(abs(difference)))° cooler than last year"
+        } else {
+            return "\(Int(abs(difference)))° warmer than last year"
+        }
+    }
+}
+
 struct HistoricalDailyWeather: Codable, Sendable, Equatable {
     let time: [String]
     let temperature2mMax: [Double]
@@ -407,21 +444,11 @@ struct OnThisDayCard: View {
 // MARK: - Historical Weather Service
 
 enum HistoricalWeatherService {
-    private static let archiveURL = "https://archive-api.open-meteo.com/v1/archive"
+    /// Shared URL session from OpenMeteoConfig
+    private static let session = OpenMeteoConfig.cachedSession
     
-    /// Shared URL session (reuses WeatherService pattern)
-    private static let session: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.urlCache = URLCache(memoryCapacity: 5_000_000, diskCapacity: 20_000_000)
-        config.requestCachePolicy = .returnCacheDataElseLoad
-        config.timeoutIntervalForRequest = 15
-        return URLSession(configuration: config)
-    }()
-    
-    private static let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        return decoder
-    }()
+    /// Shared decoder from OpenMeteoConfig
+    private static let decoder = OpenMeteoConfig.decoder
     
     /// Cached date formatter for building date strings
     private static let dateFormatter: DateFormatter = {
@@ -490,7 +517,7 @@ enum HistoricalWeatherService {
         
         let dateString = dateFormatter.string(from: targetDate)
         
-        var urlComponents = URLComponents(string: archiveURL)
+        var urlComponents = URLComponents(string: OpenMeteoConfig.historicalURL)
         urlComponents?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),

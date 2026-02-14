@@ -100,43 +100,6 @@ class WeatherService {
     
     // MARK: - Constants
     
-    /// Cache capacity: 10 MB in memory
-    private static let memoryCacheCapacity = 10_000_000
-    /// Cache capacity: 50 MB on disk
-    private static let diskCacheCapacity = 50_000_000
-    /// Timeout for individual requests (seconds)
-    private static let requestTimeout: TimeInterval = 15
-    /// Timeout for overall resource loading (seconds)
-    private static let resourceTimeout: TimeInterval = 30
-    
-    // MARK: - Performance Optimizations
-    
-    /// Shared URL session with caching enabled for faster repeated requests
-    private static let cachedSession: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.urlCache = URLCache(memoryCapacity: memoryCacheCapacity, diskCapacity: diskCacheCapacity)
-        config.requestCachePolicy = .returnCacheDataElseLoad
-        config.timeoutIntervalForRequest = requestTimeout
-        config.timeoutIntervalForResource = resourceTimeout
-        return URLSession(configuration: config)
-    }()
-    
-    /// Separate session that bypasses HTTP cache for force-refresh requests
-    private static let forceRefreshSession: URLSession = {
-        let config = URLSessionConfiguration.default
-        config.requestCachePolicy = .reloadIgnoringLocalCacheData
-        config.timeoutIntervalForRequest = requestTimeout
-        config.timeoutIntervalForResource = resourceTimeout
-        return URLSession(configuration: config)
-    }()
-    
-    /// Shared decoder - creating decoders is expensive
-    private static let decoder: JSONDecoder = {
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        return decoder
-    }()
-    
     /// Last successful fetch timestamp for debouncing
     private var lastFetchTime: Date?
     private let minimumFetchInterval: TimeInterval = 60 // 1 minute minimum between fetches
@@ -271,9 +234,9 @@ class WeatherService {
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: Self.currentParameters),
-            URLQueryItem(name: "hourly", value: Self.hourlyParameters),
-            URLQueryItem(name: "daily", value: Self.dailyParameters),
+            URLQueryItem(name: "current", value: OpenMeteoConfig.currentParameters),
+            URLQueryItem(name: "hourly", value: OpenMeteoConfig.hourlyParameters),
+            URLQueryItem(name: "daily", value: OpenMeteoConfig.dailyParameters),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "wind_speed_unit", value: "mph"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
@@ -286,7 +249,7 @@ class WeatherService {
         }
         
         // Use force-refresh session to bypass HTTP cache when user explicitly refreshes
-        let session = forceRefresh ? Self.forceRefreshSession : Self.cachedSession
+        let session = forceRefresh ? OpenMeteoConfig.forceRefreshSession : OpenMeteoConfig.cachedSession
         let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -299,7 +262,7 @@ class WeatherService {
         
         do {
             // Use static decoder for better performance
-            return try Self.decoder.decode(WeatherData.self, from: data)
+            return try OpenMeteoConfig.decoder.decode(WeatherData.self, from: data)
         } catch let decodingError as DecodingError {
             throw WeatherError.decodingError(decodingError.localizedDescription)
         }
@@ -318,21 +281,21 @@ class WeatherService {
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: "us_aqi,pm10,pm2_5,ozone,nitrogen_dioxide,sulphur_dioxide,carbon_monoxide"),
+            URLQueryItem(name: "current", value: OpenMeteoConfig.airQualityParameters),
             URLQueryItem(name: "timezone", value: "auto")
         ]
         
         guard let url = components?.url else { return }
         
         do {
-            let (data, response) = try await Self.cachedSession.data(from: url)
+            let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
             
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else {
                 return
             }
             
-            let airQuality = try Self.decoder.decode(AirQualityData.self, from: data)
+            let airQuality = try OpenMeteoConfig.decoder.decode(AirQualityData.self, from: data)
             
             await MainActor.run {
                 self.airQualityData = airQuality
@@ -393,14 +356,13 @@ class WeatherService {
     /// Use this for transient callers like FavoritesView, ComparisonView, and widgets
     /// to avoid heavyweight init() (cache I/O + eager background refresh).
     static func fetchWeatherData(latitude: Double, longitude: Double) async -> WeatherData? {
-        let baseURL = "https://api.open-meteo.com/v1/forecast"
-        var components = URLComponents(string: baseURL)
+        var components = URLComponents(string: OpenMeteoConfig.forecastURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: currentParameters),
-            URLQueryItem(name: "hourly", value: hourlyParameters),
-            URLQueryItem(name: "daily", value: dailyParameters),
+            URLQueryItem(name: "current", value: OpenMeteoConfig.currentParameters),
+            URLQueryItem(name: "hourly", value: OpenMeteoConfig.hourlyParameters),
+            URLQueryItem(name: "daily", value: OpenMeteoConfig.dailyParameters),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "wind_speed_unit", value: "mph"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
@@ -411,10 +373,10 @@ class WeatherService {
         guard let url = components?.url else { return nil }
         
         do {
-            let (data, response) = try await cachedSession.data(from: url)
+            let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
             guard let httpResponse = response as? HTTPURLResponse,
                   httpResponse.statusCode == 200 else { return nil }
-            return try decoder.decode(WeatherData.self, from: data)
+            return try OpenMeteoConfig.decoder.decode(WeatherData.self, from: data)
         } catch {
             Logger.weatherService.warning("Static fetch failed: \(error.localizedDescription)")
             return nil
@@ -431,18 +393,16 @@ class WeatherService {
         startDate: Date,
         endDate: Date
     ) async throws -> HistoricalWeatherData {
-        let baseURL = "https://archive-api.open-meteo.com/v1/archive"
-        
         let dateFormatter = ISO8601DateFormatter()
         dateFormatter.formatOptions = [.withFullDate]
         
-        var components = URLComponents(string: baseURL)
+        var components = URLComponents(string: OpenMeteoConfig.historicalURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
             URLQueryItem(name: "start_date", value: dateFormatter.string(from: startDate)),
             URLQueryItem(name: "end_date", value: dateFormatter.string(from: endDate)),
-            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max"),
+            URLQueryItem(name: "daily", value: OpenMeteoConfig.historicalDailyParameters),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
             URLQueryItem(name: "timezone", value: "auto")
@@ -452,14 +412,14 @@ class WeatherService {
             throw WeatherError.invalidURL
         }
         
-        let (data, response) = try await cachedSession.data(from: url)
+        let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             throw WeatherError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
         }
         
-        return try decoder.decode(HistoricalWeatherData.self, from: data)
+        return try OpenMeteoConfig.decoder.decode(HistoricalWeatherData.self, from: data)
     }
     
     // MARK: - Pollen Forecast
@@ -470,13 +430,11 @@ class WeatherService {
         latitude: Double,
         longitude: Double
     ) async throws -> PollenData {
-        let baseURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
-        
-        var components = URLComponents(string: baseURL)
+        var components = URLComponents(string: OpenMeteoConfig.airQualityURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "hourly", value: "grass_pollen,birch_pollen,olive_pollen,ragweed_pollen"),
+            URLQueryItem(name: "hourly", value: OpenMeteoConfig.pollenParameters),
             URLQueryItem(name: "timezone", value: "auto"),
             URLQueryItem(name: "forecast_days", value: "7")
         ]
@@ -485,14 +443,14 @@ class WeatherService {
             throw WeatherError.invalidURL
         }
         
-        let (data, response) = try await cachedSession.data(from: url)
+        let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse,
               httpResponse.statusCode == 200 else {
             throw WeatherError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
         }
         
-        return try decoder.decode(PollenData.self, from: data)
+        return try OpenMeteoConfig.decoder.decode(PollenData.self, from: data)
     }
 }
 

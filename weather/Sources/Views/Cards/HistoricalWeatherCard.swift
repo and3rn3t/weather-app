@@ -89,7 +89,7 @@ struct HistoricalWeatherCard: View {
                 }
             } else if let error = error {
                 HistoryErrorView(message: error) {
-                    loadHistoricalData()
+                    await loadHistoricalData()
                 }
             } else {
                 Text("Loading historical weather data...")

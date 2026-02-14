@@ -113,13 +113,13 @@ Fixed all markdown linting issues in [android-app/IMPLEMENTATION_COMPLETE.md](an
 
 ### 8. 🔧 Updated Components
 
-**WeatherService.swift** ([link](weather/Sources/Services/WeatherService.swift)):
+**WeatherService.swift** - View [source code](weather/Sources/Services/WeatherService.swift):
 
 - Added `fetchHistoricalWeather()` static method
 - Added `fetchPollenForecast()` static method
 - Both integrate with Open-Meteo APIs (free)
 
-**WeatherDetailView.swift** ([link](weather/Sources/Views/WeatherDetailView.swift)):
+**WeatherDetailView.swift** - View [source code](weather/Sources/Views/WeatherDetailView.swift):
 
 - Updated "More Details" section to include:
   - Historical Weather Comparison Card
@@ -180,7 +180,7 @@ These features were requested but were already fully implemented:
 
 ## File Structure
 
-```
+```text
 weather/Sources/
 ├── Models/
 │   ├── HistoricalWeatherModels.swift  [NEW]
