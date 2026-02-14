@@ -6,13 +6,13 @@ A fully functional Android weather application MVP with native Kotlin and Jetpac
 
 ### Project Location
 
-```
+```bash
 /Users/andernet/Documents/GitHub/weather2/android/
 ```
 
 ### Files Created (50+ files)
 
-**Build Configuration**
+#### Build Configuration
 
 - Gradle build files (project & app level)
 - Dependencies configured for Compose, Hilt, Retrofit, Room, etc.
@@ -25,26 +25,26 @@ A fully functional Android weather application MVP with native Kotlin and Jetpac
 - Database: WeatherDatabase.kt, SavedLocation.kt, SavedLocationDao.kt
 - Repositories: WeatherRepository, LocationRepository, FavoritesRepository, SettingsRepository
 
-**Dependency Injection** (2 files)
+#### Dependency Injection (2 files)
 
 - AppModule.kt - Network, location, geocoding
 - DatabaseModule.kt - Room database
 
-**ViewModels** (4 files)
+#### ViewModels (4 files)
 
 - MainViewModel.kt - Weather display state
 - SearchViewModel.kt - Location search
 - FavoritesViewModel.kt - Saved locations
 - SettingsViewModel.kt - User preferences
 
-**UI Layer** (9+ files)
+#### UI Layer (9+ files)
 
 - Navigation: WeatherApp.kt with bottom navigation
 - Screens: HomeScreen, SearchScreen, FavoritesScreen, SettingsScreen
 - Components: WeatherCards, ForecastComponents
 - Theme: Material 3 colors, typography, theme setup
 
-**Resources**
+#### Resources
 
 - strings.xml with all UI text
 - themes.xml with Material 3 theme
@@ -180,7 +180,7 @@ Since you're learning Android, here are helpful resources:
 
 ### How Data Flows
 
-```
+```text
 User Action (UI)
     ↓
 ViewModel (MainViewModel)
@@ -246,7 +246,7 @@ HomeScreen: val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 ## Comparison Table: Android vs iOS
 
 | Feature | iOS (Swift/SwiftUI) | Android (Kotlin/Compose) |
-|---------|---------------------|--------------------------|
+| ------- | ------------------- | ------------------------ |
 | UI Framework | SwiftUI | Jetpack Compose |
 | State Management | @Observable, @Published | StateFlow, collectAsState |
 | DI | @Environment, property wrappers | Hilt, @HiltViewModel |

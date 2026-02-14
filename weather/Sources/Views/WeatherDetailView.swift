@@ -92,7 +92,6 @@ struct WeatherDetailView: View {
     }
     
     private var weatherBackground: some View {
-        let condition = WeatherCondition(code: weatherData.current.weatherCode)
         let theme = themeManager.adaptiveTheme(
             for: weatherData.current.weatherCode,
             isDay: weatherData.current.isDay == 1
@@ -224,13 +223,20 @@ struct MoreDetailsSection: View {
                     // Air Quality Index
                     AirQualityCard(airQualityData: airQualityData)
                     
-                    // On This Day - Historical Weather
-                    OnThisDayCard(
+                    // Historical Weather Comparison (This Time Last Year)
+                    HistoricalWeatherCard(
                         currentWeather: weatherData.current,
+                        currentDaily: weatherData.daily,
                         latitude: weatherData.latitude,
                         longitude: weatherData.longitude
                     )
                         .environment(settings)
+                    
+                    // Pollen & Allergy Forecast
+                    PollenForecastCard(
+                        latitude: weatherData.latitude,
+                        longitude: weatherData.longitude
+                    )
                     
                     // Additional Details
                     WeatherDetailsCard(current: weatherData.current)

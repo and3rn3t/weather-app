@@ -420,5 +420,79 @@ class WeatherService {
             return nil
         }
     }
+    
+    // MARK: - Historical Weather
+    
+    /// Fetch historical weather data for a specific date range
+    /// Uses Open-Meteo Historical Weather API (free, no API key required)
+    static func fetchHistoricalWeather(
+        latitude: Double,
+        longitude: Double,
+        startDate: Date,
+        endDate: Date
+    ) async throws -> HistoricalWeatherData {
+        let baseURL = "https://archive-api.open-meteo.com/v1/archive"
+        
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withFullDate]
+        
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "start_date", value: dateFormatter.string(from: startDate)),
+            URLQueryItem(name: "end_date", value: dateFormatter.string(from: endDate)),
+            URLQueryItem(name: "daily", value: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum,wind_speed_10m_max"),
+            URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
+            URLQueryItem(name: "precipitation_unit", value: "inch"),
+            URLQueryItem(name: "timezone", value: "auto")
+        ]
+        
+        guard let url = components?.url else {
+            throw WeatherError.invalidURL
+        }
+        
+        let (data, response) = try await cachedSession.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw WeatherError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        
+        return try decoder.decode(HistoricalWeatherData.self, from: data)
+    }
+    
+    // MARK: - Pollen Forecast
+    
+    /// Fetch pollen forecast data from Open-Meteo Air Quality API
+    /// Note: Pollen data is only available for Europe
+    static func fetchPollenForecast(
+        latitude: Double,
+        longitude: Double
+    ) async throws -> PollenData {
+        let baseURL = "https://air-quality-api.open-meteo.com/v1/air-quality"
+        
+        var components = URLComponents(string: baseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "hourly", value: "grass_pollen,birch_pollen,olive_pollen,ragweed_pollen"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "forecast_days", value: "7")
+        ]
+        
+        guard let url = components?.url else {
+            throw WeatherError.invalidURL
+        }
+        
+        let (data, response) = try await cachedSession.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw WeatherError.serverError(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+        
+        return try decoder.decode(PollenData.self, from: data)
+    }
 }
 
