@@ -37,6 +37,10 @@ enum TomorrowIOService {
             throw WeatherError.invalidURL
         }
         
+        #if DEBUG
+        print("🌸 Tomorrow.io Pollen Request: \(url.absoluteString)")
+        #endif
+        
         // Make request
         let (data, response) = try await TomorrowIOConfig.session.data(from: url)
         
@@ -44,6 +48,15 @@ enum TomorrowIOService {
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WeatherError.invalidResponse
         }
+        
+        #if DEBUG
+        print("🌸 Tomorrow.io Response Status: \(httpResponse.statusCode)")
+        if httpResponse.statusCode != 200 {
+            if let errorString = String(data: data, encoding: .utf8) {
+                print("🌸 Error Response: \(errorString)")
+            }
+        }
+        #endif
         
         switch httpResponse.statusCode {
         case 200:
@@ -53,6 +66,10 @@ enum TomorrowIOService {
         case 429:
             throw WeatherError.rateLimited
         default:
+            // Include error details in the error
+            if let errorString = String(data: data, encoding: .utf8) {
+                throw WeatherError.decodingError("Tomorrow.io API error (\(httpResponse.statusCode)): \(errorString)")
+            }
             throw WeatherError.serverError(statusCode: httpResponse.statusCode)
         }
         
@@ -60,6 +77,11 @@ enum TomorrowIOService {
         do {
             return try TomorrowIOConfig.decoder.decode(TomorrowIOPollenData.self, from: data)
         } catch {
+            #if DEBUG
+            if let jsonString = String(data: data, encoding: .utf8) {
+                print("🌸 Failed to decode JSON: \(jsonString)")
+            }
+            #endif
             throw WeatherError.decodingError("Failed to decode Tomorrow.io pollen data: \(error.localizedDescription)")
         }
     }
