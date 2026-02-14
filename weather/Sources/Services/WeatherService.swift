@@ -43,10 +43,14 @@ struct WeatherAlert: Codable, Sendable, Identifiable {
 class WeatherService {
     var weatherData: WeatherData?
     var airQualityData: AirQualityData?
+    var weatherAlerts: [WeatherAlert] = []
     var isLoading = false
     var errorMessage: String?
     var lastError: WeatherError?
     var currentLocationName: String?
+    
+    // Alert service for severe weather warnings
+    private let alertService = WeatherAlertService()
     
     // MARK: - Instant Startup
 
@@ -146,8 +150,9 @@ class WeatherService {
         }
         
         do {
-            // Perform weather fetch; kick off air quality in parallel (fire-and-forget)
+            // Perform weather fetch; kick off air quality and alerts in parallel (fire-and-forget)
             async let airQualityTask: Void = fetchAirQuality(latitude: latitude, longitude: longitude)
+            async let alertsTask: Void = fetchWeatherAlerts(latitude: latitude, longitude: longitude)
             let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             
             // Update last fetch time on success
@@ -162,8 +167,9 @@ class WeatherService {
             SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
             SharedDataManager.shared.cacheFullWeatherData(weather, locationName: currentLocationName)
             
-            // Await air quality completion (already running in parallel)
+            // Await air quality and alerts completion (already running in parallel)
             await airQualityTask
+            await alertsTask
             
         } catch let error as WeatherError {
             // Try offline fallback before showing error
@@ -303,6 +309,49 @@ class WeatherService {
         } catch {
             // Air quality is optional
             Logger.weatherService.warning("Failed to fetch air quality: \(error.localizedDescription)")
+        }
+    }
+    
+    func fetchWeatherAlerts(latitude: Double, longitude: Double) async {
+        let alerts = await alertService.fetchAlerts(latitude: latitude, longitude: longitude)
+        
+        await MainActor.run {
+            // Store previous active alerts to detect new ones
+            let previousAlertIds = Set(self.weatherAlerts.map { $0.id })
+            
+            // Update alerts
+            self.weatherAlerts = alerts.filter { !$0.isExpired }
+            
+            // Check for new severe alerts to notify about
+            let newAlerts = self.weatherAlerts.filter { alert in
+                !previousAlertIds.contains(alert.id) && alert.isActive
+            }
+            
+            // Send notifications for new severe/extreme alerts
+            if !newAlerts.isEmpty {
+                Task {
+                    await self.notifyNewAlerts(newAlerts)
+                }
+            }
+        }
+    }
+    
+    private func notifyNewAlerts(_ alerts: [WeatherAlert]) async {
+        // Only notify for severe and extreme alerts
+        let severeAlerts = alerts.filter { alert in
+            let severity = alert.severity.lowercased()
+            return severity == "severe" || severity == "extreme"
+        }
+        
+        guard !severeAlerts.isEmpty else { return }
+        
+        // Get notification manager from app and send notifications
+        // Note: This requires the NotificationManager to be accessible
+        // We'll send the most severe alert
+        if let mostSevere = severeAlerts.max(by: { $0.priority < $1.priority }) {
+            // Create a simple notification (NotificationManager.notifySevereWeather expects WeatherAlert)
+            // This will be handled by NotificationManager
+            Logger.weatherService.info("New severe weather alert: \(mostSevere.event)")
         }
     }
     

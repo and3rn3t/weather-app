@@ -58,6 +58,7 @@ struct ContentView: View {
                     onSearchTapped: { showingSearch = true },
                     onShareCardTapped: { showingShareCard = true },
                     airQualityData: weatherService.airQualityData,
+                    weatherAlerts: weatherService.weatherAlerts,
                     settings: settings
                 )
             } else if weatherService.isLoading {

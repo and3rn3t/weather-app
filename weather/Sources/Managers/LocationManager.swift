@@ -74,7 +74,7 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
         }
     }
     
-    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
         Task { @MainActor [weak self] in
             self?.errorMessage = "Failed to get location: \(error.localizedDescription)"
         }

@@ -18,6 +18,7 @@ struct WeatherDetailView: View {
     let onSearchTapped: () -> Void
     let onShareCardTapped: () -> Void
     let airQualityData: AirQualityData?
+    let weatherAlerts: [WeatherAlert]
     
     @Namespace private var glassNamespace
     var settings: SettingsManager
@@ -41,6 +42,11 @@ struct WeatherDetailView: View {
                         onShareCardTapped: onShareCardTapped
                     )
                         .environment(settings)
+                    
+                    // Severe Weather Alerts - Show at top if any active
+                    if !weatherAlerts.isEmpty {
+                        WeatherAlertsCard(alerts: weatherAlerts)
+                    }
                     
                     // Current Weather - Prominent card
                     CurrentWeatherCard(

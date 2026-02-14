@@ -243,7 +243,7 @@ enum WeatherIntentError: Error, CustomLocalizedStringResourceConvertible {
 // Helper to get current location for intents
 class IntentLocationProvider: NSObject, CLLocationManagerDelegate {
     private let locationManager = CLLocationManager()
-    private var continuation: CheckedContinuation<CLLocation, Error>?
+    private var continuation: CheckedContinuation<CLLocation, any Error>?
     
     /// Timeout duration for location requests (seconds)
     private static let locationTimeoutSeconds: UInt64 = 10
@@ -274,7 +274,7 @@ class IntentLocationProvider: NSObject, CLLocationManagerDelegate {
         }
     }
     
-    func locationManager(_ manager: CLLocationManager, didFailWithError error: Error) {
+    func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
         continuation?.resume(throwing: WeatherIntentError.locationAccessDenied)
         continuation = nil
     }
