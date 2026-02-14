@@ -130,7 +130,7 @@ jobs:
 
       - name: Upload Test Results
         if: always() && inputs.run_tests
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ inputs.configuration }}-${{ inputs.device }}
           path: TestResults-${{ inputs.device }}.xcresult

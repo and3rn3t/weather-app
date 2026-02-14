@@ -95,7 +95,7 @@ jobs:
           echo "$(date -u +%Y-%m-%d)" > .github/metrics/last-run.txt
 
       - name: Upload metrics artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-metrics-ios
           path: .github/metrics/
@@ -171,7 +171,7 @@ jobs:
           echo "${{ steps.build_time.outputs.build_time }}" > .github/metrics/android-build-time.txt
 
       - name: Upload metrics artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: build-metrics-android
           path: .github/metrics/
