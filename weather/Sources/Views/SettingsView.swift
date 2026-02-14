@@ -208,6 +208,21 @@ struct SettingsView: View {
                     Label("About", systemImage: "info.circle")
                 }
                 
+                #if DEBUG
+                // Developer Section (DEBUG only)
+                Section {
+                    NavigationLink {
+                        DiagnosticsView()
+                    } label: {
+                        Label("View Diagnostics", systemImage: "chart.xyaxis.line")
+                    }
+                } header: {
+                    Label("Developer", systemImage: "hammer")
+                } footer: {
+                    Text("MetricKit crash reports and performance metrics are saved locally in DEBUG builds.")
+                }
+                #endif
+                
                 // Reset Section
                 Section {
                     Button(role: .destructive) {

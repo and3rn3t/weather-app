@@ -31,6 +31,9 @@ struct WeatherApp: App {
         resetStartupLog()
         #endif
         os_signpost(.begin, log: StartupSignpost.log, name: "App.init")
+        
+        // Initialize MetricKit telemetry (crash reporting & performance monitoring)
+        _ = TelemetryManager.shared
 
         #if DEBUG
         let preMainMs = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
