@@ -1,0 +1,185 @@
+# Build Performance Tracking
+# Tracks build times and reports on trends
+
+name: Build Performance
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+jobs:
+  ios-build-time:
+    name: iOS Build Time
+    runs-on: macos-15
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-perf-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-perf-
+
+      - name: Clean Build
+        run: |
+          echo "🧹 Cleaning build folder..."
+          xcodebuild clean \
+            -project weather.xcodeproj \
+            -scheme weather
+
+      - name: Measure Build Time
+        id: build_time
+        run: |
+          echo "⏱️  Starting timed build..."
+          START_TIME=$(date +%s)
+          
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            > /dev/null 2>&1
+          
+          END_TIME=$(date +%s)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "📊 Build completed in ${BUILD_TIME} seconds"
+
+      - name: Analyze Build Performance
+        run: |
+          echo "### ⚡ Build Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Time | ${{ steps.build_time.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Configuration | Debug |" >> $GITHUB_STEP_SUMMARY
+          echo "| Device | iPhone 16 Pro Simulator |" >> $GITHUB_STEP_SUMMARY
+          echo "| Xcode Version | 16.0 |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Performance rating
+          BUILD_TIME=${{ steps.build_time.outputs.build_time }}
+          if [ $BUILD_TIME -lt 30 ]; then
+            echo "**Status:** ✅ Excellent (< 30s)" >> $GITHUB_STEP_SUMMARY
+          elif [ $BUILD_TIME -lt 60 ]; then
+            echo "**Status:** ⚡ Good (30-60s)" >> $GITHUB_STEP_SUMMARY
+          elif [ $BUILD_TIME -lt 120 ]; then
+            echo "**Status:** ⚠️ Acceptable (60-120s)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** 🐌 Slow (> 120s)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Save build metrics
+        run: |
+          mkdir -p .github/metrics
+          echo "${{ steps.build_time.outputs.build_time }}" > .github/metrics/ios-build-time.txt
+          echo "$(date -u +%Y-%m-%d)" > .github/metrics/last-run.txt
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metrics-ios
+          path: .github/metrics/
+          retention-days: 90
+
+  android-build-time:
+    name: Android Build Time  
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create local.properties
+        working-directory: android-app
+        run: echo "MAPS_API_KEY=dummy_key" > local.properties
+
+      - name: Clean Build
+        working-directory: android-app
+        run: ./gradlew clean
+
+      - name: Measure Build Time
+        id: build_time
+        working-directory: android-app
+        run: |
+          echo "⏱️  Starting timed build..."
+          START_TIME=$(date +%s)
+          
+          ./gradlew assembleDebug --no-daemon
+          
+          END_TIME=$(date +%s)
+          BUILD_TIME=$((END_TIME - START_TIME))
+          
+          echo "build_time=$BUILD_TIME" >> $GITHUB_OUTPUT
+          echo "📊 Build completed in ${BUILD_TIME} seconds"
+
+      - name: Analyze Build Performance
+        run: |
+          echo "### ⚡ Android Build Performance Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Time | ${{ steps.build_time.outputs.build_time }}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Configuration | Debug |" >> $GITHUB_STEP_SUMMARY
+          echo "| Task | assembleDebug |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Performance rating
+          BUILD_TIME=${{ steps.build_time.outputs.build_time }}
+          if [ $BUILD_TIME -lt 60 ]; then
+            echo "**Status:** ✅ Excellent (< 60s)" >> $GITHUB_STEP_SUMMARY
+          elif [ $BUILD_TIME -lt 120 ]; then
+            echo "**Status:** ⚡ Good (60-120s)" >> $GITHUB_STEP_SUMMARY
+          elif [ $BUILD_TIME -lt 180 ]; then
+            echo "**Status:** ⚠️ Acceptable (120-180s)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "**Status:** 🐌 Slow (> 180s)" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Save build metrics
+        run: |
+          mkdir -p .github/metrics
+          echo "${{ steps.build_time.outputs.build_time }}" > .github/metrics/android-build-time.txt
+
+      - name: Upload metrics artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-metrics-android
+          path: .github/metrics/
+          retention-days: 90
+
+      - name: Gradle Build Scan
+        if: github.event_name == 'push'
+        working-directory: android-app
+        run: |
+          echo "📊 For detailed build insights, enable Gradle Build Scans:"
+          echo "Add 'id(\"com.gradle.enterprise\") version \"3.16\"' to settings.gradle.kts"

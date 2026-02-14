@@ -1,0 +1,137 @@
+# Reusable workflow for iOS builds
+# Can be called from other workflows to avoid duplication
+
+name: iOS Build (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      configuration:
+        description: 'Build configuration (Debug/Release)'
+        required: false
+        type: string
+        default: 'Debug'
+      device:
+        description: 'Destination device'
+        required: false
+        type: string
+        default: 'iPhone 16 Pro'
+      enable_coverage:
+        description: 'Enable code coverage'
+        required: false
+        type: boolean
+        default: false
+      run_tests:
+        description: 'Run tests'
+        required: false
+        type: boolean
+        default: true
+      scheme:
+        description: 'Xcode scheme'
+        required: false
+        type: string
+        default: 'weather'
+    outputs:
+      build_success:
+        description: 'Whether the build succeeded'
+        value: ${{ jobs.build.outputs.success }}
+      artifact_path:
+        description: 'Path to build artifact'
+        value: ${{ jobs.build.outputs.artifact_path }}
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 30
+    outputs:
+      success: ${{ steps.build.outcome == 'success' }}
+      artifact_path: ${{ steps.build.outputs.path }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-deriveddata-${{ inputs.configuration }}-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
+          restore-keys: |
+            ${{ runner.os }}-deriveddata-${{ inputs.configuration }}-
+            ${{ runner.os }}-deriveddata-
+
+      - name: Cache SPM dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            weather.xcodeproj/project.xcworkspace/xcshareddata/swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Cache Homebrew
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/xcbeautify
+          key: ${{ runner.os }}-homebrew-xcbeautify
+          restore-keys: |
+            ${{ runner.os }}-homebrew-
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Build
+        id: build
+        run: |
+          COVERAGE_FLAG=""
+          if [ "${{ inputs.enable_coverage }}" = "true" ]; then
+            COVERAGE_FLAG="-enableCodeCoverage YES"
+          fi
+          
+          xcodebuild build \
+            -project ${{ inputs.scheme }}.xcodeproj \
+            -scheme ${{ inputs.scheme }} \
+            -destination 'platform=iOS Simulator,name=${{ inputs.device }}' \
+            -configuration ${{ inputs.configuration }} \
+            $COVERAGE_FLAG \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Run Tests
+        if: inputs.run_tests
+        run: |
+          COVERAGE_FLAG=""
+          if [ "${{ inputs.enable_coverage }}" = "true" ]; then
+            COVERAGE_FLAG="-enableCodeCoverage YES -derivedDataPath DerivedData"
+          fi
+          
+          xcodebuild test \
+            -project ${{ inputs.scheme }}.xcodeproj \
+            -scheme ${{ inputs.scheme }} \
+            -destination 'platform=iOS Simulator,name=${{ inputs.device }}' \
+            -parallel-testing-enabled YES \
+            -resultBundlePath TestResults-${{ inputs.device }}.xcresult \
+            $COVERAGE_FLAG \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Upload Test Results
+        if: always() && inputs.run_tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ inputs.configuration }}-${{ inputs.device }}
+          path: TestResults-${{ inputs.device }}.xcresult
+          retention-days: 7

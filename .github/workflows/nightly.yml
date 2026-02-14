@@ -1,0 +1,267 @@
+# Nightly Builds
+# Runs comprehensive builds and tests every night
+# Catches issues early and validates against latest dependencies
+
+name: Nightly Build
+
+on:
+  schedule:
+    # Run at 2 AM UTC every day
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      run_performance_tests:
+        description: 'Run performance tests'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+jobs:
+  ios-nightly:
+    name: iOS Nightly Build
+    runs-on: macos-15
+    timeout-minutes: 60
+
+    strategy:
+      fail-fast: false
+      matrix:
+        configuration: [Debug, Release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: Cache DerivedData
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Developer/Xcode/DerivedData
+          key: ${{ runner.os }}-nightly-${{ matrix.configuration }}-${{ hashFiles('**/*.swift') }}
+          restore-keys: |
+            ${{ runner.os }}-nightly-${{ matrix.configuration }}-
+
+      - name: Install xcbeautify
+        run: brew install xcbeautify
+
+      - name: Build All Schemes
+        run: |
+          # Build main app
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration ${{ matrix.configuration }} \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify
+          
+          # Build widget extension
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme "Andernet Weather Widget" \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration ${{ matrix.configuration }} \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify
+
+      - name: Run Tests
+        run: |
+          xcodebuild test \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -enableCodeCoverage YES \
+            -resultBundlePath NightlyTests-${{ matrix.configuration }}.xcresult \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify
+
+      - name: Analyze Code
+        if: matrix.configuration == 'Release'
+        run: |
+          xcodebuild analyze \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO
+
+      - name: Check for Warnings
+        if: matrix.configuration == 'Release'
+        run: |
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            2>&1 | tee build.log
+          
+          WARNINGS=$(grep -c "warning:" build.log || true)
+          echo "⚠️ Found $WARNINGS warnings in Release build"
+          
+          if [ $WARNINGS -gt 0 ]; then
+            echo "### ⚠️ Build Warnings Found" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Total Warnings:** $WARNINGS" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            grep "warning:" build.log | head -20 >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-test-results-ios-${{ matrix.configuration }}
+          path: NightlyTests-${{ matrix.configuration }}.xcresult
+          retention-days: 14
+
+  android-nightly:
+    name: Android Nightly Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    strategy:
+      fail-fast: false
+      matrix:
+        variant: [debug, release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v3
+
+      - name: Create local.properties
+        working-directory: android-app
+        run: echo "MAPS_API_KEY=dummy_key_for_ci" > local.properties
+
+      - name: Build APK
+        working-directory: android-app
+        run: |
+          if [ "${{ matrix.variant }}" = "debug" ]; then
+            ./gradlew assembleDebug
+          else
+            ./gradlew assembleRelease
+          fi
+
+      - name: Run Tests
+        working-directory: android-app
+        run: ./gradlew test${{ matrix.variant == 'debug' && 'Debug' || 'Release' }}UnitTest
+
+      - name: Run Lint
+        if: matrix.variant == 'release'
+        working-directory: android-app
+        run: ./gradlew lintRelease
+
+      - name: Check for Lint Issues
+        if: matrix.variant == 'release'
+        working-directory: android-app
+        run: |
+          if [ -f "app/build/reports/lint-results-release.xml" ]; then
+            ERRORS=$(grep -c 'severity="Error"' app/build/reports/lint-results-release.xml || true)
+            WARNINGS=$(grep -c 'severity="Warning"' app/build/reports/lint-results-release.xml || true)
+            
+            echo "### 📋 Lint Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Errors | $ERRORS |" >> $GITHUB_STEP_SUMMARY
+            echo "| Warnings | $WARNINGS |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-apk-${{ matrix.variant }}
+          path: android-app/app/build/outputs/apk/${{ matrix.variant }}/*.apk
+          retention-days: 14
+
+      - name: Upload Lint Results
+        if: always() && matrix.variant == 'release'
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-lint-results
+          path: android-app/app/build/reports/lint-*.html
+          retention-days: 14
+
+  dependency-audit:
+    name: Dependency Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check for outdated dependencies
+        run: |
+          echo "### 📦 Dependency Audit" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Dependency updates are managed by Dependabot." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check the **Pull Requests** tab for pending updates." >> $GITHUB_STEP_SUMMARY
+
+  notify:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [ios-nightly, android-nightly, dependency-audit]
+    if: failure()
+
+    steps:
+      - name: Create Issue on Failure
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = `🌙 Nightly Build Failed - ${new Date().toISOString().split('T')[0]}`;
+            const body = `The nightly build workflow failed.
+            
+            **Workflow Run:** ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}
+            
+            **Failed Jobs:**
+            - Check the workflow run link above for details
+            
+            **Action Required:**
+            - Review the failed jobs
+            - Fix any issues found
+            - Close this issue once resolved
+            `;
+            
+            // Check if an issue already exists for today
+            const issues = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'nightly-build-failure',
+            });
+            
+            const today = new Date().toISOString().split('T')[0];
+            const existingIssue = issues.data.find(issue => issue.title.includes(today));
+            
+            if (!existingIssue) {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: title,
+                body: body,
+                labels: ['nightly-build-failure', 'ci'],
+              });
+            }

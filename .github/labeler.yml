@@ -1,0 +1,103 @@
+# Labeler configuration
+# Automatically label PRs based on changed files
+
+# Platform labels
+ios:
+  - changed-files:
+    - any-glob-to-any-file: 'weather/**/*.swift'
+    - any-glob-to-any-file: 'weather/**/*.xcconfig'
+    - any-glob-to-any-file: 'weather/**/*.plist'
+    - any-glob-to-any-file: 'weather/**/*.entitlements'
+    - any-glob-to-any-file: 'weather/**/*.xcassets/**'
+    - any-glob-to-any-file: 'weather.xcodeproj/**'
+
+android:
+  - changed-files:
+    - any-glob-to-any-file: 'android-app/**/*.kt'
+    - any-glob-to-any-file: 'android-app/**/*.kts'
+    - any-glob-to-any-file: 'android-app/**/*.xml'
+    - any-glob-to-any-file: 'android-app/**/*.gradle'
+    - any-glob-to-any-file: 'android-app/**/*.properties'
+
+# Component labels
+ui:
+  - changed-files:
+    - any-glob-to-any-file: 'weather/Sources/Views/**'
+    - any-glob-to-any-file: 'weather/**/*View.swift'
+    - any-glob-to-any-file: 'android-app/**/ui/**'
+    - any-glob-to-any-file: 'android-app/**/*Screen.kt'
+    - any-glob-to-any-file: 'android-app/**/*Composable.kt'
+
+networking:
+  - changed-files:
+    - any-glob-to-any-file: '**/*Service.swift'
+    - any-glob-to-any-file: '**/*API*.swift'
+    - any-glob-to-any-file: '**/*Repository*.kt'
+    - any-glob-to-any-file: '**/*Service*.kt'
+
+database:
+  - changed-files:
+    - any-glob-to-any-file: '**/*Model.swift'
+    - any-glob-to-any-file: '**/*Entity*.kt'
+    - any-glob-to-any-file: '**/*Dao*.kt'
+
+widget:
+  - changed-files:
+    - any-glob-to-any-file: 'Andernet Weather Widget/**'
+    - any-glob-to-any-file: 'android-app/**/widget/**'
+
+# Type of change labels
+feature:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - 'weather/Sources/**'
+      - 'android-app/app/src/**'
+    - all-globs-to-all-files: '!**/*Test*.swift'
+    - all-globs-to-all-files: '!**/*Test*.kt'
+
+tests:
+  - changed-files:
+    - any-glob-to-any-file: 'weatherTests/**'
+    - any-glob-to-any-file: 'weatherUITests/**'
+    - any-glob-to-any-file: 'android-app/**/test/**'
+    - any-glob-to-any-file: 'android-app/**/androidTest/**'
+    - any-glob-to-any-file: '**/*Test*.swift'
+    - any-glob-to-any-file: '**/*Test*.kt'
+
+documentation:
+  - changed-files:
+    - any-glob-to-any-file: 
+      - '**/*.md'
+      - 'weather/Documentation/**'
+      - 'docs/**'
+
+ci-cd:
+  - changed-files:
+    - any-glob-to-any-file: '.github/**'
+    - any-glob-to-any-file: 'fastlane/**'
+    - any-glob-to-any-file: '.xcode-version'
+
+dependencies:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/Package.resolved'
+      - '**/Podfile*'
+      - 'android-app/gradle/**'
+      - 'android-app/**/*.gradle.kts'
+      - 'android-app/**/libs.versions.toml'
+
+configuration:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.xcconfig'
+      - '**/*.plist'
+      - '**/*.entitlements'
+      - 'ExportOptions.plist'
+      - 'android-app/**/*.properties'
+      - 'android-app/**/proguard-rules.pro'
+
+assets:
+  - changed-files:
+    - any-glob-to-any-file:
+      - '**/*.xcassets/**'
+      - 'android-app/**/res/**'

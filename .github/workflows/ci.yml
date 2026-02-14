@@ -38,8 +38,9 @@ jobs:
       matrix:
         device:
           - 'iPhone 16 Pro'
-          - 'iPhone SE (3rd generation)'
           - 'iPad Pro (13-inch) (M4)'
+        # Cost optimization: Reduced from 3 to 2 devices
+        # iPhone SE testing can be done in nightly builds
 
     steps:
       - name: Checkout

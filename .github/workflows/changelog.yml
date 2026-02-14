@@ -1,0 +1,150 @@
+# Changelog Generator
+# Automatically generates changelog entries on release
+
+name: Changelog
+
+on:
+  release:
+    types: [created, published]
+  workflow_dispatch:
+    inputs:
+      from_tag:
+        description: 'Start tag (leave empty for previous release)'
+        required: false
+        type: string
+      to_tag:
+        description: 'End tag (leave empty for HEAD)'
+        required: false
+        type: string
+
+jobs:
+  generate-changelog:
+    name: Generate Changelog
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Generate Changelog
+        id: changelog
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fromTag = '${{ inputs.from_tag }}' || context.payload.release?.tag_name;
+            const toTag = '${{ inputs.to_tag }}' || 'HEAD';
+            
+            // Get commits between tags
+            let compareResult;
+            try {
+              compareResult = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: fromTag || 'HEAD~50',
+                head: toTag,
+              });
+            } catch (error) {
+              console.log('Could not compare commits, using recent commits');
+              const commits = await github.rest.repos.listCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 50,
+              });
+              compareResult = { data: { commits: commits.data } };
+            }
+            
+            // Categorize commits
+            const features = [];
+            const bugfixes = [];
+            const improvements = [];
+            const dependencies = [];
+            const other = [];
+            
+            for (const commit of compareResult.data.commits) {
+              const message = commit.commit.message.split('\n')[0];
+              const lowerMessage = message.toLowerCase();
+              
+              if (lowerMessage.startsWith('feat') || lowerMessage.includes('new feature')) {
+                features.push(message);
+              } else if (lowerMessage.startsWith('fix') || lowerMessage.includes('bug')) {
+                bugfixes.push(message);
+              } else if (lowerMessage.startsWith('perf') || lowerMessage.startsWith('improve')) {
+                improvements.push(message);
+              } else if (lowerMessage.startsWith('deps') || lowerMessage.includes('dependabot')) {
+                dependencies.push(message);
+              } else if (!lowerMessage.startsWith('merge') && !lowerMessage.startsWith('ci')) {
+                other.push(message);
+              }
+            }
+            
+            // Build changelog
+            let changelog = '# Changelog\n\n';
+            
+            if (features.length > 0) {
+              changelog += '## ✨ New Features\n\n';
+              features.forEach(f => changelog += `- ${f}\n`);
+              changelog += '\n';
+            }
+            
+            if (bugfixes.length > 0) {
+              changelog += '## 🐛 Bug Fixes\n\n';
+              bugfixes.forEach(f => changelog += `- ${f}\n`);
+              changelog += '\n';
+            }
+            
+            if (improvements.length > 0) {
+              changelog += '## ⚡ Improvements\n\n';
+              improvements.forEach(i => changelog += `- ${i}\n`);
+              changelog += '\n';
+            }
+            
+            if (dependencies.length > 0) {
+              changelog += '## 📦 Dependencies\n\n';
+              const depCount = dependencies.length;
+              changelog += `- Updated ${depCount} ${depCount === 1 ? 'dependency' : 'dependencies'}\n\n`;
+            }
+            
+            if (other.length > 0) {
+              changelog += '## 🔧 Other Changes\n\n';
+              other.slice(0, 10).forEach(o => changelog += `- ${o}\n`);
+              if (other.length > 10) {
+                changelog += `- ...and ${other.length - 10} more changes\n`;
+              }
+              changelog += '\n';
+            }
+            
+            changelog += `\n**Full Changelog**: ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/compare/${fromTag}...${toTag}`;
+            
+            return changelog;
+
+      - name: Update Release Notes
+        if: github.event_name == 'release'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const changelog = ${{ steps.changelog.outputs.result }};
+            
+            await github.rest.repos.updateRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              release_id: context.payload.release.id,
+              body: changelog,
+            });
+
+      - name: Save Changelog
+        run: |
+          echo '${{ steps.changelog.outputs.result }}' > CHANGELOG-$(date +%Y%m%d).md
+
+      - name: Upload Changelog
+        uses: actions/upload-artifact@v4
+        with:
+          name: changelog
+          path: CHANGELOG-*.md
+          retention-days: 90
+
+      - name: Create Summary
+        run: |
+          echo "${{ steps.changelog.outputs.result }}" >> $GITHUB_STEP_SUMMARY
