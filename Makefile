@@ -159,6 +159,47 @@ install-hooks:
 	@chmod +x .git/hooks/pre-commit
 	@echo "✅ Git hooks installed"
 
+# Setup development environment
+setup-dev:
+	@chmod +x scripts/setup-dev-environment.sh
+	@./scripts/setup-dev-environment.sh
+
+# Run security scan
+security-scan:
+	@chmod +x scripts/security-scan.sh
+	@./scripts/security-scan.sh
+
+# Update dependencies
+update-deps:
+	@chmod +x scripts/update-dependencies.sh
+	@./scripts/update-dependencies.sh check
+
+update-deps-minor:
+	@chmod +x scripts/update-dependencies.sh
+	@./scripts/update-dependencies.sh minor
+
+update-deps-tools:
+	@chmod +x scripts/update-dependencies.sh
+	@./scripts/update-dependencies.sh tools
+
+# Prepare release
+prepare-release:
+	@chmod +x scripts/prepare-release.sh
+	@./scripts/prepare-release.sh patch
+
+prepare-release-minor:
+	@chmod +x scripts/prepare-release.sh
+	@./scripts/prepare-release.sh minor
+
+prepare-release-major:
+	@chmod +x scripts/prepare-release.sh
+	@./scripts/prepare-release.sh major
+
+# Generate release notes
+release-notes:
+	@chmod +x scripts/generate-release-notes.sh
+	@./scripts/generate-release-notes.sh
+
 # Run tests with test plan
 test-plan:
 	xcodebuild test \
@@ -242,6 +283,7 @@ help:
 	@echo "  analyze-build-times - Analyze slow compilation units"
 	@echo "  analyze-size       - Analyze app bundle size"
 	@echo "  accessibility      - Run accessibility audit"
+	@echo "  security-scan      - Run comprehensive security scan"
 	@echo ""
 	@echo "  Memory:"
 	@echo "  memory-diagnostics - Run all memory diagnostics"
@@ -252,9 +294,19 @@ help:
 	@echo "  export-ipa         - Export IPA for distribution"
 	@echo "  profile            - Build for Instruments profiling"
 	@echo "  quality-gate       - Run all checks before release"
+	@echo "  prepare-release    - Prepare patch release"
+	@echo "  prepare-release-minor - Prepare minor release"
+	@echo "  prepare-release-major - Prepare major release"
+	@echo "  release-notes      - Generate release notes from git history"
+	@echo ""
+	@echo "  Dependencies:"
+	@echo "  update-deps        - Check dependency status"
+	@echo "  update-deps-minor  - Update to latest minor versions"
+	@echo "  update-deps-tools  - Update build tools only"
 	@echo ""
 	@echo "  Setup:"
 	@echo "  format             - Format code with swift-format"
 	@echo "  install-hooks      - Install git pre-commit hooks"
 	@echo "  setup-tools        - Install optional build tools"
+	@echo "  setup-dev          - Complete development environment setup"
 	@echo "  ci                 - Full CI pipeline (clean, build, test)"
