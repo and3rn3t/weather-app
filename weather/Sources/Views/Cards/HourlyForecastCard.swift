@@ -10,7 +10,7 @@ import Charts
 
 // MARK: - Hourly Forecast Card
 
-struct HourlyForecastCard: View {
+struct HourlyForecastCard: View, Equatable {
     let hourly: HourlyWeather
     let timezone: String
     @State private var selectedHour: Int?
@@ -143,11 +143,16 @@ struct HourlyForecastCard: View {
             return ("minus", "Steady", .secondary)
         }
     }
+    
+    // MARK: - Equatable
+    static func == (lhs: HourlyForecastCard, rhs: HourlyForecastCard) -> Bool {
+        lhs.hourly == rhs.hourly && lhs.timezone == rhs.timezone && lhs.selectedHour == rhs.selectedHour && lhs.showUVIndex == rhs.showUVIndex
+    }
 }
 
 // MARK: - Hourly Weather Item
 
-struct HourlyWeatherItem: View {
+struct HourlyWeatherItem: View, Equatable {
     let time: String
     let temperature: Double
     let weatherCode: Int
@@ -191,7 +196,7 @@ struct HourlyWeatherItem: View {
 
 // MARK: - Hourly UV Item
 
-struct HourlyUVItem: View {
+struct HourlyUVItem: View, Equatable {
     let time: String
     let uvIndex: Double
     let weatherCode: Int

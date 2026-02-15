@@ -52,6 +52,15 @@ class WeatherService {
     // Alert service for severe weather warnings
     private let alertService = WeatherAlertService()
     
+    // Enhanced cache manager
+    private let cacheManager = WeatherCacheManager.shared
+    
+    // Request coalescer for batching API calls
+    private let requestCoalescer = RequestCoalescer.shared
+    
+    // Performance tracking
+    private let performanceTracker = PerformanceTracker.shared
+    
     // MARK: - Instant Startup
 
     init() {
@@ -73,11 +82,22 @@ class WeatherService {
         #endif
 
         let locationMeta = SharedDataManager.lastKnownLocation()
-        let cached = SharedDataManager.shared.loadCachedFullWeatherData()
-
-        if let cached {
-            self.weatherData = cached
-            self.currentLocationName = locationMeta?.name
+        
+        // Use enhanced cache manager for faster, smarter cache loading
+        if let locationMeta = locationMeta {
+            let cached = cacheManager.getCachedWeather(latitude: locationMeta.latitude, longitude: locationMeta.longitude)
+            if let cached {
+                self.weatherData = cached
+                self.currentLocationName = locationMeta.name
+            }
+        } else {
+            // Fallback: try to load any cached data from SharedDataManager for backward compatibility
+            let cached = SharedDataManager.shared.loadCachedFullWeatherData()
+            if let cached {
+                self.weatherData = cached
+                self.currentLocationName = SharedDataManager.lastKnownLocation()?.name
+            }
+        }
             #if DEBUG
             let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
             startupLog("Cache loaded + published: \(String(format: "%.0f", elapsed))ms since launch")
@@ -116,12 +136,24 @@ class WeatherService {
     // MARK: - Public Methods
     
     func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
+        let traceKey = forceRefresh ? "weather_fetch_force" : "weather_fetch_normal"
+        performanceTracker.startTrace(traceKey, attributes: [
+            "force_refresh": String(forceRefresh),
+            "has_location_name": String(locationName != nil),
+            "has_cached_data": String(weatherData != nil)
+        ])
+        
         self.currentLocationName = locationName
         
         // Debounce: Skip fetch if we recently fetched (unless force refresh)
         if !forceRefresh, let lastFetch = lastFetchTime,
            Date().timeIntervalSince(lastFetch) < minimumFetchInterval,
            weatherData != nil {
+            performanceTracker.recordEvent("weather_fetch_skipped", parameters: [
+                "reason": "debounce",
+                "time_since_last": String(Date().timeIntervalSince(lastFetch))
+            ])
+            performanceTracker.stopTrace(traceKey)
             return
         }
         
@@ -130,11 +162,19 @@ class WeatherService {
            abs(active.latitude - latitude) < Self.inFlightDeduplicationTolerance,
            abs(active.longitude - longitude) < Self.inFlightDeduplicationTolerance,
            !forceRefresh {
+            performanceTracker.recordEvent("weather_fetch_skipped", parameters: [
+                "reason": "duplicate_in_flight",
+                "distance": String(abs(active.latitude - latitude) + abs(active.longitude - longitude))
+            ])
+            performanceTracker.stopTrace(traceKey)
             return
         }
         
         activeFetchCoordinate = (latitude, longitude)
-        defer { activeFetchCoordinate = nil }
+        defer { 
+            activeFetchCoordinate = nil 
+            performanceTracker.stopTrace(traceKey)
+        }
         
         await MainActor.run {
             // Only show loading spinner when there's NO data to display yet.
@@ -147,10 +187,10 @@ class WeatherService {
         }
         
         do {
-            // Perform weather fetch; kick off air quality and alerts in parallel (fire-and-forget)
-            async let airQualityTask: Void = fetchAirQuality(latitude: latitude, longitude: longitude)
-            async let alertsTask: Void = fetchWeatherAlerts(latitude: latitude, longitude: longitude)
-            let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
+            // Use request coalescer for optimized parallel fetching
+            async let airQualityTask: Void = fetchAirQualityCoalesced(latitude: latitude, longitude: longitude)
+            async let alertsTask: Void = fetchWeatherAlertsCoalesced(latitude: latitude, longitude: longitude)
+            let weather = try await performWeatherFetchWithRetryCoalesced(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             
             // Update last fetch time on success
             lastFetchTime = Date()
@@ -160,19 +200,40 @@ class WeatherService {
                 self.isLoading = false
             }
             
-            // Save to shared storage for widgets + cache full data for instant startup
+            // Record successful fetch
+            performanceTracker.recordEvent("weather_fetch_success", parameters: [
+                "force_refresh": String(forceRefresh),
+                "has_location_name": String(locationName != nil)
+            ])
+            
+            // Save using enhanced cache manager for better performance
+            cacheManager.cacheWeather(weather, latitude: latitude, longitude: longitude)
+            
+            // Also save to shared storage for widgets (backward compatibility)
             SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
-            SharedDataManager.shared.cacheFullWeatherData(weather, locationName: currentLocationName)
             
             // Await air quality and alerts completion (already running in parallel)
             await airQualityTask
             await alertsTask
             
         } catch let error as WeatherError {
-            // Try offline fallback before showing error
-            if SharedDataManager.shared.loadWeatherData() != nil {
+            // Record error event
+            performanceTracker.recordEvent("weather_fetch_error", parameters: [
+                "error_type": "WeatherError",
+                "error_code": String(error.code.rawValue),
+                "has_cached_fallback": String(cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) != nil)
+            ])
+            
+            // Try enhanced cache fallback first, then SharedDataManager
+            let cachedFromEnhanced = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude)
+            let cachedFromShared = SharedDataManager.shared.loadWeatherData()
+            
+            if cachedFromEnhanced != nil || cachedFromShared != nil {
                 await MainActor.run {
-                    // Show cached data with error message as warning
+                    // Use enhanced cache if available, otherwise shared cache
+                    if let enhanced = cachedFromEnhanced {
+                        self.weatherData = enhanced
+                    }
                     self.isLoading = false
                     self.errorMessage = "Showing cached data. " + (error.recoverySuggestion ?? "")
                 }
@@ -180,10 +241,17 @@ class WeatherService {
                 await handleError(error)
             }
         } catch let urlError as URLError {
-            if SharedDataManager.shared.loadWeatherData() != nil {
+            let cachedFromEnhanced = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude)
+            let cachedFromShared = SharedDataManager.shared.loadWeatherData()
+            
+            if cachedFromEnhanced != nil || cachedFromShared != nil {
                 await MainActor.run {
+                    if let enhanced = cachedFromEnhanced {
+                        self.weatherData = enhanced
+                    }
                     self.isLoading = false
                     self.errorMessage = "Showing cached data. Check your connection."
+                }
                 }
             } else {
                 await handleError(.from(urlError))
@@ -350,6 +418,95 @@ class WeatherService {
             // This will be handled by NotificationManager
             Logger.weatherService.info("New severe weather alert: \(mostSevere.event)")
         }
+    }
+    
+    // MARK: - Coalesced API Methods
+    
+    /// Coalesced weather fetch using RequestCoalescer for optimized batching
+    private func performWeatherFetchCoalesced(latitude: Double, longitude: Double, forceRefresh: Bool = false) async throws -> WeatherData {
+        return try await withCheckedThrowingContinuation { continuation in
+            Task {
+                await requestCoalescer.coalesceWeatherRequest(
+                    latitude: latitude,
+                    longitude: longitude
+                ) { result in
+                    continuation.resume(with: result)
+                }
+            }
+        }
+    }
+    
+    /// Coalesced air quality fetch
+    private func fetchAirQualityCoalesced(latitude: Double, longitude: Double) async {
+        await withCheckedContinuation { continuation in
+            Task {
+                await requestCoalescer.coalesceAirQualityRequest(
+                    latitude: latitude,
+                    longitude: longitude
+                ) { result in
+                    Task { @MainActor in
+                        switch result {
+                        case .success(let airQuality):
+                            self.airQualityData = airQuality
+                        case .failure:
+                            // Air quality failure is non-critical, just log it
+                            break
+                        }
+                    }
+                    continuation.resume()
+                }
+            }
+        }
+    }
+    
+    /// Coalesced weather alerts fetch
+    private func fetchWeatherAlertsCoalesced(latitude: Double, longitude: Double) async {
+        await withCheckedContinuation { continuation in
+            Task {
+                await requestCoalescer.coalesceAlertsRequest(
+                    latitude: latitude,
+                    longitude: longitude
+                ) { result in
+                    Task { @MainActor in
+                        switch result {
+                        case .success(let alerts):
+                            self.weatherAlerts = alerts
+                        case .failure:
+                            // Alerts failure is non-critical, just log it
+                            break
+                        }
+                    }
+                    continuation.resume()
+                }
+            }
+        }
+    }
+    
+    /// Request coalescing wrapper with retry logic
+    private func performWeatherFetchWithRetryCoalesced(latitude: Double, longitude: Double, forceRefresh: Bool = false) async throws -> WeatherData {
+        let config = RetryConfiguration.default
+        var lastError: (any Error)?
+        
+        for attempt in 1...config.maxAttempts {
+            do {
+                return try await performWeatherFetchCoalesced(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
+            } catch let error as WeatherError where error.isRetryable && attempt < config.maxAttempts {
+                lastError = error
+                let delay = config.delay(for: attempt)
+                try await Task.sleep(for: .seconds(delay))
+            } catch {
+                throw error
+            }
+        }
+        
+        throw lastError ?? WeatherError.unknown("Request failed after retries")
+    }
+    
+    // MARK: - Request Coalescing Statistics
+    
+    /// Get request coalescing statistics for debugging
+    func getRequestCoalescingStats() async -> RequestCoalescer.CoalescingStatistics {
+        return await requestCoalescer.getStatistics()
     }
     
     private static let currentParameters: String = [

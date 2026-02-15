@@ -37,6 +37,10 @@ struct ContentView: View {
     @State private var hasLoggedFirstData = false
     @Environment(ThemeManager.self) private var themeManager
     @State private var favoritesManager: FavoritesManager?
+    @StateObject private var progressiveLoader = ProgressiveLoadingCoordinator()
+    
+    // Performance tracking
+    private let performanceTracker = PerformanceTracker.shared
 
     init(modelContainer: Binding<ModelContainer?>) {
         self._modelContainer = modelContainer
@@ -62,7 +66,13 @@ struct ContentView: View {
                     settings: settings
                 )
             } else if weatherService.isLoading {
-                LoadingView()
+                switch progressiveLoader.loadingState {
+                case .initial, .loadingLocation, .loadingWeather:
+                    WeatherLoadingView()
+                        .environmentObject(progressiveLoader)
+                default:
+                    LoadingView()
+                }
             } else if let errorMessage = weatherService.errorMessage ?? locationManager.errorMessage {
                 ErrorView(
                     message: errorMessage,
@@ -81,6 +91,7 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             mainContent
+            .trackPerformance("contentview_main_render")
             .task {
                 // MARK: - Background Refresh
                 // WeatherService.init() already loaded cache and kicked off a
@@ -88,6 +99,7 @@ struct ContentView: View {
                 // needs to request a fresh GPS fix (which fires .onChange when
                 // ready, triggering a location-accurate fetch).
 
+                performanceTracker.startTrace("contentview_task_1", attributes: ["priority": "high"])
                 os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.task1")
                 #if DEBUG
                 let taskStart = CFAbsoluteTimeGetCurrent()
@@ -104,17 +116,21 @@ struct ContentView: View {
                 let task1Ms = (CFAbsoluteTimeGetCurrent() - taskStart) * 1_000
                 startupLog("ContentView.task1 synchronous: \(String(format: "%.0f", task1Ms))ms")
                 #endif
+                performanceTracker.stopTrace("contentview_task_1")
             }
             .task {
                 // Priority 2: Deferred non-critical setup after weather is visible
+                performanceTracker.startTrace("contentview_deferred_setup")
                 os_signpost(.begin, log: StartupSignpost.log, name: "ContentView.deferredSetup")
                 try? await Task.sleep(for: .milliseconds(300))
 
                 // Initialize ModelContainer off the critical path if not yet ready
                 if modelContainer == nil {
+                    performanceTracker.startTrace("model_container_init")
                     modelContainer = await Task.detached(priority: .utility) {
                         try? ModelContainer(for: SavedLocation.self)
                     }.value
+                    performanceTracker.stopTrace("model_container_init")
                 }
 
                 // Initialize favorites manager (SwiftData fetch)
@@ -122,7 +138,9 @@ struct ContentView: View {
                     #if DEBUG
                     let t = CFAbsoluteTimeGetCurrent()
                     #endif
+                    performanceTracker.startTrace("favorites_manager_init")
                     favoritesManager = FavoritesManager(modelContext: container.mainContext)
+                    performanceTracker.stopTrace("favorites_manager_init")
                     #if DEBUG
                     startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - t) * 1_000))ms")
                     #endif
@@ -130,13 +148,19 @@ struct ContentView: View {
 
                 // Restore any existing Live Activity (only if enabled)
                 if settings.liveActivitiesEnabled {
+                    performanceTracker.startTrace("live_activity_restore")
                     let lam = ensureLiveActivityManager()
                     lam.restoreExistingActivity()
+                    performanceTracker.stopTrace("live_activity_restore")
                 }
 
                 // Start auto-refresh timer
+                performanceTracker.startTrace("auto_refresh_timer")
                 startAutoRefreshTimer()
+                performanceTracker.stopTrace("auto_refresh_timer")
+                
                 os_signpost(.end, log: StartupSignpost.log, name: "ContentView.deferredSetup")
+                performanceTracker.stopTrace("contentview_deferred_setup")
             }
             .onDisappear {
                 // Cancel auto-refresh timer when view is removed to prevent task leak

@@ -1,8 +1,11 @@
 package com.andernet.weather.data.model
 
+import androidx.compose.runtime.Stable
+
 /**
  * Location data
  */
+@Stable
 data class LocationData(
     val latitude: Double,
     val longitude: Double,

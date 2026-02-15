@@ -241,9 +241,37 @@ test-performance:
 		-project $(PROJECT) \
 		-scheme $(SCHEME) \
 		-destination "$(DESTINATION)" \
+		-only-testing:weatherUITests/PerformanceTests \
 		-only-testing:weatherUITests/weatherUITests/testLaunchPerformance \
 		-only-testing:weatherUITests/weatherUITests/testScrollPerformance \
 		-only-testing:weatherUITests/weatherUITests/testMemoryPerformance \
+		-only-testing:weatherTests/ServicePerformanceTests \
+		| xcbeautify
+
+# Run comprehensive performance suite
+test-performance-full:
+	@echo "🚀 Running comprehensive performance test suite..."
+	xcodebuild test \
+		-project $(PROJECT) \
+		-scheme $(SCHEME) \
+		-destination "$(DESTINATION)" \
+		-only-testing:weatherUITests/PerformanceTests \
+		-only-testing:weatherTests/ServicePerformanceTests \
+		| xcbeautify
+	@echo "✅ Performance tests completed"
+
+# Run performance tests for CI (faster subset)
+test-performance-ci:
+	@echo "🏃‍♂️ Running CI performance tests..."
+	xcodebuild test \
+		-project $(PROJECT) \
+		-scheme $(SCHEME) \
+		-destination "$(DESTINATION)" \
+		-only-testing:weatherUITests/PerformanceTests/testColdLaunchPerformance \
+		-only-testing:weatherUITests/PerformanceTests/testMemoryUsageDuringNormalUsage \
+		-only-testing:weatherUITests/PerformanceTests/testScrollingPerformance \
+		-only-testing:weatherTests/ServicePerformanceTests/testCompleteStartupSequencePerformance \
+		-only-testing:weatherTests/ServicePerformanceTests/testCacheLoadingPerformance \
 		| xcbeautify
 
 # Build for profiling (Instruments)

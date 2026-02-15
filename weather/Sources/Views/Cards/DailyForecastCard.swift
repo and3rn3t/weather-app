@@ -9,7 +9,7 @@ import SwiftUI
 
 // MARK: - Daily Forecast Card
 
-struct DailyForecastCard: View {
+struct DailyForecastCard: View, Equatable {
     let daily: DailyWeather
     @State private var showExtendedForecast = false
     @State private var expandedDay: Int? = nil
@@ -43,7 +43,7 @@ struct DailyForecastCard: View {
             }
             .padding(.horizontal, 20)
             
-            VStack(spacing: 12) {
+            LazyVStack(spacing: 12) {
                 ForEach(Array(daily.time.prefix(displayedDays).enumerated()), id: \.offset) { index, time in
                     DailyWeatherRow(
                         date: time,
@@ -73,11 +73,16 @@ struct DailyForecastCard: View {
         .padding(.vertical, 16)
         .glassEffect(GlassStyle.regular, in: RoundedRectangle(cornerRadius: 20))
     }
+    
+    // MARK: - Equatable
+    static func == (lhs: DailyForecastCard, rhs: DailyForecastCard) -> Bool {
+        lhs.daily == rhs.daily && lhs.showExtendedForecast == rhs.showExtendedForecast && lhs.expandedDay == rhs.expandedDay
+    }
 }
 
 // MARK: - Daily Weather Row
 
-struct DailyWeatherRow: View {
+struct DailyWeatherRow: View, Equatable {
     let date: String
     let weatherCode: Int
     let high: Double
@@ -189,5 +194,17 @@ struct DailyWeatherRow: View {
     
     private var uvColor: Color {
         UVIndexHelper.color(for: uvIndex)
+    }
+    
+    // MARK: - Equatable
+    static func == (lhs: DailyWeatherRow, rhs: DailyWeatherRow) -> Bool {
+        lhs.date == rhs.date &&
+        lhs.weatherCode == rhs.weatherCode &&
+        lhs.high == rhs.high &&
+        lhs.low == rhs.low &&
+        lhs.precipProbability == rhs.precipProbability &&
+        lhs.uvIndex == rhs.uvIndex &&
+        lhs.windSpeed == rhs.windSpeed &&
+        lhs.isExpanded == rhs.isExpanded
     }
 }

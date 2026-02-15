@@ -1,11 +1,13 @@
 package com.andernet.weather.data.model
 
+import androidx.compose.runtime.Stable
 import com.squareup.moshi.Json
 import com.squareup.moshi.JsonClass
 
 /**
  * Complete weather data response from Open-Meteo API
  */
+@Stable
 @JsonClass(generateAdapter = true)
 data class WeatherData(
     val latitude: Double,
@@ -21,6 +23,7 @@ data class WeatherData(
 /**
  * Current weather conditions
  */
+@Stable
 @JsonClass(generateAdapter = true)
 data class CurrentWeather(
     val time: String,
@@ -43,6 +46,7 @@ data class CurrentWeather(
 /**
  * Hourly forecast data (arrays of 168 hours = 7 days)
  */
+@Stable
 @JsonClass(generateAdapter = true)
 data class HourlyWeather(
     val time: List<String>,
@@ -58,6 +62,7 @@ data class HourlyWeather(
 /**
  * Daily forecast data (arrays of 14 days)
  */
+@Stable
 @JsonClass(generateAdapter = true)
 data class DailyWeather(
     val time: List<String>,
@@ -96,6 +101,7 @@ enum class WeatherCondition(val code: IntRange, val description: String, val ico
 /**
  * Hourly forecast item for UI display
  */
+@Stable
 data class HourlyForecastItem(
     val time: String,
     val temperature: Double,
@@ -109,6 +115,7 @@ data class HourlyForecastItem(
 /**
  * Daily forecast item for UI display
  */
+@Stable
 data class DailyForecastItem(
     val date: String,
     val weatherCode: Int,
