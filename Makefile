@@ -200,6 +200,32 @@ release-notes:
 	@chmod +x scripts/generate-release-notes.sh
 	@./scripts/generate-release-notes.sh
 
+# Shell Integration
+shell-integration:
+	@chmod +x scripts/weather-shell-integration.sh
+	@echo "🌤️ Loading Weather App shell integration..."
+	@source scripts/weather-shell-integration.sh && echo "✅ Shell functions loaded"
+
+shell-setup:
+	@echo "🔧 Setting up advanced shell integration..."
+	@chmod +x scripts/weather-directory-hook.sh scripts/weather-terminal-optimization.sh
+	@if [[ -n "$$ZSH_VERSION" ]]; then chmod +x scripts/weather-zsh-completions.zsh; fi
+	@echo "✅ Shell integration files prepared"
+	@echo "💡 Add the following to your ~/.zshrc or ~/.bashrc:"
+	@echo "source $(PWD)/scripts/weather-shell-integration.sh"
+	@echo "source $(PWD)/scripts/weather-directory-hook.sh"
+	@echo "source $(PWD)/scripts/weather-terminal-optimization.sh"
+
+shell-status:
+	@echo "📊 Shell Integration Status:"
+	@command -v wbuild >/dev/null && echo "✅ Weather functions loaded" || echo "❌ Weather functions not loaded"
+	@[[ -n "$$WEATHER_PROJECT_LOADED" ]] && echo "✅ Directory hooks active" || echo "❌ Directory hooks not active"
+	@[[ "$$WEATHER_TERMINAL_OPTIMIZED" == "true" ]] && echo "✅ Terminal optimized" || echo "❌ Terminal not optimized"
+
+shell-test:
+	@echo "🧪 Testing shell integration..."
+	@command -v whelp >/dev/null && whelp || echo "❌ Shell functions not loaded - run 'make shell-setup'"
+
 # Run tests with test plan
 test-plan:
 	xcodebuild test \
@@ -303,6 +329,12 @@ help:
 	@echo "  update-deps        - Check dependency status"
 	@echo "  update-deps-minor  - Update to latest minor versions"
 	@echo "  update-deps-tools  - Update build tools only"
+	@echo ""
+	@echo "  Shell Integration:"
+	@echo "  shell-integration  - Load weather shell functions"
+	@echo "  shell-setup        - Setup advanced shell integration"
+	@echo "  shell-status       - Check shell integration status"
+	@echo "  shell-test         - Test shell functions"
 	@echo ""
 	@echo "  Setup:"
 	@echo "  format             - Format code with swift-format"

@@ -234,8 +234,8 @@ else
     sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
 fi
 
-# 11. Create useful aliases
-echo -e "\n${YELLOW}11. Shell Aliases${NC}"
+# 11. Advanced Shell Integration
+echo -e "\n${YELLOW}11. Advanced Shell Integration${NC}"
 SHELL_RC=""
 if [[ "$SHELL" == *"zsh"* ]]; then
     SHELL_RC="$HOME/.zshrc"
@@ -244,26 +244,51 @@ elif [[ "$SHELL" == *"bash"* ]]; then
 fi
 
 if [ -n "$SHELL_RC" ]; then
-    log_step "Adding helpful aliases to $SHELL_RC"
+    log_step "Adding advanced weather app integration to $SHELL_RC"
     
     # Create backup
     if [ -f "$SHELL_RC" ]; then
         cp "$SHELL_RC" "${SHELL_RC}.backup.$(date +%s)"
     fi
     
-    # Add weather app aliases
+    # Add weather app integration
     cat >> "$SHELL_RC" << 'EOF'
 
-# Andernet Weather App aliases
-alias wbuild='make build'
-alias wtest='make test'
-alias wclean='make clean'
-alias wlint='make lint'
-alias wsim='open -a Simulator'
-EOF
-    echo -e "${GREEN}✅ Shell aliases added${NC}"
-    echo -e "${CYAN}💡 Reload shell or run: source $SHELL_RC${NC}"
+# Andernet Weather App - Advanced Integration
+# Load shell integration functions
+if [ -f "$(pwd)/scripts/weather-shell-integration.sh" ]; then
+    source "$(pwd)/scripts/weather-shell-integration.sh"
 fi
+
+# Load directory hooks for automatic project detection
+if [ -f "$(pwd)/scripts/weather-directory-hook.sh" ]; then
+    source "$(pwd)/scripts/weather-directory-hook.sh"
+fi
+
+# Load terminal optimizations
+if [ -f "$(pwd)/scripts/weather-terminal-optimization.sh" ]; then
+    source "$(pwd)/scripts/weather-terminal-optimization.sh"
+fi
+
+# Load Zsh completions (if using Zsh)
+if [[ -n "${ZSH_VERSION:-}" && -f "$(pwd)/scripts/weather-zsh-completions.zsh" ]]; then
+    source "$(pwd)/scripts/weather-zsh-completions.zsh"
+fi
+EOF
+    echo -e "${GREEN}✅ Advanced shell integration added${NC}"
+    echo -e "${CYAN}💡 Features include: Smart functions, tab completion, directory hooks, terminal optimization${NC}"
+    echo -e "${CYAN}💡 Reload shell or run: source $SHELL_RC${NC}"
+else
+    echo -e "${YELLOW}⚠️ Could not determine shell RC file${NC}"
+    echo -e "${CYAN}💡 Manually add integration to your shell configuration${NC}"
+fi
+
+# Install shell integration files with executable permissions
+log_step "Setting up shell integration scripts"
+chmod +x scripts/weather-shell-integration.sh 2>/dev/null || true
+chmod +x scripts/weather-directory-hook.sh 2>/dev/null || true
+chmod +x scripts/weather-terminal-optimization.sh 2>/dev/null || true
+chmod +x scripts/weather-zsh-completions.zsh 2>/dev/null || true
 
 # Summary
 echo -e "\n${BLUE}================================================================"
@@ -286,12 +311,22 @@ echo -e "  2. Test the build: ${YELLOW}make build${NC}"
 echo -e "  3. Run tests: ${YELLOW}make test${NC}"
 echo -e "  4. Start developing! 🚀"
 
-echo -e "\n${CYAN}💡 Useful Commands:${NC}"
-echo -e "  • ${YELLOW}wbuild${NC}     - Quick build"
-echo -e "  • ${YELLOW}wtest${NC}      - Run tests"
-echo -e "  • ${YELLOW}wlint${NC}      - Code linting"
-echo -e "  • ${YELLOW}wsim${NC}       - Open simulator"
-echo -e "  • ${YELLOW}make help${NC}  - All available commands"
+echo -e "\n${CYAN}� Advanced Shell Functions Available:${NC}"
+echo -e "  • ${YELLOW}wbuild${NC}          - Enhanced build with better feedback"
+echo -e "  • ${YELLOW}wtest [type]${NC}    - Smart testing (unit/coverage/perf/all)"
+echo -e "  • ${YELLOW}wlint [action]${NC}  - Advanced linting (check/fix/format)"
+echo -e "  • ${YELLOW}wsim [device]${NC}   - Smart simulator launcher"
+echo -e "  • ${YELLOW}wdev [action]${NC}   - Development workflow (start/status/clean/reset)"
+echo -e "  • ${YELLOW}wcd [target]${NC}    - Quick project navigation"
+echo -e "  • ${YELLOW}wrelease [act]${NC}  - Release management tools"
+echo -e "  • ${YELLOW}wstatus${NC}         - Comprehensive project status"
+echo -e "  • ${YELLOW}whelp${NC}           - Complete function reference"
+echo -e "  • ${YELLOW}make help${NC}       - All make targets"
+echo -e "\n${CYAN}✨ Shell Features:${NC}"
+echo -e "  • Tab completion for all commands"
+echo -e "  • Auto-detection when entering project directory"
+echo -e "  • Terminal integration (iTerm2 badges, titles, etc.)"
+echo -e "  • Smart output formatting and progress indicators"
 
 echo -e "\n${BLUE}📖 Documentation:${NC}"
 echo -e "  • README.md - Project overview"

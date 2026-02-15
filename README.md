@@ -231,7 +231,8 @@ All documentation is consolidated in the [docs](../docs/) directory at the repos
 
 **AI Configuration**:
 
-- **[AI Optimization Summary](../docs/AI_OPTIMIZATION_SUMMARY.md)** - AI agent setup
+- **[AI Development Guide](../docs/development/AI_DEVELOPMENT_GUIDE.md)** - Complete guide for AI coding assistants
+- **[Shell Integration](../docs/SHELL_INTEGRATION.md)** - Advanced development automation
 
 For complete architecture documentation, see [ARCHITECTURE.md](../ARCHITECTURE.md).
 
