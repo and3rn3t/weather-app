@@ -1,0 +1,206 @@
+# Optimized CI/CD - Quick Feedback Loop
+# Ultra-fast feedback for PRs (3-5 minutes)
+
+name: Quick CI
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'weather/**'
+      - 'android-app/**'
+      - '.github/workflows/quick-ci.yml'
+
+concurrency:
+  group: quick-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Use newer Xcode for faster builds
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+
+jobs:
+  # Ultra-fast checks (1-2 minutes)
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      ios-changed: ${{ steps.changes.outputs.ios }}
+      android-changed: ${{ steps.changes.outputs.android }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Detect Changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            ios:
+              - 'weather/**'
+            android:
+              - 'android-app/**'
+
+      - name: SwiftLint (Linux - 10x cheaper)
+        if: steps.changes.outputs.ios == 'true'
+        uses: norio-nomura/action-swiftlint@3.2.1
+        with:
+          args: --config weather/.swiftlint.yml weather/
+
+      - name: Android Lint
+        if: steps.changes.outputs.android == 'true'
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Android Quick Lint
+        if: steps.changes.outputs.android == 'true'
+        working-directory: android-app
+        run: |
+          ./gradlew lintDebug --parallel --build-cache
+        timeout-minutes: 3
+
+      - name: Security Scan (if significant changes)
+        if: github.event.pull_request.changed_files > 20
+        uses: github/super-linter@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LINTER_RULES_PATH: .github/linters
+          VALIDATE_SWIFT: ${{ steps.changes.outputs.ios }}
+          VALIDATE_KOTLIN: ${{ steps.changes.outputs.android }}
+
+  # Fast build validation (5-8 minutes) 
+  build-check:
+    name: Build Check (${{ matrix.platform }})
+    runs-on: ${{ matrix.runner }}
+    needs: quick-checks
+    timeout-minutes: 10
+    if: needs.quick-checks.outputs.ios-changed == 'true' || needs.quick-checks.outputs.android-changed == 'true'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: ios
+            runner: macos-15
+            condition: needs.quick-checks.outputs.ios-changed == 'true'
+          - platform: android  
+            runner: ubuntu-latest
+            condition: needs.quick-checks.outputs.android-changed == 'true'
+
+    steps:
+      - name: Checkout
+        if: matrix.condition
+        uses: actions/checkout@v4
+
+      # iOS Build Check
+      - name: Setup Xcode
+        if: matrix.platform == 'ios' && matrix.condition
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: '16.0'
+
+      - name: iOS Smart Cache
+        if: matrix.platform == 'ios' && matrix.condition
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ios-quick-${{ hashFiles('weather/**/*.swift', 'weather/**/project.pbxproj', 'weather/**/Package.resolved') }}
+          restore-keys: |
+            ios-quick-
+            ios-
+
+      - name: iOS Compile Check
+        if: matrix.platform == 'ios' && matrix.condition
+        working-directory: weather
+        run: |
+          # Only compile, don't run tests (saves ~70% time)
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration Debug \
+            -skipPackagePluginValidation \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO
+
+      # Android Build Check  
+      - name: Setup Java
+        if: matrix.platform == 'android' && matrix.condition
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      - name: Android Smart Cache
+        if: matrix.platform == 'android' && matrix.condition
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper  
+            ~/.android/build-cache
+          key: android-quick-${{ hashFiles('android-app/**/*.gradle*', 'android-app/gradle.properties') }}
+          restore-keys: |
+            android-quick-
+            android-
+
+      - name: Android Compile Check
+        if: matrix.platform == 'android' && matrix.condition
+        working-directory: android-app
+        run: |
+          # Only compile debug variant (saves ~60% time)
+          ./gradlew compileDebugKotlin \
+            --parallel \
+            --build-cache \
+            --configuration-cache
+
+  # Comprehensive feedback (only for important PRs)
+  comprehensive-check:
+    name: Full Validation
+    needs: [quick-checks, build-check]
+    if: |
+      github.event.pull_request.changed_files > 50 ||
+      contains(github.event.pull_request.labels.*.name, 'comprehensive-ci') ||
+      contains(github.event.pull_request.title, '[full-ci]')
+    uses: ./.github/workflows/ios-build-reusable.yml
+    with:
+      configuration: 'Debug'
+      run_tests: true
+      enable_coverage: false
+
+  # Status reporting
+  ci-status:
+    name: CI Status
+    runs-on: ubuntu-latest  
+    needs: [quick-checks, build-check]
+    if: always()
+    timeout-minutes: 1
+
+    steps:
+      - name: Report Status
+        run: |
+          if [[ "${{ needs.quick-checks.result }}" == "success" && "${{ needs.build-check.result }}" == "success" ]]; then
+            echo "✅ Quick CI passed! Ready for review."
+            echo "### ⚡ Quick CI Results" >> $GITHUB_STEP_SUMMARY  
+            echo "- ✅ Code quality checks passed" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Build validation completed" >> $GITHUB_STEP_SUMMARY
+            echo "- 🚀 PR is ready for review" >> $GITHUB_STEP_SUMMARY
+            
+            # Add helpful next steps
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Next Steps:**" >> $GITHUB_STEP_SUMMARY
+            echo "- Add \`comprehensive-ci\` label for full test suite" >> $GITHUB_STEP_SUMMARY
+            echo "- Add \`[full-ci]\` to title for complete validation" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Quick CI failed. Check the logs above."
+            echo "### ❌ Quick CI Failed" >> $GITHUB_STEP_SUMMARY
+            echo "Please fix the issues and push again." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi

@@ -1,0 +1,324 @@
+# Enhanced CI/CD with Advanced Optimization
+# Smart caching, matrix builds, and conditional execution
+
+name: Enhanced CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'weather/**'
+      - '.github/workflows/enhanced-ci.yml'
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, labeled]
+    paths:
+      - 'weather/**'
+
+concurrency:
+  group: enhanced-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+  XCODE_VERSION: '16.0'
+
+jobs:
+  # Smart build matrix with conditions
+  test-matrix:
+    name: Test (${{ matrix.device }}, ${{ matrix.suite }})
+    runs-on: macos-15-xlarge  # Use larger runners for heavy builds
+    timeout-minutes: 25
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Core device with full test suite
+          - device: 'iPhone 16 Pro'
+            suite: 'unit'
+            coverage: true
+            artifact: true
+
+          # iPad tests only on main branch or when specifically requested  
+          - device: 'iPad Pro (13-inch) (M4)'
+            suite: 'ui'
+            coverage: false
+            artifact: false
+            condition: github.ref == 'refs/heads/main' || contains(github.event.pull_request.labels.*.name, 'test-ipad')
+
+          # Performance tests only for significant changes
+          - device: 'iPhone 16 Pro'
+            suite: 'performance'
+            coverage: false  
+            artifact: false
+            condition: github.event.pull_request.changed_files > 30 || contains(github.event.pull_request.labels.*.name, 'performance')
+
+    steps:
+      - name: Skip Conditional Jobs
+        if: matrix.condition && !matrix.condition
+        run: |
+          echo "⏭️ Skipping ${{ matrix.device }} (${{ matrix.suite }}) - condition not met"
+          exit 0
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Fetch more history for better caching
+          fetch-depth: 10
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      # Multi-tier caching strategy
+      - name: Primary Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            ~/Library/Caches/com.apple.dt.Xcode
+          key: ios-build-${{ matrix.device }}-${{ matrix.suite }}-${{ runner.arch }}-${{ hashFiles('weather/**/*.swift', 'weather/**/project.pbxproj', 'weather/**/Package.resolved', 'weather/**/*.xcconfig') }}
+          restore-keys: |
+            ios-build-${{ matrix.device }}-${{ matrix.suite }}-${{ runner.arch }}-
+            ios-build-${{ matrix.device }}-${{ runner.arch }}-
+            ios-build-${{ runner.arch }}-
+            ios-build-
+
+      - name: Tool Cache (xcbeautify, etc.)
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/Homebrew
+            /opt/homebrew/Cellar/xcbeautify
+            /opt/homebrew/Cellar/swiftlint
+          key: tools-${{ env.XCODE_VERSION }}-${{ runner.arch }}
+          restore-keys: |
+            tools-${{ env.XCODE_VERSION }}-
+            tools-
+
+      - name: Install Tools
+        run: |
+          # Check if already cached to avoid reinstall
+          if ! command -v xcbeautify &> /dev/null; then
+            brew install xcbeautify
+          fi
+          if ! command -v swiftlint &> /dev/null; then
+            brew install swiftlint  
+          fi
+
+      # Pre-build optimizations
+      - name: Pre-build Setup
+        working-directory: weather
+        run: |
+          # Clean up any stale derived data
+          find ~/Library/Developer/Xcode/DerivedData -name "*.xcactivitylog" -mtime +7 -delete 2>/dev/null || true
+          
+          # Warm up SPM dependencies
+          xcodebuild -resolvePackageDependencies \
+            -project weather.xcodeproj \
+            -scheme weather
+
+      # Build with optimizations
+      - name: Build for Testing
+        working-directory: weather
+        run: |
+          BUILD_START_TIME=$(date +%s)
+          
+          xcodebuild build-for-testing \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
+            -configuration Debug \
+            -skipPackagePluginValidation \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/Weather-CI \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            | xcbeautify --renderer github-actions
+          
+          BUILD_END_TIME=$(date +%s)
+          BUILD_DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
+          echo "build_duration=$BUILD_DURATION" >> $GITHUB_OUTPUT
+          echo "### 🔨 Build completed in ${BUILD_DURATION}s" >> $GITHUB_STEP_SUMMARY
+
+      # Test execution with smart selection
+      - name: Run Tests (${{ matrix.suite }})
+        working-directory: weather  
+        run: |
+          TEST_START_TIME=$(date +%s)
+          
+          # Configure test execution based on suite
+          TEST_PLAN=""
+          COVERAGE_FLAG=""
+          
+          case "${{ matrix.suite }}" in
+            "unit")
+              TEST_PLAN="-testPlan UnitTests"
+              if [[ "${{ matrix.coverage }}" == "true" ]]; then
+                COVERAGE_FLAG="-enableCodeCoverage YES"
+              fi
+              ;;
+            "ui")
+              TEST_PLAN="-testPlan UITests" 
+              ;;
+            "performance")
+              TEST_PLAN="-testPlan PerformanceTests"
+              ;;
+          esac
+          
+          xcodebuild test-without-building \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/Weather-CI \
+            -resultBundlePath TestResults-${{ matrix.device }}-${{ matrix.suite }}.xcresult \
+            $TEST_PLAN \
+            $COVERAGE_FLAG \
+            | xcbeautify --renderer github-actions
+          
+          TEST_END_TIME=$(date +%s)
+          TEST_DURATION=$((TEST_END_TIME - TEST_START_TIME))
+          echo "test_duration=$TEST_DURATION" >> $GITHUB_OUTPUT
+          echo "### 🧪 Tests completed in ${TEST_DURATION}s" >> $GITHUB_STEP_SUMMARY
+
+      # Coverage processing (only for coverage-enabled jobs)
+      - name: Process Coverage
+        if: matrix.coverage == true
+        working-directory: weather
+        run: |
+          # Extract coverage data
+          xcrun llvm-cov export \
+            -format="lcov" \
+            ~/Library/Developer/Xcode/DerivedData/Weather-CI/Build/Products/Debug-iphonesimulator/weather.app/weather \
+            -instr-profile ~/Library/Developer/Xcode/DerivedData/Weather-CI/Build/ProfileData/*/Coverage.profdata \
+            > coverage.lcov
+
+          # Generate coverage summary
+          COVERAGE_PERCENT=$(xcrun llvm-cov report \
+            ~/Library/Developer/Xcode/DerivedData/Weather-CI/Build/Products/Debug-iphonesimulator/weather.app/weather \
+            -instr-profile ~/Library/Developer/Xcode/DerivedData/Weather-CI/Build/ProfileData/*/Coverage.profdata \
+            | grep TOTAL | awk '{print $4}' | tr -d '%')
+          
+          echo "coverage_percent=$COVERAGE_PERCENT" >> $GITHUB_OUTPUT
+          echo "### 📊 Test Coverage: ${COVERAGE_PERCENT}%" >> $GITHUB_STEP_SUMMARY
+
+      # Smart artifact management
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.device }}-${{ matrix.suite }}
+          path: |
+            weather/TestResults-${{ matrix.device }}-${{ matrix.suite }}.xcresult/
+            weather/coverage.lcov
+            # Exclude large attachment files to save storage
+            !weather/TestResults-*.xcresult/**/Attachments/
+          # Keep artifacts longer for main branch
+          retention-days: ${{ github.ref == 'refs/heads/main' && 14 || 3 }}
+          compression-level: 6
+
+      # Performance metrics reporting
+      - name: Report Metrics
+        if: always()
+        run: |
+          # Create metrics summary
+          echo "## 📈 Performance Metrics (${{ matrix.device }}, ${{ matrix.suite }})" >> $GITHUB_STEP_SUMMARY
+          echo "| Metric | Value |" >> $GITHUB_STEP_SUMMARY  
+          echo "|--------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Build Time | ${{ steps.build.outputs.build_duration }}s |" >> $GITHUB_STEP_SUMMARY
+          echo "| Test Time | ${{ steps.test.outputs.test_duration }}s |" >> $GITHUB_STEP_SUMMARY
+          
+          if [[ "${{ matrix.coverage }}" == "true" ]]; then
+            echo "| Coverage | ${{ steps.coverage.outputs.coverage_percent }}% |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Conditional release build (only on main branch)
+  release-build:
+    name: Release Build Analysis
+    runs-on: macos-15
+    needs: test-matrix
+    if: github.ref == 'refs/heads/main'
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Release Build Cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          key: ios-release-${{ hashFiles('weather/**/*.swift') }}
+          restore-keys: |
+            ios-release-
+            ios-build-
+
+      - name: Build Release
+        working-directory: weather
+        run: |
+          xcodebuild build \
+            -project weather.xcodeproj \
+            -scheme weather \
+            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -configuration Release \
+            -derivedDataPath ~/Library/Developer/Xcode/DerivedData/Weather-Release \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            | xcbeautify --renderer github-actions
+
+      - name: Analyze Binary Size
+        working-directory: weather
+        run: |
+          # Get binary size
+          BINARY_PATH="~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app/weather"
+          if [[ -f "$BINARY_PATH" ]]; then
+            BINARY_SIZE=$(du -h "$BINARY_PATH" | cut -f1)
+            APP_SIZE=$(du -h "~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app" | cut -f1)
+            
+            echo "### 📦 Release Build Analysis" >> $GITHUB_STEP_SUMMARY
+            echo "| Component | Size |" >> $GITHUB_STEP_SUMMARY
+            echo "|-----------|------|" >> $GITHUB_STEP_SUMMARY
+            echo "| Binary | $BINARY_SIZE |" >> $GITHUB_STEP_SUMMARY
+            echo "| App Bundle | $APP_SIZE |" >> $GITHUB_STEP_SUMMARY
+          fi
+
+  # Final status check
+  ci-complete:
+    name: CI Complete
+    runs-on: ubuntu-latest
+    needs: [test-matrix, release-build]
+    if: always()
+    timeout-minutes: 1
+
+    steps:
+      - name: Check Overall Status
+        run: |
+          # Check if all required jobs passed
+          if [[ "${{ needs.test-matrix.result }}" == "success" ]]; then
+            echo "✅ All tests passed successfully!"
+            
+            # Add success summary
+            echo "### 🎉 Enhanced CI - Success!" >> $GITHUB_STEP_SUMMARY
+            echo "All matrix jobs completed successfully." >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "**Performance optimizations active:**" >> $GITHUB_STEP_SUMMARY
+            echo "- ⚡ Smart caching with multi-tier fallbacks" >> $GITHUB_STEP_SUMMARY
+            echo "- 🎯 Conditional job execution" >> $GITHUB_STEP_SUMMARY  
+            echo "- 📊 Build performance tracking" >> $GITHUB_STEP_SUMMARY
+            echo "- 🗜️ Optimized artifact storage" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Some tests failed. Please check the logs."
+            echo "### ❌ Enhanced CI - Failed" >> $GITHUB_STEP_SUMMARY
+            echo "One or more matrix jobs failed. Please review the logs above." >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
