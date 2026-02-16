@@ -25,9 +25,9 @@ actor RequestCoalescer {
     
     // MARK: - Types
     
-    typealias WeatherRequest = (latitude: Double, longitude: Double, completion: (Result<WeatherData, Error>) -> Void)
-    typealias AirQualityRequest = (latitude: Double, longitude: Double, completion: (Result<AirQualityData, Error>) -> Void)
-    typealias AlertsRequest = (latitude: Double, longitude: Double, completion: (Result<[WeatherAlert], Error>) -> Void)
+    typealias WeatherRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<WeatherData, Error>) -> Void)
+    typealias AirQualityRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<AirQualityData, Error>) -> Void)
+    typealias AlertsRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<[WeatherAlert], Error>) -> Void)
     
     // MARK: - Pending Requests
     
@@ -35,11 +35,11 @@ actor RequestCoalescer {
     private var pendingAirQualityRequests: [AirQualityRequest] = []
     private var pendingAlertsRequests: [AlertsRequest] = []
     
-    // MARK: - Batch Timers
+    // MARK: - Batch Tasks
     
-    private var weatherBatchTimer: Timer?
-    private var airQualityBatchTimer: Timer?
-    private var alertsBatchTimer: Timer?
+    private var weatherBatchTask: Task<Void, Never>?
+    private var airQualityBatchTask: Task<Void, Never>?
+    private var alertsBatchTask: Task<Void, Never>?
     
     // MARK: - Logger
     
@@ -52,7 +52,7 @@ actor RequestCoalescer {
     func coalesceWeatherRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping (Result<WeatherData, Error>) -> Void
+        completion: @escaping @Sendable (Result<WeatherData, Error>) -> Void
     ) {
         // Check if we have a very similar pending request (within tolerance)
         if let existingIndex = pendingWeatherRequests.firstIndex(where: { request in
@@ -61,13 +61,16 @@ actor RequestCoalescer {
         }) {
             // Combine with existing request
             let existingRequest = pendingWeatherRequests[existingIndex]
+            let existingCompletion = existingRequest.completion
+            let newCompletion = completion
+            let combinedCompletion: @Sendable (Result<WeatherData, Error>) -> Void = { result in
+                existingCompletion(result)
+                newCompletion(result)
+            }
             pendingWeatherRequests[existingIndex] = (
                 latitude: (existingRequest.latitude + latitude) / 2, // Average location
                 longitude: (existingRequest.longitude + longitude) / 2,
-                completion: { result in
-                    existingRequest.completion(result)
-                    completion(result)
-                }
+                completion: combinedCompletion
             )
             logger.debug("Coalesced weather request for nearby location")
             return
@@ -80,14 +83,15 @@ actor RequestCoalescer {
         // Process batch if we hit the limit or start timer for time-based processing
         if pendingWeatherRequests.count >= Config.maxBatchSize {
             Task { await processWeatherBatch() }
-        } else if weatherBatchTimer == nil {
+        } else if weatherBatchTask == nil {
             startWeatherBatchTimer()
         }
     }
     
     private func startWeatherBatchTimer() {
-        weatherBatchTimer = Timer.scheduledTimer(withTimeInterval: Config.coalescingWindow, repeats: false) { _ in
-            Task { await self.processWeatherBatch() }
+        weatherBatchTask = Task {
+            try? await Task.sleep(for: .seconds(Config.coalescingWindow))
+            await processWeatherBatch()
         }
     }
     
@@ -96,8 +100,8 @@ actor RequestCoalescer {
         
         let requests = pendingWeatherRequests
         pendingWeatherRequests.removeAll()
-        weatherBatchTimer?.invalidate()
-        weatherBatchTimer = nil
+        weatherBatchTask?.cancel()
+        weatherBatchTask = nil
         
         logger.info("Processing weather batch with \\(requests.count) requests")
         
@@ -106,7 +110,7 @@ actor RequestCoalescer {
         
         // Process each cluster
         for cluster in clusters {
-            Task.detached {
+            Task {
                 await self.executeWeatherCluster(cluster)
             }
         }
@@ -164,7 +168,7 @@ actor RequestCoalescer {
     func coalesceAirQualityRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping (Result<AirQualityData, Error>) -> Void
+        completion: @escaping @Sendable (Result<AirQualityData, Error>) -> Void
     ) {
         // Similar implementation to weather coalescing
         if let existingIndex = pendingAirQualityRequests.firstIndex(where: { request in
@@ -172,13 +176,16 @@ actor RequestCoalescer {
             abs(request.longitude - longitude) < Config.locationTolerance
         }) {
             let existingRequest = pendingAirQualityRequests[existingIndex]
+            let existingCompletion = existingRequest.completion
+            let newCompletion = completion
+            let combinedCompletion: @Sendable (Result<AirQualityData, Error>) -> Void = { result in
+                existingCompletion(result)
+                newCompletion(result)
+            }
             pendingAirQualityRequests[existingIndex] = (
                 latitude: (existingRequest.latitude + latitude) / 2,
                 longitude: (existingRequest.longitude + longitude) / 2,
-                completion: { result in
-                    existingRequest.completion(result)
-                    completion(result)
-                }
+                completion: combinedCompletion
             )
             return
         }
@@ -187,14 +194,15 @@ actor RequestCoalescer {
         
         if pendingAirQualityRequests.count >= Config.maxBatchSize {
             Task { await processAirQualityBatch() }
-        } else if airQualityBatchTimer == nil {
+        } else if airQualityBatchTask == nil {
             startAirQualityBatchTimer()
         }
     }
     
     private func startAirQualityBatchTimer() {
-        airQualityBatchTimer = Timer.scheduledTimer(withTimeInterval: Config.coalescingWindow, repeats: false) { _ in
-            Task { await self.processAirQualityBatch() }
+        airQualityBatchTask = Task {
+            try? await Task.sleep(for: .seconds(Config.coalescingWindow))
+            await processAirQualityBatch()
         }
     }
     
@@ -203,14 +211,14 @@ actor RequestCoalescer {
         
         let requests = pendingAirQualityRequests
         pendingAirQualityRequests.removeAll()
-        airQualityBatchTimer?.invalidate()
-        airQualityBatchTimer = nil
+        airQualityBatchTask?.cancel()
+        airQualityBatchTask = nil
         
         logger.info("Processing air quality batch with \\(requests.count) requests")
         
         // Process each request (air quality API doesn't support bulk requests)
         for request in requests {
-            Task.detached {
+            Task {
                 await self.executeAirQualityRequest(request)
             }
         }
@@ -230,7 +238,7 @@ actor RequestCoalescer {
     func coalesceAlertsRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping (Result<[WeatherAlert], Error>) -> Void
+        completion: @escaping @Sendable (Result<[WeatherAlert], Error>) -> Void
     ) {
         // Weather alerts are regional, so we can be more aggressive with coalescing
         let regionTolerance = 0.1 // ~11km tolerance for alerts
@@ -240,13 +248,16 @@ actor RequestCoalescer {
             abs(request.longitude - longitude) < regionTolerance
         }) {
             let existingRequest = pendingAlertsRequests[existingIndex]
+            let existingCompletion = existingRequest.completion
+            let newCompletion = completion
+            let combinedCompletion: @Sendable (Result<[WeatherAlert], Error>) -> Void = { result in
+                existingCompletion(result)
+                newCompletion(result)
+            }
             pendingAlertsRequests[existingIndex] = (
                 latitude: (existingRequest.latitude + latitude) / 2,
                 longitude: (existingRequest.longitude + longitude) / 2,
-                completion: { result in
-                    existingRequest.completion(result)
-                    completion(result)
-                }
+                completion: combinedCompletion
             )
             logger.debug("Coalesced weather alerts request for nearby region")
             return
@@ -256,14 +267,15 @@ actor RequestCoalescer {
         
         if pendingAlertsRequests.count >= Config.maxBatchSize {
             Task { await processAlertsBatch() }
-        } else if alertsBatchTimer == nil {
+        } else if alertsBatchTask == nil {
             startAlertsBatchTimer()
         }
     }
     
     private func startAlertsBatchTimer() {
-        alertsBatchTimer = Timer.scheduledTimer(withTimeInterval: Config.coalescingWindow, repeats: false) { _ in
-            Task { await self.processAlertsBatch() }
+        alertsBatchTask = Task {
+            try? await Task.sleep(for: .seconds(Config.coalescingWindow))
+            await processAlertsBatch()
         }
     }
     
@@ -272,13 +284,13 @@ actor RequestCoalescer {
         
         let requests = pendingAlertsRequests
         pendingAlertsRequests.removeAll()
-        alertsBatchTimer?.invalidate()
-        alertsBatchTimer = nil
+        alertsBatchTask?.cancel()
+        alertsBatchTask = nil
         
         logger.info("Processing weather alerts batch with \\(requests.count) requests")
         
         for request in requests {
-            Task.detached {
+            Task {
                 await self.executeAlertsRequest(request)
             }
         }
@@ -295,17 +307,22 @@ actor RequestCoalescer {
     
     // MARK: - API Call Methods (to be implemented by WeatherService)
     
-    private func performWeatherAPICall(latitude: Double, longitude: Double) async throws -> WeatherData {
+    private nonisolated func performWeatherAPICall(latitude: Double, longitude: Double) async throws -> WeatherData {
         // This would use the existing weather service logic
         // For now, we'll call the existing method
         
-        var components = URLComponents(string: OpenMeteoConfig.forecastURL)
+        let forecastURL = await MainActor.run { OpenMeteoConfig.forecastURL }
+        let currentParams = await MainActor.run { OpenMeteoConfig.currentParameters }
+        let hourlyParams = await MainActor.run { OpenMeteoConfig.hourlyParameters }
+        let dailyParams = await MainActor.run { OpenMeteoConfig.dailyParameters }
+        
+        var components = URLComponents(string: forecastURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
             URLQueryItem(name: "longitude", value: String(longitude)),
-            URLQueryItem(name: "current", value: OpenMeteoConfig.currentParameters),
-            URLQueryItem(name: "hourly", value: OpenMeteoConfig.hourlyParameters),
-            URLQueryItem(name: "daily", value: OpenMeteoConfig.dailyParameters),
+            URLQueryItem(name: "current", value: currentParams),
+            URLQueryItem(name: "hourly", value: hourlyParams),
+            URLQueryItem(name: "daily", value: dailyParams),
             URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
             URLQueryItem(name: "wind_speed_unit", value: "mph"),
             URLQueryItem(name: "precipitation_unit", value: "inch"),
@@ -317,7 +334,8 @@ actor RequestCoalescer {
             throw WeatherError.invalidURL
         }
         
-        let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
+        let cachedSession = await MainActor.run { OpenMeteoConfig.cachedSession }
+        let (data, response) = try await cachedSession.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw WeatherError.invalidResponse
@@ -327,7 +345,10 @@ actor RequestCoalescer {
             throw error
         }
         
-        return try OpenMeteoConfig.decoder.decode(WeatherData.self, from: data)
+        let decoder = await MainActor.run { OpenMeteoConfig.decoder }
+        return try await MainActor.run {
+            try decoder.decode(WeatherData.self, from: data)
+        }
     }
     
     private func performAirQualityAPICall(latitude: Double, longitude: Double) async throws -> AirQualityData {
@@ -349,9 +370,9 @@ actor RequestCoalescer {
             pendingWeatherRequests: pendingWeatherRequests.count,
             pendingAirQualityRequests: pendingAirQualityRequests.count,
             pendingAlertsRequests: pendingAlertsRequests.count,
-            hasActiveWeatherTimer: weatherBatchTimer != nil,
-            hasActiveAirQualityTimer: airQualityBatchTimer != nil,
-            hasActiveAlertsTimer: alertsBatchTimer != nil
+            hasActiveWeatherTimer: weatherBatchTask != nil,
+            hasActiveAirQualityTimer: airQualityBatchTask != nil,
+            hasActiveAlertsTimer: alertsBatchTask != nil
         )
     }
     

@@ -15,6 +15,7 @@ import os.signpost
 @Observable
 class LocationManager: NSObject, CLLocationManagerDelegate {
     private let manager = CLLocationManager()
+    private var isUpdatingLocation = false
     
     var location: CLLocation?
     var locationName: String?
@@ -28,6 +29,9 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
         // Kilometer accuracy is sufficient for weather and produces a much faster initial fix
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         authorizationStatus = manager.authorizationStatus
+        if authorizationStatus == .authorizedWhenInUse || authorizationStatus == .authorizedAlways {
+            manager.requestLocation()
+        }
         os_signpost(.end, log: StartupSignpost.log, name: "LocationManager.init")
         #if DEBUG
         startupLog("LocationManager.init complete, auth=\(self.authorizationStatus.rawValue)")
@@ -35,13 +39,20 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     }
     
     func requestLocation() {
-        if authorizationStatus == .notDetermined {
-            manager.requestWhenInUseAuthorization()
-        } else if authorizationStatus == .authorizedWhenInUse || 
-                  authorizationStatus == .authorizedAlways {
-            manager.requestLocation()
-        } else {
-            errorMessage = "Location access denied. Please enable in Settings."
+        Task { @MainActor in
+            if authorizationStatus == .notDetermined {
+                manager.requestWhenInUseAuthorization()
+            } else if authorizationStatus == .authorizedWhenInUse ||
+                      authorizationStatus == .authorizedAlways {
+                // Start updates to avoid requestLocation stalls on device.
+                if !isUpdatingLocation {
+                    isUpdatingLocation = true
+                    manager.requestLocation()
+                    manager.startUpdatingLocation()
+                }
+            } else {
+                errorMessage = "Location access denied. Please enable in Settings."
+            }
         }
     }
     
@@ -68,6 +79,8 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
             guard let newLocation = locations.last else { return }
             self.location = newLocation
             self.errorMessage = nil
+            self.isUpdatingLocation = false
+            self.manager.stopUpdatingLocation()
             
             // Reverse geocode to get location name
             await self.fetchLocationName(for: newLocation)
@@ -77,6 +90,8 @@ class LocationManager: NSObject, CLLocationManagerDelegate {
     nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
         Task { @MainActor [weak self] in
             self?.errorMessage = "Failed to get location: \(error.localizedDescription)"
+            self?.isUpdatingLocation = false
+            self?.manager.stopUpdatingLocation()
         }
     }
     

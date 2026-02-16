@@ -245,7 +245,7 @@ struct HistoricalWeatherCard: View {
                 return
             }
             
-            let data = try await WeatherService.fetchHistoricalWeather(
+            let data = try await HistoricalWeatherService.fetchHistoricalRange(
                 latitude: latitude,
                 longitude: longitude,
                 startDate: startDate,

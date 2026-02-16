@@ -39,11 +39,8 @@ struct WeatherAlert: Codable, Sendable, Identifiable {
 
 // MARK: - Weather Service
 
-@MainActor
 @Observable
 class WeatherService {
-    static let shared = WeatherService()
-    
     var weatherData: WeatherData?
     var airQualityData: AirQualityData?
     var weatherAlerts: [WeatherAlert] = []
@@ -101,27 +98,27 @@ class WeatherService {
                 self.currentLocationName = SharedDataManager.lastKnownLocation()?.name
             }
         }
-        #if DEBUG
-        let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
-        startupLog("Cache loaded + published: \(String(format: "%.0f", elapsed))ms since launch")
-        #endif
-        
+            #if DEBUG
+            let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
+            startupLog("Cache loaded + published: \(String(format: "%.0f", elapsed))ms since launch")
+            #endif
+        }
+
         os_signpost(.end, log: StartupSignpost.log, name: "WeatherService.init")
-    }
 
         // Fire a background network refresh with last-known coordinates.
         // This runs after init returns, overlapping with SwiftUI scene setup.
-        /*
         if let loc = locationMeta {
             Task.detached(priority: .userInitiated) { [self] in
                 #if DEBUG
                 startupLog(cached == nil ? "No cache — eager fetch" : "Eager background refresh")
                 #endif
-                await self.fetchWeatherData(latitude: loc.latitude, longitude: loc.longitude,
+                await self.fetchWeather(latitude: loc.latitude, longitude: loc.longitude,
                                         locationName: loc.name, forceRefresh: true)
             }
         }
-        */
+    }
+    
     // MARK: - Constants
     
     /// Last successful fetch timestamp for debouncing
@@ -134,11 +131,11 @@ class WeatherService {
     /// In-flight dedup tolerance: broader than FavoritesManager.coordinateTolerance (0.01°)
     /// because we're preventing redundant network requests, not matching saved locations.
     /// 0.05° ≈ 5.5 km at the equator — close enough that weather data is identical.
-    static let inFlightDeduplicationTolerance = 0.05
+    private static let inFlightDeduplicationTolerance = 0.05
     
     // MARK: - Public Methods
     
-    func fetchWeatherData(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
+    func fetchWeather(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
         let traceKey = forceRefresh ? "weather_fetch_force" : "weather_fetch_normal"
         performanceTracker.startTrace(traceKey, attributes: [
             "force_refresh": String(forceRefresh),
@@ -190,10 +187,10 @@ class WeatherService {
         }
         
         do {
-            // Use direct fetch to capture response details while debugging
+            // Use request coalescer for optimized parallel fetching
             async let airQualityTask: Void = fetchAirQualityCoalesced(latitude: latitude, longitude: longitude)
             async let alertsTask: Void = fetchWeatherAlertsCoalesced(latitude: latitude, longitude: longitude)
-            let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
+            let weather = try await performWeatherFetchWithRetryCoalesced(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             
             // Update last fetch time on success
             lastFetchTime = Date()
@@ -223,7 +220,7 @@ class WeatherService {
             // Record error event
             performanceTracker.recordEvent("weather_fetch_error", parameters: [
                 "error_type": "WeatherError",
-                "error_code": String(describing: error),
+                "error_code": String(error.code.rawValue),
                 "has_cached_fallback": String(cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) != nil)
             ])
             
@@ -255,6 +252,7 @@ class WeatherService {
                     self.isLoading = false
                     self.errorMessage = "Showing cached data. Check your connection."
                 }
+                }
             } else {
                 await handleError(.from(urlError))
             }
@@ -285,7 +283,7 @@ class WeatherService {
     func retry() async {
         // Use the stored location from weatherData if available
         if let weather = weatherData {
-            await fetchWeatherData(latitude: weather.latitude, longitude: weather.longitude, locationName: currentLocationName)
+            await fetchWeather(latitude: weather.latitude, longitude: weather.longitude, locationName: currentLocationName)
         } else {
             await handleError(.locationUnavailable)
         }
@@ -342,16 +340,9 @@ class WeatherService {
     }
     
     private func handleError(_ error: WeatherError) async {
-        let message: String
-        switch error {
-        case .decodingError(let details):
-            message = details
-        default:
-            message = error.recoverySuggestion ?? error.errorDescription ?? "Unknown error"
-        }
         await MainActor.run {
             self.lastError = error
-            self.errorMessage = message
+            self.errorMessage = error.errorDescription
             self.isLoading = false
         }
     }
@@ -517,4 +508,81 @@ class WeatherService {
     func getRequestCoalescingStats() async -> RequestCoalescer.CoalescingStatistics {
         return await requestCoalescer.getStatistics()
     }
-}
+    
+    // MARK: - Static Properties and Methods
+    private static let currentParameters: String = [
+        "temperature_2m",
+        "apparent_temperature",
+        "weather_code",
+        "is_day",
+        "precipitation",
+        "wind_speed_10m",
+        "wind_direction_10m",
+        "wind_gusts_10m",
+        "relative_humidity_2m",
+        "dew_point_2m",
+        "surface_pressure",
+        "visibility",
+        "uv_index",
+        "cloud_cover"
+    ].joined(separator: ",")
+    
+    private static let hourlyParameters: String = [
+        "temperature_2m",
+        "apparent_temperature",
+        "weather_code",
+        "precipitation",
+        "precipitation_probability",
+        "wind_speed_10m",
+        "wind_gusts_10m",
+        "wind_direction_10m",
+        "relative_humidity_2m",
+        "uv_index",
+        "visibility"
+    ].joined(separator: ",")
+    
+    private static let dailyParameters: String = [
+        "weather_code",
+        "temperature_2m_max",
+        "temperature_2m_min",
+        "sunrise",
+        "sunset",
+        "precipitation_sum",
+        "precipitation_probability_max",
+        "wind_speed_10m_max",
+        "wind_gusts_10m_max",
+        "uv_index_max"
+    ].joined(separator: ",")
+    
+    // MARK: - Lightweight Static Fetch
+    
+    /// Fetch weather data without instantiating a full WeatherService.
+    /// Use this for transient callers like FavoritesView, ComparisonView, and widgets
+    /// to avoid heavyweight init() (cache I/O + eager background refresh).
+    static func fetchWeatherData(latitude: Double, longitude: Double) async -> WeatherData? {
+        var components = URLComponents(string: OpenMeteoConfig.forecastURL)
+        components?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "current", value: OpenMeteoConfig.currentParameters),
+            URLQueryItem(name: "hourly", value: OpenMeteoConfig.hourlyParameters),
+            URLQueryItem(name: "daily", value: OpenMeteoConfig.dailyParameters),
+            URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
+            URLQueryItem(name: "wind_speed_unit", value: "mph"),
+            URLQueryItem(name: "precipitation_unit", value: "inch"),
+            URLQueryItem(name: "timezone", value: "auto"),
+            URLQueryItem(name: "forecast_days", value: "14")
+        ]
+        
+        guard let url = components?.url else { return nil }
+        
+        do {
+            let (data, response) = try await OpenMeteoConfig.cachedSession.data(from: url)
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else { return nil }
+            return try OpenMeteoConfig.decoder.decode(WeatherData.self, from: data)
+        } catch {
+            Logger.weatherService.warning("Static fetch failed: \(error.localizedDescription)")
+            return nil
+        }
+    }

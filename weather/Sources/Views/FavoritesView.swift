@@ -151,7 +151,9 @@ struct FavoritesView: View {
                 let id = location.id.uuidString
                 
                 group.addTask {
-                    let data = await WeatherService.fetchWeatherData(latitude: lat, longitude: lon)
+                    let service = await MainActor.run { WeatherService() }
+                    await service.fetchWeatherData(latitude: lat, longitude: lon)
+                    let data = await MainActor.run { service.weatherData }
                     return (id, data)
                 }
             }

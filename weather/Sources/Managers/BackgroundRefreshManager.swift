@@ -9,6 +9,8 @@ import Foundation
 import BackgroundTasks
 import CoreLocation
 import OSLog
+import Combine
+import UIKit
 
 /**
  * Manages smart background refresh scheduling based on user usage patterns and optimal timing
@@ -29,7 +31,7 @@ class BackgroundRefreshManager: ObservableObject {
     
     // MARK: - User Pattern Tracking
     
-    private struct UserUsagePattern {
+    struct UserUsagePattern {
         let hour: Int
         let dayOfWeek: Int
         let frequency: Int
@@ -61,7 +63,7 @@ class BackgroundRefreshManager: ObservableObject {
     @Published var userPatternPrediction: String = "Learning usage patterns..."
     
     private var usagePatterns: [UserUsagePattern] = []
-    private var weatherService: WeatherService = WeatherService()
+    private var weatherService: WeatherService = WeatherService.shared
     
     private let logger = Logger(subsystem: "WeatherApp.Background", category: "RefreshManager")
     private let userDefaults = UserDefaults.standard
@@ -84,7 +86,7 @@ class BackgroundRefreshManager: ObservableObject {
             self.handleBackgroundRefresh(task as! BGAppRefreshTask)
         }
         
-        logger.info("Background task registered: \\(Config.backgroundTaskIdentifier)")
+        logger.info("Background task registered: \(Config.backgroundTaskIdentifier)")
     }
     
     private func setupBackgroundTaskHandling() {
@@ -138,7 +140,7 @@ class BackgroundRefreshManager: ObservableObject {
         saveUserPatterns()
         analyzeUserPatterns()
         
-        logger.debug("Recorded app usage at hour \\(hour), day \\(dayOfWeek)")
+        logger.debug("Recorded app usage at hour \(hour), day \(dayOfWeek)")
     }
     
     private func analyzeUserPatterns() {
@@ -160,7 +162,7 @@ class BackgroundRefreshManager: ObservableObject {
         // Update prediction text
         updatePredictionDescription(optimalWindows)
         
-        logger.info("Analyzed \\(usagePatterns.count) usage patterns, found \\(optimalWindows.count) optimal windows")
+        logger.info("Analyzed \(self.usagePatterns.count) usage patterns, found \(optimalWindows.count) optimal windows")
     }
     
     private func findOptimalRefreshWindows(from hourlyScores: [Int: Double]) -> [OptimalRefreshWindow] {
@@ -180,4 +182,257 @@ class BackgroundRefreshManager: ObservableObject {
                     hour: hour,
                     confidence: score,
                     estimatedUsage: estimatedUsage
-                ))\n            }\n        }\n        \n        return windows.sorted { $0.confidence > $1.confidence }\n    }\n    \n    private func predictOptimalMinute(for hour: Int) -> Int {\n        // Analyze historical patterns for this hour to predict best minute\n        // For now, use 15 minutes before the hour to ensure fresh data\n        return max(0, 45) // Refresh 15 minutes before expected usage\n    }\n    \n    private func updatePredictionDescription(_ windows: [OptimalRefreshWindow]) {\n        if windows.isEmpty {\n            userPatternPrediction = \"Learning your usage patterns...\"\n        } else {\n            let topWindow = windows.first!\n            let formatter = DateFormatter()\n            formatter.timeStyle = .short\n            \n            let confidence = Int(topWindow.confidence * 100)\n            let timeStr = formatter.string(from: topWindow.estimatedUsage)\n            \n            userPatternPrediction = \"You typically use the app around \\(timeStr) (\\(confidence)% confidence)\"\n        }\n    }\n    \n    // MARK: - Background Refresh Scheduling\n    \n    func scheduleNextOptimalRefresh() {\n        guard isBackgroundRefreshEnabled else {\n            logger.debug(\"Background refresh disabled - not scheduling\")\n            return\n        }\n        \n        let optimalTime = calculateNextOptimalRefreshTime()\n        scheduleBackgroundRefresh(at: optimalTime)\n    }\n    \n    private func calculateNextOptimalRefreshTime() -> Date {\n        let now = Date()\n        let calendar = Calendar.current\n        \n        // Analyze user patterns to find next likely usage\n        let hourlyScores = Dictionary(grouping: usagePatterns) { $0.hour }\n            .mapValues { patterns in\n                patterns.map { $0.timeScore }.reduce(0, +)\n            }\n        \n        // Get optimal windows\n        let windows = findOptimalRefreshWindows(from: hourlyScores)\n        \n        // Find next window that's in the future\n        for window in windows {\n            var nextOccurrence = calendar.date(\n                bySettingHour: window.hour, \n                minute: 45, // 15 minutes before expected usage\n                second: 0, \n                of: now\n            ) ?? now\n            \n            // If this time has passed today, schedule for tomorrow\n            if nextOccurrence <= now {\n                nextOccurrence = calendar.date(byAdding: .day, value: 1, to: nextOccurrence) ?? now\n            }\n            \n            // Ensure minimum interval\n            if let lastRefresh = lastBackgroundRefresh,\n               nextOccurrence.timeIntervalSince(lastRefresh) >= Config.minRefreshInterval {\n                return nextOccurrence\n            } else if lastBackgroundRefresh == nil {\n                return nextOccurrence\n            }\n        }\n        \n        // Fallback: schedule in 2 hours\n        return calendar.date(byAdding: .hour, value: 2, to: now) ?? now\n    }\n    \n    private func scheduleBackgroundRefresh(at date: Date) {\n        // Cancel existing background tasks\n        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Config.backgroundTaskIdentifier)\n        \n        // Create new task request\n        let request = BGAppRefreshTaskRequest(identifier: Config.backgroundTaskIdentifier)\n        request.earliestBeginDate = date\n        \n        do {\n            try BGTaskScheduler.shared.submit(request)\n            nextScheduledRefresh = date\n            \n            let timeFormatter = DateFormatter()\n            timeFormatter.timeStyle = .short\n            timeFormatter.dateStyle = .short\n            \n            logger.info(\"Scheduled background refresh for \\(timeFormatter.string(from: date))\")\n        } catch {\n            logger.error(\"Failed to schedule background refresh: \\(error)\")\n            nextScheduledRefresh = nil\n        }\n    }\n    \n    // MARK: - Background Task Handling\n    \n    private func handleBackgroundRefresh(_ task: BGAppRefreshTask) {\n        logger.info(\"Background refresh task started\")\n        \n        // Set expiration handler\n        task.expirationHandler = {\n            self.logger.warning(\"Background refresh task expired\")\n            task.setTaskCompleted(success: false)\n        }\n        \n        // Perform refresh\n        Task {\n            await performBackgroundWeatherRefresh(task)\n        }\n    }\n    \n    private func performBackgroundWeatherRefresh(_ task: BGAppRefreshTask) async {\n        do {\n            // Get last known location\n            guard let locationMeta = SharedDataManager.lastKnownLocation() else {\n                logger.warning(\"No known location for background refresh\")\n                task.setTaskCompleted(success: false)\n                return\n            }\n            \n            // Perform weather fetch\n            await weatherService.fetchWeather(\n                latitude: locationMeta.latitude, \n                longitude: locationMeta.longitude, \n                locationName: locationMeta.name,\n                forceRefresh: true\n            )\n            \n            // Update last refresh time\n            lastBackgroundRefresh = Date()\n            userDefaults.set(lastBackgroundRefresh, forKey: \"lastBackgroundRefresh\")\n            \n            // Schedule next refresh\n            scheduleNextOptimalRefresh()\n            \n            logger.info(\"Background refresh completed successfully\")\n            task.setTaskCompleted(success: true)\n            \n        } catch {\n            logger.error(\"Background refresh failed: \\(error)\")\n            task.setTaskCompleted(success: false)\n        }\n    }\n    \n    // MARK: - Settings Management\n    \n    func enableBackgroundRefresh() {\n        isBackgroundRefreshEnabled = true\n        userDefaults.set(true, forKey: \"backgroundRefreshEnabled\")\n        scheduleNextOptimalRefresh()\n        logger.info(\"Background refresh enabled\")\n    }\n    \n    func disableBackgroundRefresh() {\n        isBackgroundRefreshEnabled = false\n        userDefaults.set(false, forKey: \"backgroundRefreshEnabled\")\n        \n        // Cancel scheduled tasks\n        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Config.backgroundTaskIdentifier)\n        nextScheduledRefresh = nil\n        \n        logger.info(\"Background refresh disabled\")\n    }\n    \n    func requestBackgroundRefreshPermission() {\n        // This should be called when user enables background refresh\n        // iOS will show the background refresh permission dialog\n        logger.info(\"Requesting background refresh permission\")\n    }\n    \n    // MARK: - Data Persistence\n    \n    private func saveUserPatterns() {\n        do {\n            let data = try JSONEncoder().encode(usagePatterns)\n            userDefaults.set(data, forKey: \"userUsagePatterns\")\n        } catch {\n            logger.error(\"Failed to save usage patterns: \\(error)\")\n        }\n    }\n    \n    private func loadUserPatterns() {\n        // Load background refresh setting\n        isBackgroundRefreshEnabled = userDefaults.bool(forKey: \"backgroundRefreshEnabled\")\n        lastBackgroundRefresh = userDefaults.object(forKey: \"lastBackgroundRefresh\") as? Date\n        \n        // Load usage patterns\n        guard let data = userDefaults.data(forKey: \"userUsagePatterns\") else {\n            usagePatterns = []\n            return\n        }\n        \n        do {\n            let patterns = try JSONDecoder().decode([UserUsagePattern].self, from: data)\n            \n            // Filter out old patterns (older than sample period)\n            let cutoffDate = Date().addingTimeInterval(-Double(Config.userPatternSampleDays) * 24 * 60 * 60)\n            usagePatterns = patterns.filter { $0.lastUsed > cutoffDate }\n            \n            logger.debug(\"Loaded \\(usagePatterns.count) usage patterns\")\n        } catch {\n            logger.error(\"Failed to load usage patterns: \\(error)\")\n            usagePatterns = []\n        }\n    }\n    \n    // MARK: - Statistics\n    \n    func getBackgroundRefreshStatistics() -> BackgroundRefreshStats {\n        let totalPatterns = usagePatterns.count\n        let uniqueHours = Set(usagePatterns.map { $0.hour }).count\n        let avgFrequency = usagePatterns.map { $0.frequency }.reduce(0, +) / max(1, totalPatterns)\n        \n        return BackgroundRefreshStats(\n            isEnabled: isBackgroundRefreshEnabled,\n            lastRefresh: lastBackgroundRefresh,\n            nextScheduled: nextScheduledRefresh,\n            totalUsagePatterns: totalPatterns,\n            uniqueUsageHours: uniqueHours,\n            averageFrequency: avgFrequency,\n            predictionConfidence: findOptimalRefreshWindows(\n                from: Dictionary(grouping: usagePatterns) { $0.hour }\n                    .mapValues { $0.map { $0.timeScore }.reduce(0, +) }\n            ).first?.confidence ?? 0.0\n        )\n    }\n    \n    struct BackgroundRefreshStats {\n        let isEnabled: Bool\n        let lastRefresh: Date?\n        let nextScheduled: Date?\n        let totalUsagePatterns: Int\n        let uniqueUsageHours: Int\n        let averageFrequency: Int\n        let predictionConfidence: Double\n    }\n}\n\n// MARK: - UserUsagePattern Codable Conformance\n\nextension BackgroundRefreshManager.UserUsagePattern: Codable {\n    enum CodingKeys: String, CodingKey {\n        case hour, dayOfWeek, frequency, lastUsed\n    }\n}
+                ))
+            }
+        }
+        
+        return windows.sorted { $0.confidence > $1.confidence }
+    }
+    
+    private func predictOptimalMinute(for hour: Int) -> Int {
+        // Analyze historical patterns for this hour to predict best minute
+        // For now, use 15 minutes before the hour to ensure fresh data
+        return max(0, 45) // Refresh 15 minutes before expected usage
+    }
+    
+    private func updatePredictionDescription(_ windows: [OptimalRefreshWindow]) {
+        if windows.isEmpty {
+            userPatternPrediction = "Learning your usage patterns..."
+        } else {
+            let topWindow = windows.first!
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            
+            let confidence = Int(topWindow.confidence * 100)
+            let timeStr = formatter.string(from: topWindow.estimatedUsage)
+            
+            userPatternPrediction = "You typically use the app around (timeStr) ((confidence)% confidence)"
+        }
+    }
+    
+    // MARK: - Background Refresh Scheduling
+    
+    func scheduleNextOptimalRefresh() {
+        guard isBackgroundRefreshEnabled else {
+            logger.debug("Background refresh disabled - not scheduling")
+            return
+        }
+        
+        let optimalTime = calculateNextOptimalRefreshTime()
+        scheduleBackgroundRefresh(at: optimalTime)
+    }
+    
+    private func calculateNextOptimalRefreshTime() -> Date {
+        let now = Date()
+        let calendar = Calendar.current
+        
+        // Analyze user patterns to find next likely usage
+        let hourlyScores = Dictionary(grouping: usagePatterns) { $0.hour }
+            .mapValues { patterns in
+                patterns.map { $0.timeScore }.reduce(0, +)
+            }
+        
+        // Get optimal windows
+        let windows = findOptimalRefreshWindows(from: hourlyScores)
+        
+        // Find next window that's in the future
+        for window in windows {
+            var nextOccurrence = calendar.date(
+                bySettingHour: window.hour, 
+                minute: 45, // 15 minutes before expected usage
+                second: 0, 
+                of: now
+            ) ?? now
+            
+            // If this time has passed today, schedule for tomorrow
+            if nextOccurrence <= now {
+                nextOccurrence = calendar.date(byAdding: .day, value: 1, to: nextOccurrence) ?? now
+            }
+            
+            // Ensure minimum interval
+            if let lastRefresh = lastBackgroundRefresh,
+               nextOccurrence.timeIntervalSince(lastRefresh) >= Config.minRefreshInterval {
+                return nextOccurrence
+            } else if lastBackgroundRefresh == nil {
+                return nextOccurrence
+            }
+        }
+        
+        // Fallback: schedule in 2 hours
+        return calendar.date(byAdding: .hour, value: 2, to: now) ?? now
+    }
+    
+    private func scheduleBackgroundRefresh(at date: Date) {
+        // Cancel existing background tasks
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Config.backgroundTaskIdentifier)
+        
+        // Create new task request
+        let request = BGAppRefreshTaskRequest(identifier: Config.backgroundTaskIdentifier)
+        request.earliestBeginDate = date
+        
+        do {
+            try BGTaskScheduler.shared.submit(request)
+            nextScheduledRefresh = date
+            
+            let timeFormatter = DateFormatter()
+            timeFormatter.timeStyle = .short
+            timeFormatter.dateStyle = .short
+            
+            logger.info("Scheduled background refresh for \(timeFormatter.string(from: date))")
+        } catch {
+            logger.error("Failed to schedule background refresh: \(error)")
+            nextScheduledRefresh = nil
+        }
+    }
+    
+    // MARK: - Background Task Handling
+    
+    private func handleBackgroundRefresh(_ task: BGAppRefreshTask) {
+        logger.info("Background refresh task started")
+        
+        // Set expiration handler
+        task.expirationHandler = {
+            self.logger.warning("Background refresh task expired")
+            task.setTaskCompleted(success: false)
+        }
+        
+        // Perform refresh
+        Task {
+            await performBackgroundWeatherRefresh(task)
+        }
+    }
+    
+    private func performBackgroundWeatherRefresh(_ task: BGAppRefreshTask) async {
+        do {
+            // Get last known location
+            guard let locationMeta = SharedDataManager.lastKnownLocation() else {
+                logger.warning("No known location for background refresh")
+                task.setTaskCompleted(success: false)
+                return
+            }
+            
+            // Perform weather fetch
+            await weatherService.fetchWeatherData(
+                latitude: locationMeta.latitude, 
+                longitude: locationMeta.longitude, 
+                locationName: locationMeta.name,
+                forceRefresh: true
+            )
+            
+            // Update last refresh time
+            lastBackgroundRefresh = Date()
+            userDefaults.set(lastBackgroundRefresh, forKey: "lastBackgroundRefresh")
+            
+            // Schedule next refresh
+            scheduleNextOptimalRefresh()
+            
+            logger.info("Background refresh completed successfully")
+            task.setTaskCompleted(success: true)
+            
+        } catch {
+            logger.error("Background refresh failed: \(error)")
+            task.setTaskCompleted(success: false)
+        }
+    }
+    
+    // MARK: - Settings Management
+    
+    func enableBackgroundRefresh() {
+        isBackgroundRefreshEnabled = true
+        userDefaults.set(true, forKey: "backgroundRefreshEnabled")
+        scheduleNextOptimalRefresh()
+        logger.info("Background refresh enabled")
+    }
+    
+    func disableBackgroundRefresh() {
+        isBackgroundRefreshEnabled = false
+        userDefaults.set(false, forKey: "backgroundRefreshEnabled")
+        
+        // Cancel scheduled tasks
+        BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: Config.backgroundTaskIdentifier)
+        nextScheduledRefresh = nil
+        
+        logger.info("Background refresh disabled")
+    }
+    
+    func requestBackgroundRefreshPermission() {
+        // This should be called when user enables background refresh
+        // iOS will show the background refresh permission dialog
+        logger.info("Requesting background refresh permission")
+    }
+    
+    // MARK: - Data Persistence
+    
+    private func saveUserPatterns() {
+        do {
+            let data = try JSONEncoder().encode(usagePatterns)
+            userDefaults.set(data, forKey: "userUsagePatterns")
+        } catch {
+            logger.error("Failed to save usage patterns: \(error)")
+        }
+    }
+    
+    private func loadUserPatterns() {
+        // Load background refresh setting
+        isBackgroundRefreshEnabled = userDefaults.bool(forKey: "backgroundRefreshEnabled")
+        lastBackgroundRefresh = userDefaults.object(forKey: "lastBackgroundRefresh") as? Date
+        
+        // Load usage patterns
+        guard let data = userDefaults.data(forKey: "userUsagePatterns") else {
+            usagePatterns = []
+            return
+        }
+        
+        do {
+            let patterns = try JSONDecoder().decode([UserUsagePattern].self, from: data)
+            
+            // Filter out old patterns (older than sample period)
+            let cutoffDate = Date().addingTimeInterval(-Double(Config.userPatternSampleDays) * 24 * 60 * 60)
+            self.usagePatterns = patterns.filter { $0.lastUsed > cutoffDate }
+            
+            logger.debug("Loaded \(self.usagePatterns.count) usage patterns")
+        } catch {
+            logger.error("Failed to load usage patterns: \(error)")
+            self.usagePatterns = []
+        }
+    }
+    
+    // MARK: - Statistics
+    
+    func getBackgroundRefreshStatistics() -> BackgroundRefreshStats {
+        let totalPatterns = usagePatterns.count
+        let uniqueHours = Set(usagePatterns.map { $0.hour }).count
+        let avgFrequency = usagePatterns.map { $0.frequency }.reduce(0, +) / max(1, totalPatterns)
+        
+        return BackgroundRefreshStats(
+            isEnabled: isBackgroundRefreshEnabled,
+            lastRefresh: lastBackgroundRefresh,
+            nextScheduled: nextScheduledRefresh,
+            totalUsagePatterns: totalPatterns,
+            uniqueUsageHours: uniqueHours,
+            averageFrequency: avgFrequency,
+            predictionConfidence: findOptimalRefreshWindows(
+                from: Dictionary(grouping: usagePatterns) { $0.hour }
+                    .mapValues { $0.map { $0.timeScore }.reduce(0, +) }
+            ).first?.confidence ?? 0.0
+        )
+    }
+    
+    struct BackgroundRefreshStats {
+        let isEnabled: Bool
+        let lastRefresh: Date?
+        let nextScheduled: Date?
+        let totalUsagePatterns: Int
+        let uniqueUsageHours: Int
+        let averageFrequency: Int
+        let predictionConfidence: Double
+    }
+}
+
+// MARK: - UserUsagePattern Codable Conformance
+
+extension BackgroundRefreshManager.UserUsagePattern: Codable {
+    enum CodingKeys: String, CodingKey {
+        case hour, dayOfWeek, frequency, lastUsed
+    }
+}

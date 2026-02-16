@@ -60,7 +60,7 @@ struct WeatherServiceIntegrationTests {
         let service = WeatherService()
         
         // Invalid coordinates should trigger an error
-        await service.fetchWeather(latitude: 999.0, longitude: 999.0, locationName: "Invalid")
+        await service.fetchWeatherData(latitude: 999.0, longitude: 999.0, locationName: "Invalid")
         
         // Service should have handled the error
         #expect(service.errorMessage != nil || service.lastError != nil)
@@ -72,7 +72,7 @@ struct WeatherServiceIntegrationTests {
         clearCache()
         let service = WeatherService()
         
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, locationName: "Test City")
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "Test City")
         
         #expect(service.currentLocationName == "Test City")
         
@@ -90,7 +90,7 @@ struct WeatherServiceIntegrationTests {
         #expect(service.weatherData != nil)
         
         // Force refresh should attempt new fetch
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "Test",

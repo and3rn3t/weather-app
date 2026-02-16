@@ -33,7 +33,9 @@ struct WeatherApp: App {
         os_signpost(.begin, log: StartupSignpost.log, name: "App.init")
         
         // Start app initialization performance tracking
-        PerformanceTracker.shared.startTrace("app_initialization", attributes: ["app_version": Bundle.main.appVersionLong])
+        Task { @MainActor in
+            PerformanceTracker.shared.startTrace("app_initialization", attributes: ["app_version": Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"])
+        }
         
         // Initialize MetricKit telemetry (crash reporting & performance monitoring)
         _ = TelemetryManager.shared
@@ -46,24 +48,24 @@ struct WeatherApp: App {
         // Kick off ModelContainer creation on a background thread immediately.
         // By the time the user taps Favorites it will long be ready.
         Task.detached(priority: .utility) { [self] in
-            PerformanceTracker.shared.startTrace("model_container_background_init")
+            await PerformanceTracker.shared.startTrace("model_container_background_init")
             let container: ModelContainer
             do {
                 container = try ModelContainer(for: SavedLocation.self)
             } catch {
                 Logger.startup.error("ModelContainer failed: \(error)")
-                PerformanceTracker.shared.recordEvent("model_container_init_failed", parameters: [
+                await PerformanceTracker.shared.recordEvent("model_container_init_failed", parameters: [
                     "error": error.localizedDescription
                 ])
-                PerformanceTracker.shared.stopTrace("model_container_background_init")
+                await PerformanceTracker.shared.stopTrace("model_container_background_init")
                 return
             }
             
             await MainActor.run {
                 self.modelContainer = container
             }
-            PerformanceTracker.shared.stopTrace("model_container_background_init")
-            PerformanceTracker.shared.recordEvent("model_container_init_success")
+            await PerformanceTracker.shared.stopTrace("model_container_background_init")
+            await PerformanceTracker.shared.recordEvent("model_container_init_success")
         }
 
         // If location is already authorized, request GPS fix immediately —
@@ -77,10 +79,14 @@ struct WeatherApp: App {
         }
 
         // Complete app initialization tracking
-        PerformanceTracker.shared.stopTrace("app_initialization")
-        PerformanceTracker.shared.recordEvent("app_init_complete", parameters: [
-            "location_authorized": String(locationManager.authorizationStatus == .authorizedWhenInUse || locationManager.authorizationStatus == .authorizedAlways)
-        ])
+        let locationAuthorized = locationManager.authorizationStatus == .authorizedWhenInUse ||
+            locationManager.authorizationStatus == .authorizedAlways
+        Task { @MainActor in
+            PerformanceTracker.shared.stopTrace("app_initialization")
+            PerformanceTracker.shared.recordEvent("app_init_complete", parameters: [
+                "location_authorized": String(locationAuthorized)
+            ])
+        }
 
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
         #if DEBUG

@@ -324,17 +324,35 @@ struct PollenForecastCard: View {
         }
         
         do {
-            let data = try await WeatherService.fetchPollenForecast(
+            let data = try await TomorrowIOService.fetchPollenForecast(
                 latitude: latitude,
-                longitude: longitude
+                longitude: longitude,
+                apiKey: APIConfig.defaultTomorrowIOKey
+            )
+
+            guard let unified = UnifiedPollenData.from(tomorrowIO: data) else {
+                throw WeatherError.decodingError("Invalid pollen data")
+            }
+            let hourly = HourlyPollen(
+                time: unified.dates,
+                grassPollen: unified.grassLevels,
+                birchPollen: unified.treeLevels,
+                olivePollen: nil,
+                ragweedPollen: unified.weedLevels
+            )
+            let converted = PollenData(
+                latitude: latitude,
+                longitude: longitude,
+                timezone: "auto",
+                hourly: hourly
             )
             
             await MainActor.run {
-                self.pollenData = data
+                self.pollenData = converted
                 self.isLoading = false
                 
                 // Auto-select the highest pollen type if available
-                if let hourly = data.hourly,
+                if let hourly = converted.hourly,
                    let maxPollen = hourly.maxPollenInRange(start: 0, count: 24) {
                     self.selectedPollenType = maxPollen.type
                 }

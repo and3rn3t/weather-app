@@ -25,7 +25,7 @@ struct WeatherFetchIntegrationTests {
         settings.windSpeedUnit = .mph
         
         // Fetch weather
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "San Francisco"
@@ -41,7 +41,7 @@ struct WeatherFetchIntegrationTests {
         let settings = SettingsManager()
         
         // Fetch weather
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "New York"
@@ -59,7 +59,7 @@ struct WeatherFetchIntegrationTests {
         let service = WeatherService()
         
         // Attempt fetch with invalid data
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 999,
             longitude: 999,
             locationName: "Invalid"
@@ -87,7 +87,7 @@ struct LocationWeatherIntegrationTests {
         
         // Simulate location update
         if let location = locationManager.location {
-            await weatherService.fetchWeather(
+            await weatherService.fetchWeatherData(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
                 locationName: locationManager.locationName ?? "Unknown"
@@ -136,7 +136,7 @@ struct FavoritesWeatherIntegrationTests {
         
         // Fetch weather for favorite
         let location = favoritesManager.savedLocations[0]
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: location.latitude,
             longitude: location.longitude,
             locationName: location.name
@@ -384,7 +384,7 @@ struct DataFlowIntegrationTests {
         
         // 3. Fetch weather for favorite
         let favorite = favoritesManager.savedLocations[0]
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: favorite.latitude,
             longitude: favorite.longitude,
             locationName: favorite.name

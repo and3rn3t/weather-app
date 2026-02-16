@@ -136,12 +136,12 @@ struct WeatherServiceEnhancedTests {
         let service = WeatherService()
         
         // Test multiple concurrent fetches don't cause issues
-        async let fetch1: () = service.fetchWeather(
+        async let fetch1: () = service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
         )
-        async let fetch2: () = service.fetchWeather(
+        async let fetch2: () = service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "NYC"
@@ -157,13 +157,13 @@ struct WeatherServiceEnhancedTests {
         let service = WeatherService()
         
         // Fetch with invalid coordinates
-        await service.fetchWeather(latitude: 999, longitude: 999, locationName: "Invalid")
+        await service.fetchWeatherData(latitude: 999, longitude: 999, locationName: "Invalid")
         
         // Should have error
         #expect(service.errorMessage != nil || service.lastError != nil)
         
         // Now fetch with valid coordinates
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
         
         // Error state should be updated (either cleared or new error)
         #expect(service.isLoading == false)
@@ -173,12 +173,12 @@ struct WeatherServiceEnhancedTests {
         let service = WeatherService()
         
         // Initial fetch
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
         
         let firstLocationName = service.currentLocationName
         
         // Refresh same location with force refresh
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, 
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, 
                                    locationName: "SF", forceRefresh: true)
         
         // Should maintain location
@@ -190,10 +190,10 @@ struct WeatherServiceEnhancedTests {
         let service = WeatherService()
         
         // Test background refresh mechanism
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
         
         // Simulate background refresh
-        await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, 
+        await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, 
                                    locationName: "SF", forceRefresh: true)
         
         #expect(service.isLoading == false)

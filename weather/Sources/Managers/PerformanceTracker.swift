@@ -59,7 +59,8 @@ final class PerformanceTracker {
     }
     
     deinit {
-        stopMemoryMonitoring()
+        // Timer will be cleaned up automatically when object is deallocated
+        logger.debug("PerformanceTracker deallocated")
     }
     
     // MARK: - Trace Management
@@ -208,7 +209,7 @@ final class PerformanceTracker {
     }
     
     private func checkMemoryPressure() {
-        let memoryInfo = mach_task_basic_info()
+        var memoryInfo = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
         
         let result: kern_return_t = withUnsafeMutablePointer(to: &memoryInfo) {

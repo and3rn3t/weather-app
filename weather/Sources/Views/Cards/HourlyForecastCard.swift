@@ -159,6 +159,14 @@ struct HourlyWeatherItem: View, Equatable {
     let timezone: String
     var isSelected: Bool = false
     @Environment(SettingsManager.self) var settings
+
+    static func == (lhs: HourlyWeatherItem, rhs: HourlyWeatherItem) -> Bool {
+        lhs.time == rhs.time &&
+        lhs.temperature == rhs.temperature &&
+        lhs.weatherCode == rhs.weatherCode &&
+        lhs.timezone == rhs.timezone &&
+        lhs.isSelected == rhs.isSelected
+    }
     
     var body: some View {
         VStack(spacing: 8) {

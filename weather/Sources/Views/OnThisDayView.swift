@@ -496,6 +496,42 @@ enum HistoricalWeatherService {
         
         return results.sorted(by: { $0.year > $1.year })
     }
+
+    /// Fetch historical weather data for a date range
+    static func fetchHistoricalRange(
+        latitude: Double,
+        longitude: Double,
+        startDate: Date,
+        endDate: Date
+    ) async throws -> HistoricalWeatherData {
+        let startString = dateFormatter.string(from: startDate)
+        let endString = dateFormatter.string(from: endDate)
+
+        var urlComponents = URLComponents(string: OpenMeteoConfig.historicalURL)
+        urlComponents?.queryItems = [
+            URLQueryItem(name: "latitude", value: String(latitude)),
+            URLQueryItem(name: "longitude", value: String(longitude)),
+            URLQueryItem(name: "start_date", value: startString),
+            URLQueryItem(name: "end_date", value: endString),
+            URLQueryItem(name: "daily", value: "temperature_2m_max,temperature_2m_min,weather_code,precipitation_sum,wind_speed_10m_max"),
+            URLQueryItem(name: "temperature_unit", value: "fahrenheit"),
+            URLQueryItem(name: "wind_speed_unit", value: "mph"),
+            URLQueryItem(name: "precipitation_unit", value: "inch"),
+            URLQueryItem(name: "timezone", value: "auto")
+        ]
+
+        guard let url = urlComponents?.url else {
+            throw WeatherError.invalidURL
+        }
+
+        let (data, response) = try await Self.session.data(from: url)
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw WeatherError.invalidResponse
+        }
+
+        return try Self.decoder.decode(HistoricalWeatherData.self, from: data)
+    }
     
     /// Fetch a single day's historical weather
     private static func fetchSingleDay(

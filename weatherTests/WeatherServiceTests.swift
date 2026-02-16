@@ -46,7 +46,7 @@ struct WeatherServiceTests {
         
         // Start a fetch (will fail without network, but tests loading state)
         Task {
-            await service.fetchWeather(latitude: 37.7749, longitude: -122.4194, locationName: "San Francisco")
+            await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "San Francisco")
         }
         
         // Give time for loading to start
@@ -62,7 +62,7 @@ struct WeatherServiceTests {
         let testName = "Test Location"
         
         // This will likely fail but should save the location name
-        await service.fetchWeather(latitude: 0, longitude: 0, locationName: testName)
+        await service.fetchWeatherData(latitude: 0, longitude: 0, locationName: testName)
         
         #expect(service.currentLocationName == testName)
     }

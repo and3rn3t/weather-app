@@ -28,8 +28,8 @@ struct GetWeatherIntent: AppIntent {
         let (latitude, longitude, resolvedName) = try await resolveLocation()
         
         // Create WeatherService on MainActor and fetch weather
-        let weatherService = await MainActor.run { WeatherService() }
-        await weatherService.fetchWeather(
+        let weatherService = await MainActor.run { WeatherService.shared }
+        await weatherService.fetchWeatherData(
             latitude: latitude,
             longitude: longitude,
             locationName: resolvedName
@@ -111,11 +111,11 @@ struct WillItRainIntent: AppIntent {
         let location = try await locationProvider.getCurrentLocation()
         
         // Create WeatherService on MainActor and fetch weather
-        let weatherService = await MainActor.run { WeatherService() }
-        await weatherService.fetchWeather(
+        let weatherService = await MainActor.run { WeatherService.shared }
+        await weatherService.fetchWeatherData(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
-            locationName: nil
+            locationName: nil as String?
         )
         
         // Access weatherData on MainActor
@@ -155,11 +155,11 @@ struct GetTemperatureIntent: AppIntent {
         let location = try await locationProvider.getCurrentLocation()
         
         // Create WeatherService on MainActor and fetch weather
-        let weatherService = await MainActor.run { WeatherService() }
-        await weatherService.fetchWeather(
+        let weatherService = await MainActor.run { WeatherService.shared }
+        await weatherService.fetchWeatherData(
             latitude: location.coordinate.latitude,
             longitude: location.coordinate.longitude,
-            locationName: nil
+            locationName: nil as String?
         )
         
         // Access weatherData on MainActor

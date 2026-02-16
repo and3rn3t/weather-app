@@ -13,13 +13,22 @@ import OSLog
  * Enhanced cache manager with memory pressure handling, cache warming, and intelligent invalidation
  */
 @MainActor
-class WeatherCacheManager {
+class WeatherCacheManager: NSObject {
     static let shared = WeatherCacheManager()
     
     // MARK: - Cache Components
     
     /// Memory cache with automatic eviction under pressure
-    private let memoryCache = NSCache<NSString, WeatherData>()
+    private let memoryCache = NSCache<NSString, WeatherDataBox>()
+
+    /// Wraps WeatherData for NSCache storage
+    final class WeatherDataBox: NSObject {
+        let value: WeatherData
+
+        init(_ value: WeatherData) {
+            self.value = value
+        }
+    }
     
     /// Disk cache directory
     private let diskCacheDirectory: URL
@@ -42,7 +51,7 @@ class WeatherCacheManager {
     
     // MARK: - Cache Metadata
     
-    private struct CacheMetadata: Codable {
+    fileprivate struct CacheMetadata: Codable {
         let key: String
         let timestamp: Date
         let size: Int64
@@ -66,10 +75,12 @@ class WeatherCacheManager {
     
     // MARK: - Initialization
     
-    private init() {
+    private override init() {
         // Create disk cache directory
         let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
         diskCacheDirectory = cacheDirectory.appendingPathComponent("WeatherCache")
+
+        super.init()
         
         try? FileManager.default.createDirectory(at: diskCacheDirectory, withIntermediateDirectories: true)
         
@@ -118,7 +129,7 @@ class WeatherCacheManager {
         if let cached = memoryCache.object(forKey: key as NSString) {
             updateAccessMetadata(for: key)
             logger.debug("Cache HIT (memory): \\(key)")
-            return cached
+            return cached.value
         }
         
         // Try disk cache
@@ -130,7 +141,7 @@ class WeatherCacheManager {
             
             // Load back to memory cache
             let cost = data.count
-            memoryCache.setObject(weather, forKey: key as NSString, cost: cost)
+            memoryCache.setObject(WeatherDataBox(weather), forKey: key as NSString, cost: cost)
             
             updateAccessMetadata(for: key)
             logger.debug("Cache HIT (disk): \\(key)")
@@ -151,7 +162,7 @@ class WeatherCacheManager {
                 let cost = data.count
                 
                 // Store in memory cache
-                memoryCache.setObject(weather, forKey: key as NSString, cost: cost)
+                memoryCache.setObject(WeatherDataBox(weather), forKey: key as NSString, cost: cost)
                 
                 // Store on disk
                 let diskURL = diskCacheDirectory.appendingPathComponent(key).appendingPathExtension("json")

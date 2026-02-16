@@ -6,10 +6,11 @@
 //
 
 import SwiftUI
+import CoreLocation
 
 // MARK: - Skeleton Loading Views
 
-struct SkeletonView: View {
+struct ShimmerSkeletonView: View {
     @State private var isAnimating = false
     
     let width: CGFloat?
@@ -64,25 +65,25 @@ struct SkeletonView: View {
 
 // MARK: - Weather-Specific Skeleton Views
 
-struct CurrentWeatherSkeleton: View {
+struct CurrentWeatherSkeletonView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 VStack(alignment: .leading, spacing: 8) {
-                    SkeletonView(width: 120, height: 24) // Location name
-                    SkeletonView(width: 200, height: 16) // Weather description
+                    ShimmerSkeletonView(width: 120, height: 24) // Location name
+                    ShimmerSkeletonView(width: 200, height: 16) // Weather description
                 }
                 
                 Spacer()
                 
-                SkeletonView(width: 60, height: 60, cornerRadius: 30) // Weather icon
+                ShimmerSkeletonView(width: 60, height: 60, cornerRadius: 30) // Weather icon
             }
             
             VStack(alignment: .leading, spacing: 8) {
-                SkeletonView(width: 150, height: 48) // Temperature
+                ShimmerSkeletonView(width: 150, height: 48) // Temperature
                 HStack(spacing: 20) {
-                    SkeletonView(width: 80, height: 16) // High
-                    SkeletonView(width: 80, height: 16) // Low
+                    ShimmerSkeletonView(width: 80, height: 16) // High
+                    ShimmerSkeletonView(width: 80, height: 16) // Low
                 }
             }
             
@@ -90,8 +91,8 @@ struct CurrentWeatherSkeleton: View {
             LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 2), spacing: 12) {
                 ForEach(0..<4, id: \.self) { _ in
                     VStack(spacing: 4) {
-                        SkeletonView(width: 40, height: 16) // Label
-                        SkeletonView(width: 60, height: 20) // Value
+                        ShimmerSkeletonView(width: 40, height: 16) // Label
+                        ShimmerSkeletonView(width: 60, height: 20) // Value
                     }
                 }
             }
@@ -101,18 +102,18 @@ struct CurrentWeatherSkeleton: View {
     }
 }
 
-struct HourlyForecastSkeleton: View {
+struct HourlyForecastSkeletonView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                SkeletonView(width: 120, height: 20) // "Hourly Forecast"
+                ShimmerSkeletonView(width: 120, height: 20) // "Hourly Forecast"
                 Spacer()
-                SkeletonView(width: 60, height: 24, cornerRadius: 12) // Toggle button
+                ShimmerSkeletonView(width: 60, height: 24, cornerRadius: 12) // Toggle button
             }
             .padding(.horizontal, 20)
             
             // Chart area
-            SkeletonView(width: nil, height: 200, cornerRadius: 12)
+            ShimmerSkeletonView(width: nil, height: 200, cornerRadius: 12)
                 .padding(.horizontal, 16)
             
             Divider()
@@ -123,9 +124,9 @@ struct HourlyForecastSkeleton: View {
                 LazyHStack(spacing: 24) {
                     ForEach(0..<8, id: \.self) { _ in
                         VStack(spacing: 8) {
-                            SkeletonView(width: 35, height: 12) // Time
-                            SkeletonView(width: 30, height: 30, cornerRadius: 15) // Icon
-                            SkeletonView(width: 40, height: 16) // Temperature
+                            ShimmerSkeletonView(width: 35, height: 12) // Time
+                            ShimmerSkeletonView(width: 30, height: 30, cornerRadius: 15) // Icon
+                            ShimmerSkeletonView(width: 40, height: 16) // Temperature
                         }
                         .frame(width: 60)
                     }
@@ -139,28 +140,28 @@ struct HourlyForecastSkeleton: View {
     }
 }
 
-struct DailyForecastSkeleton: View {
+struct DailyForecastSkeletonView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
-                SkeletonView(width: 140, height: 20) // "14-Day Forecast"
+                ShimmerSkeletonView(width: 140, height: 20) // "14-Day Forecast"
                 Spacer()
-                SkeletonView(width: 80, height: 16) // "Show All" button
+                ShimmerSkeletonView(width: 80, height: 16) // "Show All" button
             }
             .padding(.horizontal, 20)
             
             VStack(spacing: 12) {
                 ForEach(0..<5, id: \.self) { index in
                     HStack(alignment: .center, spacing: 12) {
-                        SkeletonView(width: 80, height: 16) // Day name
-                        SkeletonView(width: 36, height: 24, cornerRadius: 12) // Weather icon
-                        SkeletonView(width: 55, height: 14) // Precipitation
+                        ShimmerSkeletonView(width: 80, height: 16) // Day name
+                        ShimmerSkeletonView(width: 36, height: 24, cornerRadius: 12) // Weather icon
+                        ShimmerSkeletonView(width: 55, height: 14) // Precipitation
                         
                         Spacer()
                         
                         HStack(spacing: 12) {
-                            SkeletonView(width: 48, height: 16) // Low temp
-                            SkeletonView(width: 48, height: 16) // High temp
+                            ShimmerSkeletonView(width: 48, height: 16) // Low temp
+                            ShimmerSkeletonView(width: 48, height: 16) // High temp
                         }
                     }
                     .padding(.horizontal, 20)
@@ -185,26 +186,26 @@ struct WeatherDetailSkeleton: View {
                 // Location header skeleton
                 HStack {
                     VStack(alignment: .leading, spacing: 4) {
-                        SkeletonView(width: 150, height: 24) // Location name
-                        SkeletonView(width: 100, height: 14) // Last update
+                        ShimmerSkeletonView(width: 150, height: 24) // Location name
+                        ShimmerSkeletonView(width: 100, height: 14) // Last update
                     }
                     
                     Spacer()
                     
                     HStack(spacing: 12) {
-                        SkeletonView(width: 40, height: 40, cornerRadius: 20) // Search button
-                        SkeletonView(width: 40, height: 40, cornerRadius: 20) // Share button
+                        ShimmerSkeletonView(width: 40, height: 40, cornerRadius: 20) // Search button
+                        ShimmerSkeletonView(width: 40, height: 40, cornerRadius: 20) // Share button
                     }
                 }
                 .padding(.horizontal, 20)
                 
                 // Current weather skeleton
-                CurrentWeatherSkeleton()
+                CurrentWeatherSkeletonView()
                 
                 // Weather recommendations skeleton
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
-                        SkeletonView(width: 140, height: 20) // "Recommendations"
+                        ShimmerSkeletonView(width: 140, height: 20) // "Recommendations"
                         Spacer()
                     }
                     .padding(.horizontal, 20)
@@ -213,9 +214,9 @@ struct WeatherDetailSkeleton: View {
                         LazyHStack(spacing: 12) {
                             ForEach(0..<3, id: \.self) { _ in
                                 VStack(alignment: .leading, spacing: 8) {
-                                    SkeletonView(width: 30, height: 30, cornerRadius: 15) // Icon
-                                    SkeletonView(width: 100, height: 16) // Title
-                                    SkeletonView(width: 120, height: 12) // Description
+                                    ShimmerSkeletonView(width: 30, height: 30, cornerRadius: 15) // Icon
+                                    ShimmerSkeletonView(width: 100, height: 16) // Title
+                                    ShimmerSkeletonView(width: 120, height: 12) // Description
                                 }
                                 .padding(16)
                                 .frame(width: 140)
@@ -231,22 +232,22 @@ struct WeatherDetailSkeleton: View {
                 // Sun & Moon skeleton
                 VStack(alignment: .leading, spacing: 16) {
                     HStack {
-                        SkeletonView(width: 100, height: 20) // "Sun & Moon"
+                        ShimmerSkeletonView(width: 100, height: 20) // "Sun & Moon"
                         Spacer()
                     }
                     .padding(.horizontal, 20)
                     
                     HStack(spacing: 20) {
                         VStack(spacing: 8) {
-                            SkeletonView(width: 30, height: 30, cornerRadius: 15) // Sun icon
-                            SkeletonView(width: 60, height: 14) // Sunrise time
+                            ShimmerSkeletonView(width: 30, height: 30, cornerRadius: 15) // Sun icon
+                            ShimmerSkeletonView(width: 60, height: 14) // Sunrise time
                         }
                         
                         Spacer()
                         
                         VStack(spacing: 8) {
-                            SkeletonView(width: 30, height: 30, cornerRadius: 15) // Moon icon
-                            SkeletonView(width: 60, height: 14) // Sunset time
+                            ShimmerSkeletonView(width: 30, height: 30, cornerRadius: 15) // Moon icon
+                            ShimmerSkeletonView(width: 60, height: 14) // Sunset time
                         }
                     }
                     .padding(.horizontal, 20)
@@ -256,16 +257,16 @@ struct WeatherDetailSkeleton: View {
                 
                 // Section label skeleton
                 HStack {
-                    SkeletonView(width: 80, height: 20) // "Forecast"
+                    ShimmerSkeletonView(width: 80, height: 20) // "Forecast"
                     Spacer()
                 }
                 .padding(.horizontal, 20)
                 
                 // Hourly forecast skeleton
-                HourlyForecastSkeleton()
+                HourlyForecastSkeletonView()
                 
                 // Daily forecast skeleton
-                DailyForecastSkeleton()
+                DailyForecastSkeletonView()
             }
             .padding(.horizontal, 20)
             .padding(.vertical, 16)
@@ -277,6 +278,7 @@ struct WeatherDetailSkeleton: View {
 
 struct ProgressiveWeatherView: View {
     let weatherService: WeatherService
+    @Environment(SettingsManager.self) private var settings
     @State private var showingAllDetails = false
     
     var body: some View {
@@ -291,7 +293,7 @@ struct ProgressiveWeatherView: View {
                     onShareCardTapped: { /* Handle share */ },
                     airQualityData: weatherService.airQualityData,
                     weatherAlerts: weatherService.weatherAlerts,
-                    settings: SettingsManager.shared
+                    settings: settings
                 )
                 .opacity(showingAllDetails ? 1.0 : 0.0)
                 .animation(.easeInOut(duration: 0.3), value: showingAllDetails)
@@ -311,7 +313,7 @@ struct ProgressiveWeatherView: View {
                     ErrorView(
                         message: errorMessage,
                         error: weatherService.lastError,
-                        retryAction: { await weatherService.retry() }
+                        retryAction: { Task { await weatherService.retry() } }
                     )
                 } else {
                     WelcomeView(
@@ -381,8 +383,8 @@ struct LoadingOverlay: View {
 
 #Preview {
     VStack(spacing: 20) {
-        CurrentWeatherSkeleton()
-        HourlyForecastSkeleton()
+        CurrentWeatherSkeletonView()
+        HourlyForecastSkeletonView()
     }
     .padding()
 }

@@ -194,7 +194,7 @@ struct ContentView: View {
                 // Only use location manager if no manual location selected
                 if selectedCoordinate == nil, let location = newLocation {
                     Task {
-                        await weatherService.fetchWeather(
+                        await weatherService.fetchWeatherData(
                             latitude: location.coordinate.latitude,
                             longitude: location.coordinate.longitude,
                             locationName: locationManager.locationName
@@ -214,7 +214,7 @@ struct ContentView: View {
                     selectedCoordinate = coordinate
                     selectedLocationName = locationName
                     Task {
-                        await weatherService.fetchWeather(
+                        await weatherService.fetchWeatherData(
                             latitude: coordinate.latitude,
                             longitude: coordinate.longitude,
                             locationName: locationName
@@ -238,7 +238,7 @@ struct ContentView: View {
                         selectedCoordinate = location.coordinate
                         selectedLocationName = location.name
                         Task {
-                            await weatherService.fetchWeather(
+                            await weatherService.fetchWeatherData(
                                 latitude: location.latitude,
                                 longitude: location.longitude,
                                 locationName: location.name
@@ -368,10 +368,7 @@ struct ContentView: View {
     }
     
     private func checkAndFetchWeather() {
-        if locationManager.authorizationStatus == .authorizedWhenInUse ||
-           locationManager.authorizationStatus == .authorizedAlways {
-            locationManager.requestLocation()
-        }
+        locationManager.requestLocation()
     }
     
     private func requestLocation() {
@@ -382,7 +379,7 @@ struct ContentView: View {
         if let coordinate = selectedCoordinate {
             // Fetch for manually selected location
             Task {
-                await weatherService.fetchWeather(
+                await weatherService.fetchWeatherData(
                     latitude: coordinate.latitude,
                     longitude: coordinate.longitude,
                     locationName: selectedLocationName
@@ -391,7 +388,7 @@ struct ContentView: View {
         } else if let location = locationManager.location {
             // Fetch for current location
             Task {
-                await weatherService.fetchWeather(
+                await weatherService.fetchWeatherData(
                     latitude: location.coordinate.latitude,
                     longitude: location.coordinate.longitude,
                     locationName: locationManager.locationName
@@ -404,13 +401,13 @@ struct ContentView: View {
     
     private func refreshWeather() async {
         if let coordinate = selectedCoordinate {
-            await weatherService.fetchWeather(
+            await weatherService.fetchWeatherData(
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
                 locationName: selectedLocationName
             )
         } else if let location = locationManager.location {
-            await weatherService.fetchWeather(
+            await weatherService.fetchWeatherData(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
                 locationName: locationManager.locationName
@@ -458,6 +455,7 @@ struct ContentView: View {
             }
         }
     }
+
 }
 
 struct LoadingView: View {

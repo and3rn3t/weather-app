@@ -49,7 +49,7 @@ struct EndToEndWorkflowTests {
         #expect(weatherService.currentLocationName == nil)
 
         // 2. App requests weather for default location
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "San Francisco"
@@ -108,7 +108,7 @@ struct EndToEndWorkflowTests {
 
         // 5. User fetches weather for that location
         let weatherService = WeatherService()
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: searchCoordinate.latitude,
             longitude: searchCoordinate.longitude,
             locationName: "New York"
@@ -152,7 +152,7 @@ struct EndToEndWorkflowTests {
 
         // 2. User switches between locations
         for location in locations {
-            await weatherService.fetchWeather(
+            await weatherService.fetchWeatherData(
                 latitude: location.coord.latitude,
                 longitude: location.coord.longitude,
                 locationName: location.name
@@ -260,7 +260,7 @@ struct EndToEndWorkflowTests {
         let weatherService = WeatherService()
 
         // 1. User enters invalid location coordinates
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 999.0,
             longitude: 999.0,
             locationName: "Invalid"
@@ -270,7 +270,7 @@ struct EndToEndWorkflowTests {
         #expect(weatherService.errorMessage != nil || weatherService.lastError != nil)
 
         // 3. User corrects and enters valid coordinates
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "San Francisco"
@@ -289,7 +289,7 @@ struct EndToEndWorkflowTests {
 
         // 1. User fetches weather, gets cached
         let weatherService = WeatherService()
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "Test"
@@ -298,7 +298,7 @@ struct EndToEndWorkflowTests {
         let firstFetch = weatherService.weatherData
 
         // 2. User force refreshes
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "Test",
@@ -353,7 +353,7 @@ struct IntegrationTestScenarios {
 
         // 1. WeatherService fetches data
         let service = WeatherService()
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "NYC"
@@ -379,7 +379,7 @@ struct IntegrationTestScenarios {
         let themeManager = ThemeManager()
 
         // 2. Fetch weather
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
@@ -410,7 +410,7 @@ struct IntegrationTestScenarios {
         let alertService = WeatherAlertService()
 
         // 2. Fetch weather for location
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "San Francisco"
@@ -435,7 +435,7 @@ struct IntegrationTestScenarios {
         let weatherService = WeatherService()
 
         // 2. Fetch from API
-        await weatherService.fetchWeather(
+        await weatherService.fetchWeatherData(
             latitude: 51.5074,
             longitude: -0.1278,
             locationName: "London"
@@ -461,19 +461,19 @@ struct IntegrationTestScenarios {
         let service = WeatherService()
 
         // 1. Simulate rapid location changes (user scrolling favorites)
-        async let request1: () = service.fetchWeather(
+        async let request1: () = service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
         )
 
-        async let request2: () = service.fetchWeather(
+        async let request2: () = service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "NYC"
         )
 
-        async let request3: () = service.fetchWeather(
+        async let request3: () = service.fetchWeatherData(
             latitude: 51.5074,
             longitude: -0.1278,
             locationName: "London"
@@ -495,7 +495,7 @@ struct IntegrationTestScenarios {
 
         // 1. First app session
         let weatherService1 = WeatherService()
-        await weatherService1.fetchWeather(
+        await weatherService1.fetchWeatherData(
             latitude: 48.8566,
             longitude: 2.3522,
             locationName: "Paris"
@@ -554,7 +554,7 @@ struct IntegrationTestScenarios {
 
         // 1. Attempt request that will likely fail
         let service = WeatherService()
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 0,
             longitude: 0,
             locationName: "Middle of Ocean"
@@ -565,7 +565,7 @@ struct IntegrationTestScenarios {
             service.errorMessage != nil || service.lastError != nil || service.weatherData != nil)
 
         // 3. Retry with valid location
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
@@ -654,7 +654,7 @@ struct RealWorldScenarioTests {
         #expect(service.weatherData != nil)
 
         // 2. User pulls to refresh
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "Home",
@@ -703,7 +703,7 @@ struct RealWorldScenarioTests {
 
         // 2. Check weather for each destination
         for (name, lat, lon) in destinations {
-            await service.fetchWeather(latitude: lat, longitude: lon, locationName: name)
+            await service.fetchWeatherData(latitude: lat, longitude: lon, locationName: name)
             #expect(service.currentLocationName == name || service.errorMessage != nil)
             try? await Task.sleep(nanoseconds: 50_000_000)
         }
@@ -719,7 +719,7 @@ struct RealWorldScenarioTests {
         let alertService = WeatherAlertService()
 
         // 1. User checks current weather
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
@@ -747,7 +747,7 @@ struct RealWorldScenarioTests {
         #expect(service.currentLocationName == "Cached")
 
         // 2. Network comes back, user refreshes
-        await service.fetchWeather(
+        await service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF",

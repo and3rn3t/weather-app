@@ -45,12 +45,91 @@ struct CurrentWeather: Codable, Sendable, Equatable {
         case windGusts10m = "wind_gusts_10m"
         case relativeHumidity2m = "relative_humidity_2m"
         case dewPoint2m = "dew_point_2m"
-        case pressure = "surface_pressure"
+        case pressureMSL = "pressure_msl"
         case cloudCover = "cloud_cover"
         case visibility
         case uvIndex = "uv_index"
         case isDay = "is_day"
         case precipitation
+    }
+
+    private enum LegacyKeys: String, CodingKey {
+        case surfacePressure = "surface_pressure"
+    }
+
+    init(
+        time: String,
+        temperature2m: Double,
+        apparentTemperature: Double,
+        weatherCode: Int,
+        windSpeed10m: Double,
+        windDirection10m: Double,
+        windGusts10m: Double,
+        relativeHumidity2m: Int,
+        dewPoint2m: Double,
+        pressure: Double,
+        cloudCover: Int,
+        visibility: Double,
+        uvIndex: Double,
+        isDay: Int,
+        precipitation: Double
+    ) {
+        self.time = time
+        self.temperature2m = temperature2m
+        self.apparentTemperature = apparentTemperature
+        self.weatherCode = weatherCode
+        self.windSpeed10m = windSpeed10m
+        self.windDirection10m = windDirection10m
+        self.windGusts10m = windGusts10m
+        self.relativeHumidity2m = relativeHumidity2m
+        self.dewPoint2m = dewPoint2m
+        self.pressure = pressure
+        self.cloudCover = cloudCover
+        self.visibility = visibility
+        self.uvIndex = uvIndex
+        self.isDay = isDay
+        self.precipitation = precipitation
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        time = try container.decode(String.self, forKey: .time)
+        temperature2m = try container.decode(Double.self, forKey: .temperature2m)
+        apparentTemperature = try container.decode(Double.self, forKey: .apparentTemperature)
+        weatherCode = try container.decode(Int.self, forKey: .weatherCode)
+        windSpeed10m = try container.decode(Double.self, forKey: .windSpeed10m)
+        windDirection10m = try container.decodeIfPresent(Double.self, forKey: .windDirection10m) ?? 0
+        windGusts10m = try container.decodeIfPresent(Double.self, forKey: .windGusts10m) ?? 0
+        relativeHumidity2m = try container.decodeIfPresent(Int.self, forKey: .relativeHumidity2m) ?? 0
+        dewPoint2m = try container.decodeIfPresent(Double.self, forKey: .dewPoint2m) ?? 0
+        let legacy = try decoder.container(keyedBy: LegacyKeys.self)
+        pressure = try container.decodeIfPresent(Double.self, forKey: .pressureMSL)
+            ?? legacy.decodeIfPresent(Double.self, forKey: .surfacePressure)
+            ?? 0
+        cloudCover = try container.decodeIfPresent(Int.self, forKey: .cloudCover) ?? 0
+        visibility = try container.decodeIfPresent(Double.self, forKey: .visibility) ?? 0
+        uvIndex = try container.decodeIfPresent(Double.self, forKey: .uvIndex) ?? 0
+        isDay = try container.decode(Int.self, forKey: .isDay)
+        precipitation = try container.decodeIfPresent(Double.self, forKey: .precipitation) ?? 0
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(time, forKey: .time)
+        try container.encode(temperature2m, forKey: .temperature2m)
+        try container.encode(apparentTemperature, forKey: .apparentTemperature)
+        try container.encode(weatherCode, forKey: .weatherCode)
+        try container.encode(windSpeed10m, forKey: .windSpeed10m)
+        try container.encode(windDirection10m, forKey: .windDirection10m)
+        try container.encode(windGusts10m, forKey: .windGusts10m)
+        try container.encode(relativeHumidity2m, forKey: .relativeHumidity2m)
+        try container.encode(dewPoint2m, forKey: .dewPoint2m)
+        try container.encode(pressure, forKey: .pressureMSL)
+        try container.encode(cloudCover, forKey: .cloudCover)
+        try container.encode(visibility, forKey: .visibility)
+        try container.encode(uvIndex, forKey: .uvIndex)
+        try container.encode(isDay, forKey: .isDay)
+        try container.encode(precipitation, forKey: .precipitation)
     }
 }
 
@@ -86,7 +165,7 @@ struct DailyWeather: Codable, Sendable, Equatable {
     let sunset: [String]
     let uvIndexMax: [Double?]
     let windSpeed10mMax: [Double?]
-    let windGusts10mMax: [Double?]
+    let windGusts10mMax: [Double?]?
     
     enum CodingKeys: String, CodingKey {
         case time
@@ -99,6 +178,64 @@ struct DailyWeather: Codable, Sendable, Equatable {
         case uvIndexMax = "uv_index_max"
         case windSpeed10mMax = "wind_speed_10m_max"
         case windGusts10mMax = "wind_gusts_10m_max"
+    }
+
+    init(
+        time: [String],
+        weatherCode: [Int],
+        temperature2mMax: [Double],
+        temperature2mMin: [Double],
+        precipitationProbabilityMax: [Int],
+        sunrise: [String],
+        sunset: [String],
+        uvIndexMax: [Double?],
+        windSpeed10mMax: [Double?],
+        windGusts10mMax: [Double?]?
+    ) {
+        self.time = time
+        self.weatherCode = weatherCode
+        self.temperature2mMax = temperature2mMax
+        self.temperature2mMin = temperature2mMin
+        self.precipitationProbabilityMax = precipitationProbabilityMax
+        self.sunrise = sunrise
+        self.sunset = sunset
+        self.uvIndexMax = uvIndexMax
+        self.windSpeed10mMax = windSpeed10mMax
+        self.windGusts10mMax = windGusts10mMax
+    }
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        time = try container.decode([String].self, forKey: .time)
+        weatherCode = try container.decode([Int].self, forKey: .weatherCode)
+        temperature2mMax = try container.decode([Double].self, forKey: .temperature2mMax)
+        temperature2mMin = try container.decode([Double].self, forKey: .temperature2mMin)
+        if let ints = try? container.decode([Int].self, forKey: .precipitationProbabilityMax) {
+            precipitationProbabilityMax = ints
+        } else if let doubles = try? container.decode([Double].self, forKey: .precipitationProbabilityMax) {
+            precipitationProbabilityMax = doubles.map { Int($0.rounded()) }
+        } else {
+            precipitationProbabilityMax = []
+        }
+        sunrise = try container.decode([String].self, forKey: .sunrise)
+        sunset = try container.decode([String].self, forKey: .sunset)
+        uvIndexMax = try container.decodeIfPresent([Double?].self, forKey: .uvIndexMax) ?? []
+        windSpeed10mMax = try container.decodeIfPresent([Double?].self, forKey: .windSpeed10mMax) ?? []
+        windGusts10mMax = try container.decodeIfPresent([Double?].self, forKey: .windGusts10mMax)
+    }
+
+    func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(time, forKey: .time)
+        try container.encode(weatherCode, forKey: .weatherCode)
+        try container.encode(temperature2mMax, forKey: .temperature2mMax)
+        try container.encode(temperature2mMin, forKey: .temperature2mMin)
+        try container.encode(precipitationProbabilityMax, forKey: .precipitationProbabilityMax)
+        try container.encode(sunrise, forKey: .sunrise)
+        try container.encode(sunset, forKey: .sunset)
+        try container.encode(uvIndexMax, forKey: .uvIndexMax)
+        try container.encode(windSpeed10mMax, forKey: .windSpeed10mMax)
+        try container.encodeIfPresent(windGusts10mMax, forKey: .windGusts10mMax)
     }
 }
 
