@@ -61,7 +61,7 @@ jobs:
             > coverage.lcov
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: coverage.lcov
@@ -107,7 +107,7 @@ jobs:
         run: ./gradlew testDebugUnitTest jacocoTestReport
 
       - name: Upload Coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: android-app/app/build/reports/jacoco/jacocoTestReport/jacocoTestReport.xml
