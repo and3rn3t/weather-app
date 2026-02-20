@@ -121,7 +121,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nightly-test-results-ios-${{ matrix.configuration }}
           path: NightlyTests-${{ matrix.configuration }}.xcresult
@@ -189,7 +189,7 @@ jobs:
           fi
 
       - name: Upload APK
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nightly-apk-${{ matrix.variant }}
           path: android-app/app/build/outputs/apk/${{ matrix.variant }}/*.apk
@@ -197,7 +197,7 @@ jobs:
 
       - name: Upload Lint Results
         if: always() && matrix.variant == 'release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: nightly-lint-results
           path: android-app/app/build/reports/lint-*.html

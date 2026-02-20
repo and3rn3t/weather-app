@@ -109,7 +109,7 @@ jobs:
 
       - name: Upload Lint Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: lint-results
           path: android-app/app/build/reports/lint-results-*.html
@@ -268,7 +268,7 @@ jobs:
 
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.variant }}-api${{ matrix.api-level }}
           path: |
@@ -281,7 +281,7 @@ jobs:
 
       - name: Upload APK/AAB
         if: matrix.variant == 'Release'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: release-${{ matrix.variant }}-api${{ matrix.api-level }}
           path: |
@@ -384,7 +384,7 @@ jobs:
 
       - name: Upload Security Reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: security-reports
           path: |
