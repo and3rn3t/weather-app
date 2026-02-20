@@ -137,7 +137,7 @@ dependencies {
     implementation("androidx.hilt:hilt-work:1.1.0")
 
     // Google Maps SDK
-    implementation("com.google.android.gms:play-services-maps:18.2.0")
+    implementation("com.google.android.gms:play-services-maps:20.0.0")
     implementation("com.google.maps.android:maps-compose:4.3.3")
 
     // MPAndroidChart
