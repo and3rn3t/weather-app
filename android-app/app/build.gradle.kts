@@ -91,17 +91,17 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 
     // Core Android
-    implementation("androidx.core:core-ktx:1.12.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
-    implementation("androidx.activity:activity-compose:1.8.2")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
-    implementation("androidx.navigation:navigation-compose:2.7.7")
+    implementation("androidx.core:core-ktx:1.17.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.10.0")
+    implementation("androidx.activity:activity-compose:1.12.4")
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.10.0")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.10.0")
+    implementation("androidx.navigation:navigation-compose:2.9.7")
 
     // Hilt - Dependency Injection
     implementation("com.google.dagger:hilt-android:2.52")
     ksp("com.google.dagger:hilt-android-compiler:2.52")
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
+    implementation("androidx.hilt:hilt-navigation-compose:1.3.0")
 
     // Retrofit - Networking
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
@@ -115,12 +115,12 @@ dependencies {
     ksp("com.squareup.moshi:moshi-kotlin-codegen:1.15.1")
 
     // Room - Database
-    implementation("androidx.room:room-runtime:2.6.1")
-    implementation("androidx.room:room-ktx:2.6.1")
-    ksp("androidx.room:room-compiler:2.6.1")
+    implementation("androidx.room:room-runtime:2.8.4")
+    implementation("androidx.room:room-ktx:2.8.4")
+    ksp("androidx.room:room-compiler:2.8.4")
 
     // DataStore - Preferences
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
+    implementation("androidx.datastore:datastore-preferences:1.2.0")
 
     // Location Services
     implementation("com.google.android.gms:play-services-location:21.1.0")
@@ -133,8 +133,8 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
 
     // WorkManager - Background Tasks
-    implementation("androidx.work:work-runtime-ktx:2.9.0")
-    implementation("androidx.hilt:hilt-work:1.1.0")
+    implementation("androidx.work:work-runtime-ktx:2.11.1")
+    implementation("androidx.hilt:hilt-work:1.3.0")
 
     // Google Maps SDK
     implementation("com.google.android.gms:play-services-maps:18.2.0")
@@ -144,8 +144,8 @@ dependencies {
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
 
     // Glance - Widgets
-    implementation("androidx.glance:glance-appwidget:1.0.0")
-    implementation("androidx.glance:glance-material3:1.0.0")
+    implementation("androidx.glance:glance-appwidget:1.1.1")
+    implementation("androidx.glance:glance-material3:1.1.1")
 
     // Testing
  
@@ -189,7 +189,7 @@ tasks.register<JacocoReport>("jacocoTestReport") {
         include("jacoco/testDebugUnitTest.exec")
     })
 }   testImplementation("junit:junit:4.13.2")
-    androidTestImplementation("androidx.test.ext:junit:1.1.5")
-    androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
+    androidTestImplementation("androidx.test.ext:junit:1.3.0")
+    androidTestImplementation("androidx.test.espresso:espresso-core:3.7.0")
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
 }
