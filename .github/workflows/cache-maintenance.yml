@@ -42,7 +42,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Restore Existing Cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
@@ -79,7 +79,7 @@ jobs:
           echo "✅ iOS cache warmed"
 
       - name: Save Warm Cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
@@ -104,7 +104,7 @@ jobs:
           java-version: '17'
 
       - name: Restore Existing Cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@v5
         with:
           path: |
             ~/.gradle/caches
@@ -133,7 +133,7 @@ jobs:
           echo "✅ Android cache warmed"
 
       - name: Save Warm Cache
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@v5
         with:
           path: |
             ~/.gradle/caches

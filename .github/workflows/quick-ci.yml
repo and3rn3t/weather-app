@@ -105,7 +105,7 @@ jobs:
 
       - name: iOS Smart Cache
         if: matrix.platform == 'ios' && matrix.condition
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
@@ -140,7 +140,7 @@ jobs:
 
       - name: Android Smart Cache
         if: matrix.platform == 'android' && matrix.condition
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/.gradle/caches
