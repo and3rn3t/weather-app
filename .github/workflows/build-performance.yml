@@ -29,7 +29,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Cache DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-deriveddata-perf-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
