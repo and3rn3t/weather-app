@@ -126,8 +126,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.1.0")
 
     // Accompanist - Utilities
-    implementation("com.google.accompanist:accompanist-permissions:0.34.0")
-    implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
+    implementation("com.google.accompanist:accompanist-permissions:0.37.3")
+    implementation("com.google.accompanist:accompanist-swiperefresh:0.37.3")
 
     // Coil - Image Loading
     implementation("io.coil-kt:coil-compose:2.5.0")
