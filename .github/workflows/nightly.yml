@@ -16,8 +16,7 @@ on:
         type: boolean
         default: false
 
-env:
-  # DEVELOPER_DIR managed by setup-xcode action
+# DEVELOPER_DIR is managed by the setup-xcode action, not a workflow-level env var.
 
 jobs:
   ios-nightly:

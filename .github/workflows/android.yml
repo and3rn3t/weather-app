@@ -139,6 +139,11 @@ jobs:
     needs: [lint, test]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 25
+    env:
+      # `if:` conditions can't reference the secrets context directly, so the
+      # presence check happens here in env: (which can) and the step below
+      # checks env.HAS_KEYSTORE instead.
+      HAS_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
 
     steps:
       - name: Checkout
@@ -161,7 +166,7 @@ jobs:
           echo "MAPS_API_KEY=${{ secrets.GOOGLE_MAPS_API_KEY || 'dummy_key_for_ci' }}" > local.properties
 
       - name: Decode Keystore
-        if: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' }}
+        if: env.HAS_KEYSTORE == 'true'
         working-directory: android-app
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 -d > release.keystore

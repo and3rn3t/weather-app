@@ -9,14 +9,14 @@ on:
     paths:
       - 'weather/**'
       - '.github/workflows/ci.yml'
-      - '!../docs/**'
+      - '!weather/Documentation/**'
       - '!**.md'
   pull_request:
     branches: [main]
     paths:
       - 'weather/**'
       - '.github/workflows/ci.yml'
-      - '!../docs/**'
+      - '!weather/Documentation/**'
       - '!**.md'
 
 concurrency:
@@ -120,7 +120,18 @@ jobs:
             /opt/homebrew/Cellar/swiftlint
           key: ${{ runner.os }}-homebrew-swiftlint
           restore-keys: |
-            ${{ runner., security-scan]
+            ${{ runner.os }}-homebrew-
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint lint --strict --reporter github-actions-logging
+
+  build-release:
+    name: Release Build & Size Analysis
+    runs-on: macos-15
+    needs: [build, lint]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
 
@@ -175,19 +186,19 @@ jobs:
             -configuration Release \
             | grep -m 1 "BUILT_PRODUCTS_DIR" \
             | awk '{print $3}')
-          
+
           if [ -d "$BUILD_DIR/weather.app" ]; then
             SIZE=$(du -sh "$BUILD_DIR/weather.app" | awk '{print $1}')
             echo "📦 App Bundle Size: $SIZE"
             echo "size=$SIZE" >> $GITHUB_OUTPUT
-            
+
             # Create size breakdown
             echo "### 📊 Build Size Analysis" >> $GITHUB_STEP_SUMMARY
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "| Component | Size |" >> $GITHUB_STEP_SUMMARY
             echo "|-----------|------|" >> $GITHUB_STEP_SUMMARY
             echo "| Total App Bundle | $SIZE |" >> $GITHUB_STEP_SUMMARY
-            
+
             # Show largest files
             echo "" >> $GITHUB_STEP_SUMMARY
             echo "**Largest Files:**" >> $GITHUB_STEP_SUMMARY
@@ -203,41 +214,4 @@ jobs:
           echo "Build completed successfully on macOS 15 with Xcode 16.0" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Configuration:** Release" >> $GITHUB_STEP_SUMMARY
-          echo "**Target:** iOS Simulator" >> $GITHUB_STEP_SUMMARYode-version: '16.0'
-
-      - name: Cache DerivedData
-        uses: actions/cache@v4
-        with:
-          path: ~/Library/Developer/Xcode/DerivedData
-          key: ${{ runner.os }}-deriveddata-release-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
-          restore-keys: |
-            ${{ runner.os }}-deriveddata-release-
-
-      - name: Install xcbeautify
-        run: brew install xcbeautify
-
-      - name: Build Release
-        run: |
-          xcodebuild build \
-            -project ${{ env.PROJECT_NAME }}.xcodeproj \
-            -scheme ${{ env.SCHEME }} \
-            -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
-            -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            | xcbeautify --renderer github-actions
-
-      - name: Analyze Build Size
-        run: |
-          # Get the build product path
-          BUILD_DIR=$(xcodebuild -project ${{ env.PROJECT_NAME }}.xcodeproj \
-            -scheme ${{ env.SCHEME }} \
-            -showBuildSettings \
-            -configuration Release \
-            | grep -m 1 "BUILT_PRODUCTS_DIR" \
-            | awk '{print $3}')
-          
-          if [ -d "$BUILD_DIR/weather.app" ]; then
-            echo "📦 App Bundle Size:"
-            du -sh "$BUILD_DIR/weather.app"
-          fi
+          echo "**Target:** iOS Simulator" >> $GITHUB_STEP_SUMMARY

@@ -123,6 +123,7 @@ jobs:
 
       # Build with optimizations
       - name: Build for Testing
+        id: build
         working-directory: weather
         run: |
           BUILD_START_TIME=$(date +%s)
@@ -146,7 +147,8 @@ jobs:
 
       # Test execution with smart selection
       - name: Run Tests (${{ matrix.suite }})
-        working-directory: weather  
+        id: test
+        working-directory: weather
         run: |
           TEST_START_TIME=$(date +%s)
           
@@ -186,6 +188,7 @@ jobs:
 
       # Coverage processing (only for coverage-enabled jobs)
       - name: Process Coverage
+        id: coverage
         if: matrix.coverage == true
         working-directory: weather
         run: |
