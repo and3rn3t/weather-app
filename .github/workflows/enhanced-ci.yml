@@ -74,7 +74,7 @@ jobs:
 
       # Multi-tier caching strategy
       - name: Primary Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
@@ -88,7 +88,7 @@ jobs:
             ios-build-
 
       - name: Tool Cache (xcbeautify, etc.)
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -256,7 +256,7 @@ jobs:
           xcode-version: ${{ env.XCODE_VERSION }}
 
       - name: Release Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData

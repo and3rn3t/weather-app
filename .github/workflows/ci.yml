@@ -52,7 +52,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Cache DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-deriveddata-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
@@ -60,7 +60,7 @@ jobs:
             ${{ runner.os }}-deriveddata-
 
       - name: Cache Homebrew
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -113,7 +113,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Cache Homebrew
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -145,7 +145,7 @@ jobs:
           xcode-version: '16.0'
 
       - name: Cache DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-deriveddata-release-${{ hashFiles('**/*.swift', '**/project.pbxproj') }}
@@ -153,7 +153,7 @@ jobs:
             ${{ runner.os }}-deriveddata-release-
 
       - name: Cache Homebrew
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/Library/Caches/Homebrew

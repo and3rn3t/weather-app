@@ -39,7 +39,7 @@ jobs:
           xcode-version: 'latest-stable'
 
       - name: Cache DerivedData
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/Library/Developer/Xcode/DerivedData
           key: ${{ runner.os }}-nightly-${{ matrix.configuration }}-${{ hashFiles('**/*.swift') }}
