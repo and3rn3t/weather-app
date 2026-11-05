@@ -8,6 +8,7 @@
 import XCTest
 @testable import weather
 
+@MainActor
 final class ServicePerformanceTests: XCTestCase {
     
     var weatherService: WeatherService!
