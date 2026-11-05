@@ -103,6 +103,7 @@ jobs:
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
             -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
+            -only-test-configuration 'Default Configuration' \
             -skip-testing:weatherUITests \
             -parallel-testing-enabled NO \
             -test-timeouts-enabled YES \
