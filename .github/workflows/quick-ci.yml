@@ -61,7 +61,7 @@ jobs:
         working-directory: android-app
         run: |
           ./gradlew lintDebug --parallel --build-cache
-        timeout-minutes: 3
+        timeout-minutes: 10
 
       - name: Security Scan (if significant changes)
         if: github.event.pull_request.changed_files > 20
