@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
-  XCODE_VERSION: '16.4'
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+  XCODE_VERSION: '26.2'
 
 jobs:
   # Smart build matrix with conditions
@@ -41,7 +41,7 @@ jobs:
             artifact: true
 
           # iPad tests only on main branch or when specifically requested  
-          - device: 'iPad Pro (13-inch) (M4)'
+          - device: 'iPad Pro 13-inch (M4)'
             suite: 'ui'
             coverage: false
             artifact: false

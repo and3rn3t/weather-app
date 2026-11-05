@@ -17,7 +17,7 @@ concurrency:
 
 env:
   # Use newer Xcode for faster builds
-  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
 
 jobs:
   # Ultra-fast checks (1-2 minutes)
@@ -101,7 +101,7 @@ jobs:
         if: matrix.platform == 'ios' && matrix.condition
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.4'
+          xcode-version: '26.2'
 
       - name: Create APIConfig.swift from template
         if: matrix.platform == 'ios' && matrix.condition
