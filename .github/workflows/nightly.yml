@@ -43,6 +43,16 @@ jobs:
         # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
         run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
+      - name: Wait for iOS simulators
+        # CoreSimulator can take a while to enumerate devices on a fresh runner, and
+        # xcodebuild gives up with "Unable to find a device" if it asks too early.
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            xcrun simctl list devices available | grep -q "iPhone 16 Pro" && exit 0
+            sleep 10
+          done
+          echo "::warning::iPhone 16 Pro simulator is not listed"
+
       - name: Cache DerivedData
         uses: actions/cache@v4
         with:
