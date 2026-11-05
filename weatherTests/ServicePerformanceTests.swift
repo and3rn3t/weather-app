@@ -14,7 +14,7 @@ final class ServicePerformanceTests: XCTestCase {
     var weatherService: WeatherService!
     var mockCacheData: Data!
     
-    override func setUpWithError() throws {
+    override func setUp() async throws {
         // Create mock data for performance testing
         let mockWeather = WeatherData(
             latitude: 37.7749,
@@ -64,7 +64,7 @@ final class ServicePerformanceTests: XCTestCase {
         mockCacheData = try JSONEncoder().encode(mockWeather)
     }
     
-    override func tearDownWithError() throws {
+    override func tearDown() async throws {
         weatherService = nil
         mockCacheData = nil
     }
