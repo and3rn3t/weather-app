@@ -5,9 +5,9 @@
 //  Created by Matt on 2/5/26.
 //
 
-import SwiftUI
 import MapKit
 import OSLog
+import SwiftUI
 
 // MARK: - Weather Map View
 

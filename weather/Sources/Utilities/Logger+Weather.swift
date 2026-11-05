@@ -5,8 +5,8 @@
 //  Structured logging to replace print() statements.
 //
 
-import OSLog
 import os.signpost
+import OSLog
 
 nonisolated
 extension Logger {

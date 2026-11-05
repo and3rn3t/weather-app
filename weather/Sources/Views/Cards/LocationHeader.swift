@@ -13,7 +13,7 @@ struct LocationHeader: View {
     let locationName: String?
     let weatherData: WeatherData
     let onSearchTapped: () -> Void
-    var onShareCardTapped: (() -> Void)? = nil
+    var onShareCardTapped: (() -> Void)?
     @Environment(SettingsManager.self) var settings
     
     /// Cached update timestamp — avoids Date.now which changes every render and causes perpetual redraws
@@ -85,10 +85,10 @@ struct LocationHeader: View {
                 
                 // Share weather card button
                 if let onShareCardTapped {
-                    Button(action: {
+                    Button {
                         HapticFeedback.impact()
                         onShareCardTapped()
-                    }) {
+                    } label: {
                         Image(systemName: "photo.on.rectangle.angled")
                             .font(.body.weight(.medium))
                             .foregroundStyle(.blue)
@@ -99,10 +99,10 @@ struct LocationHeader: View {
                 }
                 
                 // Search button
-                Button(action: {
+                Button {
                     HapticFeedback.impact()
                     onSearchTapped()
-                }) {
+                } label: {
                     Image(systemName: "magnifyingglass")
                         .font(.body.weight(.medium))
                         .foregroundStyle(.blue)

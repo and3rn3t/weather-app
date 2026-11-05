@@ -5,9 +5,9 @@
 //  Created by Matt on 2/4/26.
 //
 
-import SwiftUI
 import MapKit
 import OSLog
+import SwiftUI
 
 struct LocationSearchView: View {
     @Environment(\.dismiss) private var dismiss
@@ -35,9 +35,9 @@ struct LocationSearchView: View {
                     ContentUnavailableView.search(text: searchText)
                 } else {
                     List(searchResults, id: \.self) { item in
-                        Button(action: {
+                        Button {
                             selectLocation(item)
-                        }) {
+                        } label: {
                             LocationSearchRow(mapItem: item)
                         }
                     }

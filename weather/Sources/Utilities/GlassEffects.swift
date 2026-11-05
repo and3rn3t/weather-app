@@ -17,37 +17,37 @@ struct GlassStyle {
     var tint: Color?
     var isInteractive: Bool
     
-    static let regular = GlassStyle(
+    static let regular = Self(
         cornerRadius: 20,
         tint: nil,
         isInteractive: false
     )
     
-    static let prominent = GlassStyle(
+    static let prominent = Self(
         cornerRadius: 20,
         tint: nil,
         isInteractive: false
     )
     
-    static let thick = GlassStyle(
+    static let thick = Self(
         cornerRadius: 20,
         tint: nil,
         isInteractive: false
     )
     
-    func tint(_ color: Color) -> GlassStyle {
+    func tint(_ color: Color) -> Self {
         var style = self
         style.tint = color
         return style
     }
     
-    func interactive() -> GlassStyle {
+    func interactive() -> Self {
         var style = self
         style.isInteractive = true
         return style
     }
     
-    func cornerRadius(_ radius: CGFloat) -> GlassStyle {
+    func cornerRadius(_ radius: CGFloat) -> Self {
         var style = self
         style.cornerRadius = radius
         return style

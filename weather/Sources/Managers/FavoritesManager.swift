@@ -5,11 +5,11 @@
 //  Created by Matt on 2/5/26.
 //
 
-import Foundation
 import CoreLocation
+import Foundation
+import OSLog
 import SwiftData
 import SwiftUI
-import OSLog
 
 // MARK: - Favorites Manager
 

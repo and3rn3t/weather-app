@@ -5,11 +5,11 @@
 //  Smart background refresh scheduling based on user patterns and optimal refresh times
 //
 
-import Foundation
 import BackgroundTasks
-import CoreLocation
-import OSLog
 import Combine
+import CoreLocation
+import Foundation
+import OSLog
 import UIKit
 
 /**
@@ -83,7 +83,11 @@ class BackgroundRefreshManager: ObservableObject {
             forTaskWithIdentifier: Config.backgroundTaskIdentifier,
             using: nil
         ) { task in
-            self.handleBackgroundRefresh(task as! BGAppRefreshTask)
+            guard let refreshTask = task as? BGAppRefreshTask else {
+                task.setTaskCompleted(success: false)
+                return
+            }
+            self.handleBackgroundRefresh(refreshTask)
         }
         
         logger.info("Background task registered: \(Config.backgroundTaskIdentifier)")
@@ -328,7 +332,6 @@ class BackgroundRefreshManager: ObservableObject {
             
             logger.info("Background refresh completed successfully")
             task.setTaskCompleted(success: true)
-            
         } catch {
             logger.error("Background refresh failed: \(error)")
             task.setTaskCompleted(success: false)

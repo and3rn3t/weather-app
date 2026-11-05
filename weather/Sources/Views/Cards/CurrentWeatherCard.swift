@@ -29,7 +29,7 @@ struct CurrentWeatherCard: View {
                 .accessibilityLabel("Weather condition: \(condition.description)")
             
             // Temperature display - tap it for interaction!
-            Button(action: {
+            Button {
                 // Haptic feedback
                 HapticFeedback.impact()
                 
@@ -41,7 +41,7 @@ struct CurrentWeatherCard: View {
                     try? await Task.sleep(for: .milliseconds(300))
                     isTapped = false
                 }
-            }) {
+            } label: {
                 Text(settings.formatTemperature(current.temperature2m))
                     .font(.system(size: 80, weight: .thin, design: .rounded))
                     .foregroundStyle(temperatureGradient)
