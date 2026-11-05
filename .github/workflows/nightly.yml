@@ -74,8 +74,8 @@ jobs:
             -configuration ${{ matrix.configuration }} \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            | xcbeautify
-          || echo "::warning::Widget scheme not found — skipping"
+            | xcbeautify \
+            || echo "::warning::Widget scheme not found — skipping"
 
       - name: Run Tests
         run: |
