@@ -40,6 +40,13 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deriveddata-perf-
 
+      - name: TEMP simulator diagnostics
+        run: |
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devices available | head -60
+          xcodebuild -showdestinations -project weather.xcodeproj -scheme weather 2>&1 | head -30 || true
+
       - name: Clean Build
         run: |
           echo "🧹 Cleaning build folder..."
@@ -60,7 +67,7 @@ jobs:
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            > /dev/null 2>&1
+            > "$RUNNER_TEMP/build.log" 2>&1 || { tail -n 150 "$RUNNER_TEMP/build.log"; exit 1; }
           
           END_TIME=$(date +%s)
           BUILD_TIME=$((END_TIME - START_TIME))

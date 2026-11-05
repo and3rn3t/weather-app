@@ -57,7 +57,6 @@ jobs:
             ios-build-
 
       - name: Warm Build Cache
-        working-directory: weather
         run: |
           echo "🔥 Warming iOS build cache..."
           
