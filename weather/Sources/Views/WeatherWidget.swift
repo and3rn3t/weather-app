@@ -127,8 +127,7 @@ private func widgetBackgroundGradient(for code: Int) -> some View {
 
 /// Cached formatters for widget hour display
 private enum WidgetFormatters {
-    // ISO8601DateFormatter is thread-safe but not Sendable in the iOS 18 SDK.
-    nonisolated(unsafe) static let isoParser: ISO8601DateFormatter = {
+    static let isoParser: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
