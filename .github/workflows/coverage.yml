@@ -57,14 +57,30 @@ jobs:
 
       - name: Run Tests with Coverage
         run: |
+          # Unit tests only (UI tests need their own job); no parallel clones, which starve a
+          # small macOS runner; per-test limits so a hang fails fast instead of eating the job.
           xcodebuild test \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
+            -skip-testing:weatherUITests \
+            -parallel-testing-enabled NO \
+            -test-timeouts-enabled YES \
+            -default-test-execution-time-allowance 60 \
+            -maximum-test-execution-time-allowance 120 \
             -enableCodeCoverage YES \
+            -resultBundlePath Coverage.xcresult \
             -derivedDataPath DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-test-results
+          path: Coverage.xcresult
+          retention-days: 7
 
       - name: Generate Coverage Report
         run: |
