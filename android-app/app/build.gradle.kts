@@ -130,7 +130,7 @@ dependencies {
     implementation("com.google.accompanist:accompanist-swiperefresh:0.34.0")
 
     // Coil - Image Loading
-    implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     // WorkManager - Background Tasks
     implementation("androidx.work:work-runtime-ktx:2.9.0")
