@@ -5,8 +5,8 @@
 //  Created by AI Assistant on 2/14/26.
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 
 // MARK: - Pollen Forecast Card
 
@@ -36,7 +36,6 @@ struct PollenForecastCard: View {
             
             if let hourly = pollenData?.hourly,
                let maxPollen = hourly.maxPollenInRange(start: 0, count: 24) {
-                
                 VStack(spacing: 16) {
                     // Current pollen level
                     pollenLevelIndicator(type: maxPollen.type, concentration: maxPollen.value)

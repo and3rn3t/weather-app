@@ -6,8 +6,8 @@
 //
 
 import Foundation
-import UIKit
 import OSLog
+import UIKit
 
 /**
  * Enhanced cache manager with memory pressure handling, cache warming, and intelligent invalidation
@@ -201,13 +201,12 @@ class WeatherCacheManager: NSObject {
     /// Preload cache for given locations (cache warming)
     func warmCache(for locations: [(latitude: Double, longitude: Double)]) {
         Task(priority: .background) {
-            for location in locations {
-                // Only warm cache if we don't have recent data
-                if shouldRefreshCache(latitude: location.latitude, longitude: location.longitude) {
-                    logger.info("Cache warming for location: (\\(location.latitude), \\(location.longitude))")
-                    // Note: This would typically trigger a background fetch
-                    // Implementation depends on your weather service architecture
-                }
+            // Only warm cache if we don't have recent data
+            for location in locations
+            where shouldRefreshCache(latitude: location.latitude, longitude: location.longitude) {
+                logger.info("Cache warming for location: (\\(location.latitude), \\(location.longitude))")
+                // Note: This would typically trigger a background fetch
+                // Implementation depends on your weather service architecture
             }
         }
     }
@@ -236,10 +235,8 @@ class WeatherCacheManager: NSObject {
         let now = Date()
         var expiredKeys: [String] = []
         
-        for (key, metadata) in cacheMetadata {
-            if metadata.isExpired {
-                expiredKeys.append(key)
-            }
+        for (key, metadata) in cacheMetadata where metadata.isExpired {
+            expiredKeys.append(key)
         }
         
         // Remove expired files and metadata

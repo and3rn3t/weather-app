@@ -5,8 +5,8 @@
 //  Created by Matt on 2/5/26.
 //
 
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 @main
 struct Andernet_Weather_WidgetBundle: WidgetBundle {

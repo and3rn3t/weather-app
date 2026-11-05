@@ -19,6 +19,8 @@ disabled_rules:
   - type_body_length
   - todo
 
+# closure_body_length is intentionally not opted in: SwiftUI view-builder closures
+# routinely run past 30 lines, and the sibling length rules above are disabled too.
 opt_in_rules:
   - empty_count
   - empty_string
@@ -29,7 +31,6 @@ opt_in_rules:
   - sorted_imports
   - vertical_whitespace_closing_braces
   - vertical_whitespace_opening_braces
-  - closure_body_length
   - discouraged_optional_boolean
   - unowned_variable_capture
   - prefer_self_in_static_references

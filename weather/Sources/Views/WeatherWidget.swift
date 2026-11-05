@@ -5,9 +5,9 @@
 //  Created by Matt on 2/5/26.
 //
 
+import AppIntents
 import SwiftUI
 import WidgetKit
-import AppIntents
 
 // MARK: - Widget Timeline Entry
 
