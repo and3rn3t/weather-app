@@ -52,7 +52,7 @@ struct SharedHourlyData: Codable {
 
 // MARK: - Shared Data Manager
 
-class SharedDataManager {
+final class SharedDataManager: Sendable {
     static let shared = SharedDataManager()
     
     private let weatherDataKey = "sharedWeatherData"

@@ -67,7 +67,7 @@ jobs:
             -configuration Debug \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            > "$RUNNER_TEMP/build.log" 2>&1 || { tail -n 150 "$RUNNER_TEMP/build.log"; exit 1; }
+            > "$RUNNER_TEMP/build.log" 2>&1 || { grep -E "error:" "$RUNNER_TEMP/build.log" | sort -u; tail -n 40 "$RUNNER_TEMP/build.log"; exit 1; }
           
           END_TIME=$(date +%s)
           BUILD_TIME=$((END_TIME - START_TIME))

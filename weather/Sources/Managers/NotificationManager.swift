@@ -22,7 +22,8 @@ class NotificationManager: NSObject {
     /// Minimum precipitation probability to trigger rain alert (%)
     private static let rainProbabilityThreshold = 50
     /// Cached date formatter — creating formatters is expensive
-    private static let isoFormatter: ISO8601DateFormatter = {
+    // ISO8601DateFormatter is thread-safe but not Sendable in the iOS 18 SDK.
+    nonisolated(unsafe) private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return formatter
