@@ -38,6 +38,10 @@ jobs:
         with:
           xcode-version: 'latest-stable'
 
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
+
       - name: Cache DerivedData
         uses: actions/cache@v4
         with:
@@ -64,7 +68,7 @@ jobs:
           # Build widget extension
           xcodebuild build \
             -project weather.xcodeproj \
-            -scheme "Andernet Weather Widget" \
+            -scheme "Andernet Weather WidgetExtension" \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
             -configuration ${{ matrix.configuration }} \
             CODE_SIGN_IDENTITY="" \
@@ -225,6 +229,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ios-nightly, android-nightly, dependency-audit]
     if: failure()
+    permissions:
+      issues: write
 
     steps:
       - name: Create Issue on Failure

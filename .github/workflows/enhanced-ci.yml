@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
-  XCODE_VERSION: '16.0'
+  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
+  XCODE_VERSION: '16.4'
 
 jobs:
   # Smart build matrix with conditions
@@ -71,6 +71,10 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
       # Multi-tier caching strategy
       - name: Primary Build Cache
@@ -254,6 +258,10 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
       - name: Release Build Cache
         uses: actions/cache@v4

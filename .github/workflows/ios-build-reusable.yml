@@ -40,7 +40,7 @@ on:
         value: ${{ jobs.build.outputs.artifact_path }}
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
+  DEVELOPER_DIR: /Applications/Xcode_16.4.app/Contents/Developer
 
 jobs:
   build:
@@ -57,7 +57,11 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: '16.0'
+          xcode-version: '16.4'
+
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
       - name: Cache DerivedData
         uses: actions/cache@v4
