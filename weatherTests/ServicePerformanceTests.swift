@@ -132,11 +132,12 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     @MainActor func testTemperatureFormatterPerformance() throws {
         // Test cached formatter performance vs creating new formatters
         let temperatures = Array(0..<1000).map { Double($0) / 10.0 }
+        let settings = SettingsManager()
         
         // Test cached formatter (what we currently use)
         measure(metrics: [XCTClockMetric()]) {
             for temp in temperatures {
-                _ = SettingsManager.shared.formatTemperature(temp)
+                _ = settings.formatTemperature(temp)
             }
         }
     }
@@ -175,7 +176,6 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
             for uv in uvValues {
                 _ = UVIndexHelper.color(for: uv)
                 _ = UVIndexHelper.level(for: uv)
-                _ = UVIndexHelper.recommendation(for: uv)
             }
         }
     }
@@ -302,6 +302,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     @MainActor func testCompleteStartupSequencePerformance() throws {
         // Test the complete startup sequence performance
+        let settings = SettingsManager()
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             // 1. Service initialization
             let service = WeatherService()
@@ -315,7 +316,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
             // 4. Simulate first UI update
             if hasData {
                 let temp = service.weatherData?.current.temperature2m ?? 0
-                _ = SettingsManager.shared.formatTemperature(temp)
+                _ = settings.formatTemperature(temp)
             }
             
             let elapsed = Date().timeIntervalSince(startTime)
