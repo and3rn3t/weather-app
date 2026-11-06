@@ -99,9 +99,13 @@ jobs:
 
       - name: Generate Coverage Report
         run: |
+          # Debug builds keep the app's code in <name>.debug.dylib; the main executable is a stub.
+          APP=DerivedData/Build/Products/Debug-iphonesimulator/${{ env.PROJECT_NAME }}.app
+          BINARY="$APP/${{ env.PROJECT_NAME }}.debug.dylib"
+          [ -f "$BINARY" ] || BINARY="$APP/${{ env.PROJECT_NAME }}"
           xcrun llvm-cov export \
             -format="lcov" \
-            DerivedData/Build/Products/Debug-iphonesimulator/${{ env.PROJECT_NAME }}.app/${{ env.PROJECT_NAME }} \
+            "$BINARY" \
             -instr-profile DerivedData/Build/ProfileData/*/Coverage.profdata \
             > coverage.lcov
 
