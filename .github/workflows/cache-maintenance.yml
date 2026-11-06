@@ -218,7 +218,7 @@ jobs:
           echo "| iOS Full Build | 18.5min | <20min | ✅ Good |" >> $GITHUB_STEP_SUMMARY
           echo "| Android Test Matrix | 22.3min | <25min | ✅ Good |" >> $GITHUB_STEP_SUMMARY
           echo "| Cache Hit Rate | 87% | >80% | ✅ Excellent |" >> $GITHUB_STEP_SUMMARY
-          echo "| Monthly CI Cost | $68 | <$100 | ✅ Under Budget |" >> $GITHUB_STEP_SUMMARY
+          echo "| Monthly CI Cost | \$68 | <\$100 | ✅ Under Budget |" >> $GITHUB_STEP_SUMMARY
           
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Trends:**" >> $GITHUB_STEP_SUMMARY

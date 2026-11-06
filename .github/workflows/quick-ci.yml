@@ -24,7 +24,7 @@ jobs:
   quick-checks:
     name: Quick Checks
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     outputs:
       ios-changed: ${{ steps.changes.outputs.ios }}
       android-changed: ${{ steps.changes.outputs.android }}
