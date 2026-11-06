@@ -311,10 +311,10 @@ jobs:
         working-directory: weather
         run: |
           # Get binary size
-          BINARY_PATH="~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app/weather"
+          BINARY_PATH="$HOME/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app/weather"
           if [[ -f "$BINARY_PATH" ]]; then
             BINARY_SIZE=$(du -h "$BINARY_PATH" | cut -f1)
-            APP_SIZE=$(du -h "~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app" | cut -f1)
+            APP_SIZE=$(du -h "$HOME/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app" | cut -f1)
             
             echo "### 📦 Release Build Analysis" >> $GITHUB_STEP_SUMMARY
             echo "| Component | Size |" >> $GITHUB_STEP_SUMMARY

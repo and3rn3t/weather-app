@@ -136,7 +136,7 @@ jobs:
 
       - name: Save Changelog
         run: |
-          echo '${{ steps.changelog.outputs.result }}' > CHANGELOG-$(date +%Y%m%d).md
+          echo '${{ steps.changelog.outputs.result }}' > "CHANGELOG-$(date +%Y%m%d).md"
 
       - name: Upload Changelog
         uses: actions/upload-artifact@v4

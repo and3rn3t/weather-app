@@ -106,7 +106,7 @@ jobs:
         run: |
           mkdir -p .github/metrics
           echo "${{ steps.build_time.outputs.build_time }}" > .github/metrics/ios-build-time.txt
-          echo "$(date -u +%Y-%m-%d)" > .github/metrics/last-run.txt
+          date -u +%Y-%m-%d > .github/metrics/last-run.txt
 
       - name: Upload metrics artifact
         uses: actions/upload-artifact@v4

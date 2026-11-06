@@ -1,0 +1,12 @@
+# actionlint configuration (read automatically from .github/actionlint.yaml).
+#
+# actionlint reports every shellcheck note as an error. These two are style/info level and
+# account for 231 of the findings in this repo, so they are ignored; real shellcheck
+# warnings and errors (SC2046, SC2088, SC1037, ...) still fail the check.
+#   SC2086  unquoted variable (almost all of them are `>> $GITHUB_STEP_SUMMARY`)
+#   SC2129  "consider grouping redirects" for consecutive `echo ... >> file` lines
+paths:
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'shellcheck reported issue in this script: SC2086:.+'
+      - 'shellcheck reported issue in this script: SC2129:.+'
