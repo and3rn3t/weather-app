@@ -36,7 +36,22 @@ jobs:
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
-          xcode-version: 'latest-stable'
+          # 26.2 matches the iOS 26.2 simulator runtime on the macos-15 image; 26.3 has no runtime yet
+          xcode-version: '26.2'
+
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
+
+      - name: Wait for iOS simulators
+        # CoreSimulator can take a while to enumerate devices on a fresh runner, and
+        # xcodebuild gives up with "Unable to find a device" if it asks too early.
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            xcrun simctl list devices available | grep -q "iPhone 16 Pro" && exit 0
+            sleep 10
+          done
+          echo "::warning::iPhone 16 Pro simulator is not listed"
 
       - name: Cache DerivedData
         uses: actions/cache@v4
@@ -64,13 +79,13 @@ jobs:
           # Build widget extension
           xcodebuild build \
             -project weather.xcodeproj \
-            -scheme "Andernet Weather Widget" \
+            -scheme "Andernet Weather WidgetExtension" \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro' \
             -configuration ${{ matrix.configuration }} \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
-            | xcbeautify
-          || echo "::warning::Widget scheme not found — skipping"
+            | xcbeautify \
+            || echo "::warning::Widget scheme not found — skipping"
 
       - name: Run Tests
         run: |
@@ -225,6 +240,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: [ios-nightly, android-nightly, dependency-audit]
     if: failure()
+    permissions:
+      issues: write
 
     steps:
       - name: Create Issue on Failure

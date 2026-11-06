@@ -20,8 +20,8 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  DEVELOPER_DIR: /Applications/Xcode_16.0.app/Contents/Developer
-  XCODE_VERSION: '16.0'
+  DEVELOPER_DIR: /Applications/Xcode_26.2.app/Contents/Developer
+  XCODE_VERSION: '26.2'
 
 jobs:
   # Smart build matrix with conditions
@@ -41,7 +41,7 @@ jobs:
             artifact: true
 
           # iPad tests only on main branch or when specifically requested  
-          - device: 'iPad Pro (13-inch) (M4)'
+          - device: 'iPad Pro 13-inch (M4)'
             suite: 'ui'
             coverage: false
             artifact: false
@@ -71,6 +71,20 @@ jobs:
         uses: maxim-lobanov/setup-xcode@v1
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
+
+      - name: Wait for iOS simulators
+        # CoreSimulator can take a while to enumerate devices on a fresh runner, and
+        # xcodebuild gives up with "Unable to find a device" if it asks too early.
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            xcrun simctl list devices available | grep -q "iPhone 16 Pro" && exit 0
+            sleep 10
+          done
+          echo "::warning::iPhone 16 Pro simulator is not listed"
 
       # Multi-tier caching strategy
       - name: Primary Build Cache
@@ -255,6 +269,20 @@ jobs:
         with:
           xcode-version: ${{ env.XCODE_VERSION }}
 
+      - name: Create APIConfig.swift from template
+        # APIConfig.swift is gitignored (it holds an API key); CI builds with the placeholder.
+        run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
+
+      - name: Wait for iOS simulators
+        # CoreSimulator can take a while to enumerate devices on a fresh runner, and
+        # xcodebuild gives up with "Unable to find a device" if it asks too early.
+        run: |
+          for _ in 1 2 3 4 5 6; do
+            xcrun simctl list devices available | grep -q "iPhone 16 Pro" && exit 0
+            sleep 10
+          done
+          echo "::warning::iPhone 16 Pro simulator is not listed"
+
       - name: Release Build Cache
         uses: actions/cache@v4
         with:
@@ -283,10 +311,10 @@ jobs:
         working-directory: weather
         run: |
           # Get binary size
-          BINARY_PATH="~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app/weather"
+          BINARY_PATH="$HOME/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app/weather"
           if [[ -f "$BINARY_PATH" ]]; then
             BINARY_SIZE=$(du -h "$BINARY_PATH" | cut -f1)
-            APP_SIZE=$(du -h "~/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app" | cut -f1)
+            APP_SIZE=$(du -h "$HOME/Library/Developer/Xcode/DerivedData/Weather-Release/Build/Products/Release-iphonesimulator/weather.app" | cut -f1)
             
             echo "### 📦 Release Build Analysis" >> $GITHUB_STEP_SUMMARY
             echo "| Component | Size |" >> $GITHUB_STEP_SUMMARY
