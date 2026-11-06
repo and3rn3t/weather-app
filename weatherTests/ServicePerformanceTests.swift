@@ -10,6 +10,10 @@ import XCTest
 
 // nonisolated: with default MainActor isolation, a main-actor XCTestCase subclass cannot override
 // XCTestCase's nonisolated initializers. The members that touch app types opt in individually.
+//
+// The tests are async on purpose: releasing a main-actor object (WeatherService, via its
+// isolated deinit) outside a Swift task aborts inside swift_task_deinitOnExecutor, and a
+// synchronous XCTest method has no task. An async method runs inside one.
 nonisolated final class ServicePerformanceTests: XCTestCase {
     
     var weatherService: WeatherService!
@@ -72,14 +76,14 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Service Initialization Performance
     
-    @MainActor func testWeatherServiceInitializationPerformance() throws {
+    @MainActor func testWeatherServiceInitializationPerformance() async throws {
         // Test how long it takes to initialize WeatherService
         measure {
             _ = WeatherService()
         }
     }
     
-    @MainActor func testCacheLoadingPerformance() throws {
+    @MainActor func testCacheLoadingPerformance() async throws {
         // Test synchronous cache loading performance during init
         let tempDirectory = FileManager.default.temporaryDirectory
         let cacheURL = tempDirectory.appendingPathComponent("weather_cache_test.json")
@@ -103,7 +107,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - JSON Decoding Performance
     
-    @MainActor func testWeatherDataDecodingPerformance() throws {
+    @MainActor func testWeatherDataDecodingPerformance() async throws {
         // Test JSON decoding performance for weather data
         measure {
             do {
@@ -114,7 +118,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         }
     }
     
-    @MainActor func testWeatherDataEncodingPerformance() throws {
+    @MainActor func testWeatherDataEncodingPerformance() async throws {
         // Test JSON encoding performance
         let weatherData = try JSONDecoder().decode(WeatherData.self, from: mockCacheData)
         
@@ -129,7 +133,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Formatter Performance
     
-    @MainActor func testTemperatureFormatterPerformance() throws {
+    @MainActor func testTemperatureFormatterPerformance() async throws {
         // Test cached formatter performance vs creating new formatters
         let temperatures = Array(0..<1000).map { Double($0) / 10.0 }
         let settings = SettingsManager()
@@ -142,7 +146,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         }
     }
     
-    @MainActor func testDateFormatterPerformance() throws {
+    @MainActor func testDateFormatterPerformance() async throws {
         // Test date formatting performance
         let dates = Array(0..<100).map { "2026-02-\(String(format: "%02d", $0 % 28 + 1))T12:00" }
         
@@ -155,7 +159,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Weather Calculation Performance
     
-    @MainActor func testWeatherConditionMappingPerformance() throws {
+    @MainActor func testWeatherConditionMappingPerformance() async throws {
         // Test performance of weather code to condition mapping
         let weatherCodes = Array(0..<100).map { $0 % 96 } // WMO codes go up to 95
         
@@ -168,7 +172,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         }
     }
     
-    @MainActor func testUVIndexCalculationPerformance() throws {
+    @MainActor func testUVIndexCalculationPerformance() async throws {
         // Test UV index helper performance
         let uvValues = Array(0..<1000).map { Double($0) / 100.0 } // 0-10 range
         
@@ -182,7 +186,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Collection Operations Performance
     
-    @MainActor func testHourlyDataProcessingPerformance() throws {
+    @MainActor func testHourlyDataProcessingPerformance() async throws {
         // Test processing of hourly forecast arrays
         let weatherData = try JSONDecoder().decode(WeatherData.self, from: mockCacheData)
         
@@ -202,7 +206,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         }
     }
     
-    @MainActor func testDailyDataFilteringPerformance() throws {
+    @MainActor func testDailyDataFilteringPerformance() async throws {
         // Test filtering and processing daily forecast data
         let weatherData = try JSONDecoder().decode(WeatherData.self, from: mockCacheData)
         
@@ -225,7 +229,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Memory Allocation Performance
     
-    @MainActor func testRepeatedViewModelCreationPerformance() throws {
+    @MainActor func testRepeatedViewModelCreationPerformance() async throws {
         // Test performance of creating multiple weather service instances
         // (simulates memory pressure scenarios)
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
@@ -242,7 +246,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         }
     }
     
-    @MainActor func testLargeDataSetHandlingPerformance() throws {
+    @MainActor func testLargeDataSetHandlingPerformance() async throws {
         // Test performance with large forecast datasets
         let largeHourlyData = HourlyWeather(
             time: Array(0..<168).map { hour in // 7 days of hourly data
@@ -276,7 +280,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Network Response Processing Performance
     
-    @MainActor func testNetworkResponseParsingPerformance() throws {
+    @MainActor func testNetworkResponseParsingPerformance() async throws {
         // Test parsing performance of typical API response sizes
         measure {
             // Simulate processing network response
@@ -300,7 +304,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     
     // MARK: - Startup Performance Integration
     
-    @MainActor func testCompleteStartupSequencePerformance() throws {
+    @MainActor func testCompleteStartupSequencePerformance() async throws {
         // Test the complete startup sequence performance
         let settings = SettingsManager()
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
