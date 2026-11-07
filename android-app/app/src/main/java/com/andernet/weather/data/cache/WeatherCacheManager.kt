@@ -70,6 +70,14 @@ class WeatherCacheManager @Inject constructor(
             get() = isStale // Simplified - could add network type detection
     }
     
+    // Must be declared before `init`: loadMetadata() uses it during construction, and Kotlin
+    // initializes properties and init blocks in declaration order.
+    private val metadataType = Types.newParameterizedType(
+        Map::class.java,
+        String::class.java,
+        CacheMetadata::class.java
+    )
+
     init {
         cacheDir.mkdirs()
         loadMetadata()
@@ -310,12 +318,6 @@ class WeatherCacheManager @Inject constructor(
         }
     }
     
-    private val metadataType = Types.newParameterizedType(
-        Map::class.java,
-        String::class.java,
-        CacheMetadata::class.java
-    )
-
     private fun loadMetadata() {
         if (metadataFile.exists()) {
             try {
