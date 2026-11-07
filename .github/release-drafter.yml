@@ -22,6 +22,26 @@ version-resolver:
     labels: ['fix', 'bugfix', 'bug', 'chore', 'dependencies', 'security', 'docs']
   default: patch
 
+# Label PRs from their conventional-commit title so the version resolver works
+# even when nobody labels by hand.
+autolabeler:
+  - label: 'breaking'
+    title:
+      - '/^\w+(\(.+\))?!:/'
+      - '/^BREAKING CHANGE:/'
+  - label: 'feature'
+    title:
+      - '/^feat(\(.+\))?:/'
+  - label: 'bug'
+    title:
+      - '/^fix(\(.+\))?:/'
+  - label: 'documentation'
+    title:
+      - '/^docs(\(.+\))?:/'
+  - label: 'chore'
+    title:
+      - '/^(chore|ci|build|refactor|style|test|perf)(\(.+\))?:/'
+
 template: |
   ## What's Changed
 

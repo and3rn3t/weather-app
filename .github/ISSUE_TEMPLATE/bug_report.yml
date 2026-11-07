@@ -1,6 +1,6 @@
 name: Bug Report
 description: Report a bug or unexpected behavior
-labels: ["bug"]
+labels: ['bug']
 body:
   - type: markdown
     attributes:
@@ -52,7 +52,6 @@ body:
     attributes:
       label: Environment
       description: Where did you encounter this bug?
-      # TODO: Replace these options with your project's supported environments.
       options:
         - Production
         - Staging
