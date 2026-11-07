@@ -47,7 +47,7 @@ jobs:
         if: steps.changes.outputs.ios == 'true'
         uses: norio-nomura/action-swiftlint@3.2.1
         with:
-          args: --config weather/.swiftlint.yml weather/
+          args: --strict --config .swiftlint.yml weather/
 
       - name: Android Lint
         if: steps.changes.outputs.android == 'true'
