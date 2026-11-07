@@ -27,7 +27,7 @@ jobs:
   # Smart build matrix with conditions
   test-matrix:
     name: Test (${{ matrix.device }}, ${{ matrix.suite }})
-    runs-on: macos-15-xlarge  # Use larger runners for heavy builds
+    runs-on: macos-15  # standard runner: the xlarge runner is separately metered and was never started on this account
     timeout-minutes: 25
 
     strategy:
