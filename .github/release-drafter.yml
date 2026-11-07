@@ -23,7 +23,8 @@ version-resolver:
   default: patch
 
 # Label PRs from their conventional-commit title so the version resolver works
-# even when nobody labels by hand.
+# even when nobody labels by hand. `documentation` is left to the path-based
+# labeler (.github/labeler.yml), whose sync-labels would strip a title-based one.
 autolabeler:
   - label: 'breaking'
     title:
@@ -35,9 +36,6 @@ autolabeler:
   - label: 'bug'
     title:
       - '/^fix(\(.+\))?:/'
-  - label: 'documentation'
-    title:
-      - '/^docs(\(.+\))?:/'
   - label: 'chore'
     title:
       - '/^(chore|ci|build|refactor|style|test|perf)(\(.+\))?:/'
