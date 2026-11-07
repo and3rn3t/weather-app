@@ -145,18 +145,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
-      - name: Cache Homebrew
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar/swiftlint
-          key: ${{ runner.os }}-homebrew-swiftlint
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
-
       - name: Install SwiftLint
-        run: brew install swiftlint
+        # The keg can already be present but unlinked ("already installed, it's just not
+        # linked"), in which case `brew install` is a no-op and `swiftlint` is not on PATH.
+        # Caching /opt/homebrew/Cellar made that likely, so the cache step is gone too.
+        run: |
+          brew list swiftlint >/dev/null 2>&1 || brew install swiftlint
+          brew link --overwrite swiftlint
+          swiftlint version
 
       - name: Run SwiftLint
         run: swiftlint lint --strict --reporter github-actions-logging

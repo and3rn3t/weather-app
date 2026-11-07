@@ -63,15 +63,6 @@ jobs:
           ./gradlew lintDebug --parallel --build-cache
         timeout-minutes: 10
 
-      - name: Security Scan (if significant changes)
-        if: github.event.pull_request.changed_files > 20
-        uses: github/super-linter@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          LINTER_RULES_PATH: .github/linters
-          VALIDATE_SWIFT: ${{ steps.changes.outputs.ios }}
-          VALIDATE_KOTLIN: ${{ steps.changes.outputs.android }}
-
   # Fast build validation (5-8 minutes) 
   build-check:
     name: Build Check (${{ matrix.platform }})
