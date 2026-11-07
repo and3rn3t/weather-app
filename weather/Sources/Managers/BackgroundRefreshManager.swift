@@ -100,7 +100,7 @@ class BackgroundRefreshManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.recordAppUsage()
+            MainActor.assumeIsolated { self?.recordAppUsage() }
         }
         
         NotificationCenter.default.addObserver(
@@ -108,7 +108,7 @@ class BackgroundRefreshManager: ObservableObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.scheduleNextOptimalRefresh()
+            MainActor.assumeIsolated { self?.scheduleNextOptimalRefresh() }
         }
     }
     
@@ -210,7 +210,7 @@ class BackgroundRefreshManager: ObservableObject {
             let confidence = Int(topWindow.confidence * 100)
             let timeStr = formatter.string(from: topWindow.estimatedUsage)
             
-            userPatternPrediction = "You typically use the app around (timeStr) ((confidence)% confidence)"
+            userPatternPrediction = "You typically use the app around \(timeStr) (\(confidence)% confidence)"
         }
     }
     
@@ -307,35 +307,30 @@ class BackgroundRefreshManager: ObservableObject {
     }
     
     private func performBackgroundWeatherRefresh(_ task: BGAppRefreshTask) async {
-        do {
-            // Get last known location
-            guard let locationMeta = SharedDataManager.lastKnownLocation() else {
-                logger.warning("No known location for background refresh")
-                task.setTaskCompleted(success: false)
-                return
-            }
-            
-            // Perform weather fetch
-            await weatherService.fetchWeatherData(
-                latitude: locationMeta.latitude, 
-                longitude: locationMeta.longitude, 
-                locationName: locationMeta.name,
-                forceRefresh: true
-            )
-            
-            // Update last refresh time
-            lastBackgroundRefresh = Date()
-            userDefaults.set(lastBackgroundRefresh, forKey: "lastBackgroundRefresh")
-            
-            // Schedule next refresh
-            scheduleNextOptimalRefresh()
-            
-            logger.info("Background refresh completed successfully")
-            task.setTaskCompleted(success: true)
-        } catch {
-            logger.error("Background refresh failed: \(error)")
+        // Get last known location
+        guard let locationMeta = SharedDataManager.lastKnownLocation() else {
+            logger.warning("No known location for background refresh")
             task.setTaskCompleted(success: false)
+            return
         }
+        
+        // Perform weather fetch
+        await weatherService.fetchWeatherData(
+            latitude: locationMeta.latitude, 
+            longitude: locationMeta.longitude, 
+            locationName: locationMeta.name,
+            forceRefresh: true
+        )
+        
+        // Update last refresh time
+        lastBackgroundRefresh = Date()
+        userDefaults.set(lastBackgroundRefresh, forKey: "lastBackgroundRefresh")
+        
+        // Schedule next refresh
+        scheduleNextOptimalRefresh()
+        
+        logger.info("Background refresh completed successfully")
+        task.setTaskCompleted(success: true)
     }
     
     // MARK: - Settings Management

@@ -193,7 +193,7 @@ final class PerformanceTracker {
         
         isMonitoringMemory = true
         memoryPressureTimer = Timer.scheduledTimer(withTimeInterval: 30.0, repeats: true) { [weak self] _ in
-            self?.checkMemoryPressure()
+            MainActor.assumeIsolated { self?.checkMemoryPressure() }
         }
         
         logger.debug("Memory monitoring started")

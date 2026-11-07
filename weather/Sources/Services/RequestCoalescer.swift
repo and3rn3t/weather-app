@@ -25,9 +25,9 @@ actor RequestCoalescer {
     
     // MARK: - Types
     
-    typealias WeatherRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<WeatherData, Error>) -> Void)
-    typealias AirQualityRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<AirQualityData, Error>) -> Void)
-    typealias AlertsRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<[WeatherAlert], Error>) -> Void)
+    typealias WeatherRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<WeatherData, any Error>) -> Void)
+    typealias AirQualityRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<AirQualityData, any Error>) -> Void)
+    typealias AlertsRequest = (latitude: Double, longitude: Double, completion: @Sendable (Result<[WeatherAlert], any Error>) -> Void)
     
     // MARK: - Pending Requests
     
@@ -52,7 +52,7 @@ actor RequestCoalescer {
     func coalesceWeatherRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping @Sendable (Result<WeatherData, Error>) -> Void
+        completion: @escaping @Sendable (Result<WeatherData, any Error>) -> Void
     ) {
         // Check if we have a very similar pending request (within tolerance)
         if let existingIndex = pendingWeatherRequests.firstIndex(where: { request in
@@ -63,7 +63,7 @@ actor RequestCoalescer {
             let existingRequest = pendingWeatherRequests[existingIndex]
             let existingCompletion = existingRequest.completion
             let newCompletion = completion
-            let combinedCompletion: @Sendable (Result<WeatherData, Error>) -> Void = { result in
+            let combinedCompletion: @Sendable (Result<WeatherData, any Error>) -> Void = { result in
                 existingCompletion(result)
                 newCompletion(result)
             }
@@ -82,7 +82,7 @@ actor RequestCoalescer {
         
         // Process batch if we hit the limit or start timer for time-based processing
         if pendingWeatherRequests.count >= Config.maxBatchSize {
-            Task { await processWeatherBatch() }
+            Task { processWeatherBatch() }
         } else if weatherBatchTask == nil {
             startWeatherBatchTimer()
         }
@@ -91,7 +91,7 @@ actor RequestCoalescer {
     private func startWeatherBatchTimer() {
         weatherBatchTask = Task {
             try? await Task.sleep(for: .seconds(Config.coalescingWindow))
-            await processWeatherBatch()
+            processWeatherBatch()
         }
     }
     
@@ -168,7 +168,7 @@ actor RequestCoalescer {
     func coalesceAirQualityRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping @Sendable (Result<AirQualityData, Error>) -> Void
+        completion: @escaping @Sendable (Result<AirQualityData, any Error>) -> Void
     ) {
         // Similar implementation to weather coalescing
         if let existingIndex = pendingAirQualityRequests.firstIndex(where: { request in
@@ -178,7 +178,7 @@ actor RequestCoalescer {
             let existingRequest = pendingAirQualityRequests[existingIndex]
             let existingCompletion = existingRequest.completion
             let newCompletion = completion
-            let combinedCompletion: @Sendable (Result<AirQualityData, Error>) -> Void = { result in
+            let combinedCompletion: @Sendable (Result<AirQualityData, any Error>) -> Void = { result in
                 existingCompletion(result)
                 newCompletion(result)
             }
@@ -193,7 +193,7 @@ actor RequestCoalescer {
         pendingAirQualityRequests.append((latitude, longitude, completion))
         
         if pendingAirQualityRequests.count >= Config.maxBatchSize {
-            Task { await processAirQualityBatch() }
+            Task { processAirQualityBatch() }
         } else if airQualityBatchTask == nil {
             startAirQualityBatchTimer()
         }
@@ -202,7 +202,7 @@ actor RequestCoalescer {
     private func startAirQualityBatchTimer() {
         airQualityBatchTask = Task {
             try? await Task.sleep(for: .seconds(Config.coalescingWindow))
-            await processAirQualityBatch()
+            processAirQualityBatch()
         }
     }
     
@@ -238,7 +238,7 @@ actor RequestCoalescer {
     func coalesceAlertsRequest(
         latitude: Double,
         longitude: Double,
-        completion: @escaping @Sendable (Result<[WeatherAlert], Error>) -> Void
+        completion: @escaping @Sendable (Result<[WeatherAlert], any Error>) -> Void
     ) {
         // Weather alerts are regional, so we can be more aggressive with coalescing
         let regionTolerance = 0.1 // ~11km tolerance for alerts
@@ -250,7 +250,7 @@ actor RequestCoalescer {
             let existingRequest = pendingAlertsRequests[existingIndex]
             let existingCompletion = existingRequest.completion
             let newCompletion = completion
-            let combinedCompletion: @Sendable (Result<[WeatherAlert], Error>) -> Void = { result in
+            let combinedCompletion: @Sendable (Result<[WeatherAlert], any Error>) -> Void = { result in
                 existingCompletion(result)
                 newCompletion(result)
             }
@@ -266,7 +266,7 @@ actor RequestCoalescer {
         pendingAlertsRequests.append((latitude, longitude, completion))
         
         if pendingAlertsRequests.count >= Config.maxBatchSize {
-            Task { await processAlertsBatch() }
+            Task { processAlertsBatch() }
         } else if alertsBatchTask == nil {
             startAlertsBatchTimer()
         }
@@ -275,7 +275,7 @@ actor RequestCoalescer {
     private func startAlertsBatchTimer() {
         alertsBatchTask = Task {
             try? await Task.sleep(for: .seconds(Config.coalescingWindow))
-            await processAlertsBatch()
+            processAlertsBatch()
         }
     }
     

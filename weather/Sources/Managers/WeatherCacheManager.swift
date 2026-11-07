@@ -88,7 +88,7 @@ class WeatherCacheManager: NSObject {
         loadCacheMetadata()
         setupMemoryWarningHandling()
         
-        logger.info("WeatherCacheManager initialized with disk cache at: \\(diskCacheDirectory.path)")
+        logger.info("WeatherCacheManager initialized with disk cache at: \(self.diskCacheDirectory.path)")
     }
     
     private func setupMemoryCache() {
@@ -105,7 +105,7 @@ class WeatherCacheManager: NSObject {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.handleMemoryWarning()
+            MainActor.assumeIsolated { self?.handleMemoryWarning() }
         }
         
         NotificationCenter.default.addObserver(
@@ -128,7 +128,7 @@ class WeatherCacheManager: NSObject {
         // Try memory cache first
         if let cached = memoryCache.object(forKey: key as NSString) {
             updateAccessMetadata(for: key)
-            logger.debug("Cache HIT (memory): \\(key)")
+            logger.debug("Cache HIT (memory): \(key)")
             return cached.value
         }
         
@@ -144,10 +144,10 @@ class WeatherCacheManager: NSObject {
             memoryCache.setObject(WeatherDataBox(weather), forKey: key as NSString, cost: cost)
             
             updateAccessMetadata(for: key)
-            logger.debug("Cache HIT (disk): \\(key)")
+            logger.debug("Cache HIT (disk): \(key)")
             return weather
         } catch {
-            logger.warning("Cache MISS: \\(key) - \\(error.localizedDescription)")
+            logger.warning("Cache MISS: \(key) - \(error.localizedDescription)")
             return nil
         }
     }
@@ -180,12 +180,12 @@ class WeatherCacheManager: NSObject {
                 cacheMetadata[key] = metadata
                 saveCacheMetadata()
                 
-                logger.info("Cached weather data: \\(key) (\\(ByteCountFormatter.string(fromByteCount: Int64(cost), countStyle: .binary)))")
+                logger.info("Cached weather data: \(key) (\(ByteCountFormatter.string(fromByteCount: Int64(cost), countStyle: .binary)))")
                 
                 // Cleanup if over disk limit
                 await cleanupDiskCacheIfNeeded()
             } catch {
-                logger.error("Failed to cache weather data: \\(error)")
+                logger.error("Failed to cache weather data: \(error)")
             }
         }
     }
@@ -204,7 +204,7 @@ class WeatherCacheManager: NSObject {
             // Only warm cache if we don't have recent data
             for location in locations
             where shouldRefreshCache(latitude: location.latitude, longitude: location.longitude) {
-                logger.info("Cache warming for location: (\\(location.latitude), \\(location.longitude))")
+                logger.info("Cache warming for location: (\(location.latitude), \(location.longitude))")
                 // Note: This would typically trigger a background fetch
                 // Implementation depends on your weather service architecture
             }
@@ -232,7 +232,6 @@ class WeatherCacheManager: NSObject {
         logger.info("Running cache cleanup and optimization")
         
         // Remove expired entries
-        let now = Date()
         var expiredKeys: [String] = []
         
         for (key, metadata) in cacheMetadata where metadata.isExpired {
@@ -247,7 +246,7 @@ class WeatherCacheManager: NSObject {
         }
         
         if !expiredKeys.isEmpty {
-            logger.info("Cleaned up \\(expiredKeys.count) expired cache entries")
+            logger.info("Cleaned up \(expiredKeys.count) expired cache entries")
             saveCacheMetadata()
         }
         
@@ -258,7 +257,7 @@ class WeatherCacheManager: NSObject {
         let totalSize = cacheMetadata.values.reduce(0) { $0 + $1.size }
         
         if totalSize > CacheConfig.diskLimit {
-            logger.warning("Disk cache over limit (\\(ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .binary))) - starting cleanup")
+            logger.warning("Disk cache over limit (\(ByteCountFormatter.string(fromByteCount: totalSize, countStyle: .binary))) - starting cleanup")
             
             // Remove least recently used items
             let sortedMetadata = cacheMetadata.values.sorted { $0.lastAccess < $1.lastAccess }
@@ -279,7 +278,7 @@ class WeatherCacheManager: NSObject {
                 removedCount += 1
             }
             
-            logger.info("Cleaned up \\(removedCount) cache entries to free space")
+            logger.info("Cleaned up \(removedCount) cache entries to free space")
             saveCacheMetadata()
         }
     }
@@ -312,7 +311,7 @@ class WeatherCacheManager: NSObject {
         do {
             let data = try Data(contentsOf: metadataURL)
             cacheMetadata = try JSONDecoder().decode([String: CacheMetadata].self, from: data)
-            logger.debug("Loaded cache metadata for \\(cacheMetadata.count) entries")
+            logger.debug("Loaded cache metadata for \(self.cacheMetadata.count) entries")
         } catch {
             logger.info("No existing cache metadata found - starting fresh")
             cacheMetadata = [:]
@@ -326,7 +325,7 @@ class WeatherCacheManager: NSObject {
             let data = try JSONEncoder().encode(cacheMetadata)
             try data.write(to: metadataURL)
         } catch {
-            logger.error("Failed to save cache metadata: \\(error)")
+            logger.error("Failed to save cache metadata: \(error)")
         }
     }
     
@@ -336,7 +335,7 @@ class WeatherCacheManager: NSObject {
         // Round to reasonable precision for cache key
         let lat = String(format: "%.4f", latitude)
         let lon = String(format: "%.4f", longitude)
-        return "weather_\\(lat)_\\(lon)"
+        return "weather_\(lat)_\(lon)"
     }
     
     // MARK: - Statistics
@@ -357,7 +356,7 @@ class WeatherCacheManager: NSObject {
 // MARK: - NSCacheDelegate
 
 extension WeatherCacheManager: NSCacheDelegate {
-    nonisolated func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: AnyObject) {
+    nonisolated func cache(_ cache: NSCache<AnyObject, AnyObject>, willEvictObject obj: Any) {
         // Log eviction for debugging
         Task { @MainActor in
             logger.debug("Memory cache evicting object due to pressure")
@@ -373,7 +372,7 @@ private extension WeatherCacheManager.CacheMetadata {
         case latitude, longitude
     }
     
-    init(from decoder: Decoder) throws {
+    init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         key = try container.decode(String.self, forKey: .key)
         timestamp = try container.decode(Date.self, forKey: .timestamp)
@@ -386,7 +385,7 @@ private extension WeatherCacheManager.CacheMetadata {
         location = (latitude: latitude, longitude: longitude)
     }
     
-    func encode(to encoder: Encoder) throws {
+    func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(key, forKey: .key)
         try container.encode(timestamp, forKey: .timestamp)

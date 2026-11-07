@@ -5,14 +5,14 @@
 //  Created by Matt on 2/5/26.
 //
 
-import ActivityKit
+@preconcurrency import ActivityKit
 import Foundation
 import OSLog
 import SwiftUI
 
 // MARK: - Weather Activity Attributes (shared with widget extension)
 
-struct WeatherActivityAttributes: ActivityAttributes {
+nonisolated struct WeatherActivityAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var temperature: Double
         var weatherCode: Int
