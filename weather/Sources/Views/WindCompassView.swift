@@ -89,7 +89,7 @@ struct WindCompassCard: View {
                 needleAnimated = true
             }
         }
-        .onChange(of: current.windDirection10m) { oldValue, newValue in
+        .onChange(of: current.windDirection10m) { oldValue, _ in
             previousDirection = oldValue
             withAnimation(.spring(response: 0.8, dampingFraction: 0.7)) {
                 // needleAnimated is already true, so the needle will animate to the new direction

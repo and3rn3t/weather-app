@@ -5,10 +5,10 @@
 //  Created by Matt on 2/4/26.
 //
 
-import Foundation
 import CoreLocation
-import OSLog
+import Foundation
 import os.signpost
+import OSLog
 
 // MARK: - Weather Alert (additional model not in WeatherModels)
 
@@ -218,7 +218,6 @@ class WeatherService {
             // Await air quality and alerts completion (already running in parallel)
             await airQualityTask
             await alertsTask
-            
         } catch let error as WeatherError {
             // Record error event
             performanceTracker.recordEvent("weather_fetch_error", parameters: [

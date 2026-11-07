@@ -5,8 +5,8 @@
 //  Created by Matt on 2/5/26.
 //
 
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 // MARK: - Onboarding View
 

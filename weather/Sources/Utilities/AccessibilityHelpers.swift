@@ -11,7 +11,6 @@ import SwiftUI
 
 /// Centralized accessibility labels for weather data
 enum WeatherAccessibility {
-    
     /// Meters per mile conversion factor (shared across the app)
     static let metersPerMile = 1609.34
     

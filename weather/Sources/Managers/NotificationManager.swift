@@ -5,10 +5,10 @@
 //  Created by Matt on 2/5/26.
 //
 
-import Foundation
-import UserNotifications
 import CoreLocation
+import Foundation
 import OSLog
+import UserNotifications
 
 @Observable
 class NotificationManager: NSObject {

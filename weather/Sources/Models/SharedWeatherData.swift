@@ -9,8 +9,8 @@
 //
 
 import Foundation
-import OSLog
 import os.signpost
+import OSLog
 
 // MARK: - App Group Identifier
 
@@ -221,4 +221,3 @@ class SharedDataManager {
 // MARK: - Widget Center Helper
 
 import WidgetKit
-
