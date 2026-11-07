@@ -62,7 +62,7 @@ jobs:
           exit 0
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # Fetch more history for better caching
           fetch-depth: 10
@@ -88,7 +88,7 @@ jobs:
 
       # Multi-tier caching strategy
       - name: Primary Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
@@ -102,7 +102,7 @@ jobs:
             ios-build-
 
       - name: Tool Cache (xcbeautify, etc.)
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Caches/Homebrew
@@ -225,7 +225,7 @@ jobs:
       # Smart artifact management
       - name: Upload Test Results
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.device }}-${{ matrix.suite }}
           path: |
@@ -262,7 +262,7 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
@@ -284,7 +284,7 @@ jobs:
           echo "::warning::iPhone 16 Pro simulator is not listed"
 
       - name: Release Build Cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: |
             ~/Library/Developer/Xcode/DerivedData
