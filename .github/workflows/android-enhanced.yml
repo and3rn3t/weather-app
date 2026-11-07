@@ -73,7 +73,7 @@ jobs:
   # Fast feedback loop (lint + quick compile)
   quick-check:
     name: Quick Check
-    runs-on: ubuntu-latest-4-cores
+    runs-on: ubuntu-latest  # standard runner: a "-4-cores" larger runner is not provisioned for this repo, so the job never started
     needs: changes
     timeout-minutes: 8
 
@@ -118,7 +118,7 @@ jobs:
   # Matrix build and test strategy
   test-matrix:
     name: Test (${{ matrix.variant }}, API ${{ matrix.api-level }})
-    runs-on: ubuntu-latest-8-cores  # More cores for parallel testing
+    runs-on: ubuntu-latest  # standard runner (the "-8-cores" larger runner is not provisioned for this repo)
     needs: [changes, quick-check]
     timeout-minutes: 30
 
