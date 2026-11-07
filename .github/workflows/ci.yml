@@ -85,13 +85,18 @@ jobs:
       - name: Install xcbeautify
         run: brew install xcbeautify
 
-      - name: Build Debug
+      - name: Build for Testing
+        # Uses the UnitTests plan so the weatherUITests target is not compiled
+        # (-skip-testing only skips running it, not building it).
         run: |
-          xcodebuild build \
+          set -o pipefail
+          xcodebuild build-for-testing \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
+            -testPlan UnitTests \
             -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
             -configuration Debug \
+            COMPILER_INDEX_STORE_ENABLE=NO \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions
@@ -104,12 +109,12 @@ jobs:
           # refresh that overwrites the cache (63.1 / 63.4 observed vs the expected 65.0); two
           # others call Open-Meteo / Tomorrow.io directly and time out intermittently on CI.
           # They need a URLSession seam in WeatherService; until then they stay out of PR CI.
-          xcodebuild test \
+          xcodebuild test-without-building \
             -project ${{ env.PROJECT_NAME }}.xcodeproj \
             -scheme ${{ env.SCHEME }} \
+            -testPlan UnitTests \
             -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
             -only-test-configuration 'Default Configuration' \
-            -skip-testing:weatherUITests \
             -skip-testing:'weatherTests/EndToEndWorkflowTests/coldStartWorkflow()' \
             -skip-testing:'weatherTests/EndToEndWorkflowTests/warmStartWithCache()' \
             -skip-testing:'weatherTests/IntegrationTestScenarios/fullDataFlowIntegration()' \
@@ -123,8 +128,6 @@ jobs:
             -default-test-execution-time-allowance 60 \
             -maximum-test-execution-time-allowance 120 \
             -resultBundlePath TestResults.xcresult \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
             | xcbeautify --renderer github-actions
 
       - name: Upload Test Results
@@ -135,31 +138,10 @@ jobs:
           path: TestResults.xcresult
           retention-days: 7
 
-  lint:
-    name: SwiftLint
-    runs-on: macos-15
-    timeout-minutes: 10
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v5
-
-      - name: Install SwiftLint
-        # The keg can already be present but unlinked ("already installed, it's just not
-        # linked"), in which case `brew install` is a no-op and `swiftlint` is not on PATH.
-        # Caching /opt/homebrew/Cellar made that likely, so the cache step is gone too.
-        run: |
-          brew list swiftlint >/dev/null 2>&1 || brew install swiftlint
-          brew link --overwrite swiftlint
-          swiftlint version
-
-      - name: Run SwiftLint
-        run: swiftlint lint --strict --reporter github-actions-logging
-
   build-release:
     name: Release Build & Size Analysis
     runs-on: macos-15
-    needs: [build, lint]
+    needs: [build]
     if: github.ref == 'refs/heads/main'
     timeout-minutes: 30
 

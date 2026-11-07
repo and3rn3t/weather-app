@@ -35,6 +35,9 @@
             reference = "container:weather.xcodeproj/xcshareddata/TestPlans/WeatherTestPlan.xctestplan"
             default = "YES">
          </TestPlanReference>
+         <TestPlanReference
+            reference = "container:weather.xcodeproj/xcshareddata/TestPlans/UnitTests.xctestplan">
+         </TestPlanReference>
       </TestPlans>
       <Testables>
          <TestableReference
