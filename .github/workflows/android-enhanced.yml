@@ -1,5 +1,6 @@
-# Optimized Android CI/CD
-# Matrix builds, advanced caching, and smart test execution
+# Optimized Android CI/CD (main + manual)
+# Matrix builds across API levels and variants. android.yml covers lint, unit tests and
+# the debug build on every PR, so this heavier matrix runs on main and on demand.
 
 name: Android Enhanced
 
@@ -9,10 +10,7 @@ on:
     paths:
       - 'android-app/**'
       - '.github/workflows/android-enhanced.yml'
-  pull_request:
-    branches: [main]
-    paths:
-      - 'android-app/**'
+  workflow_dispatch:
 
 concurrency:
   group: android-enhanced-${{ github.ref }}
@@ -48,6 +46,8 @@ jobs:
         id: changes
         uses: dorny/paths-filter@v4
         with:
+          # paths-filter needs a base ref outside push/pull_request events
+          base: ${{ github.event_name == 'workflow_dispatch' && 'main' || '' }}
           filters: |
             app-code:
               - 'android-app/app/src/main/**'
@@ -361,7 +361,7 @@ jobs:
     name: Security Analysis  
     runs-on: ubuntu-latest
     needs: changes
-    if: needs.changes.outputs.gradle-config == 'true' || github.event_name == 'push'
+    if: needs.changes.outputs.gradle-config == 'true' || github.event_name != 'pull_request'
     timeout-minutes: 10
 
     steps:
