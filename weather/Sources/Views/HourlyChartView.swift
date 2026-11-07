@@ -628,14 +628,14 @@ private extension Array {
     }
 }
 
+// MARK: - Preview Helper
+
+#if DEBUG
 #Preview {
     HourlyChartView(weatherData: WeatherData.preview)
         .environment(SettingsManager())
 }
 
-// MARK: - Preview Helper
-
-#if DEBUG
 private extension WeatherData {
     static var preview: WeatherData {
         // Create sample data for preview
