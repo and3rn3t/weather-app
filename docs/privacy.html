@@ -13,16 +13,16 @@
             padding: 20px;
             color: #333;
         }
-        h1 { color: #667eea; margin-top: 40px; }
+        h1 { color: #4f5fc1; margin-top: 40px; }
         h2 { color: #764ba2; margin-top: 30px; }
-        h3 { color: #667eea; margin-top: 20px; }
-        a { color: #667eea; }
+        h3 { color: #4f5fc1; margin-top: 20px; }
+        a { color: #4f5fc1; }
         ul, ol { margin-left: 20px; }
         li { margin: 8px 0; }
         .back-link {
             display: inline-block;
             margin-bottom: 20px;
-            color: #667eea;
+            color: #4f5fc1;
             text-decoration: none;
         }
     </style>
@@ -43,8 +43,8 @@
         <li><strong>Type:</strong> Precise Location (latitude/longitude)</li>
         <li><strong>Purpose:</strong> Fetch weather data for your area</li>
         <li><strong>Collection:</strong> Only when app is in use (foreground and background)</li>
-        <li><strong>Storage:</strong> Stored locally on your device only</li>
-        <li><strong>Sharing:</strong> Not shared with third parties</li>
+        <li><strong>Storage:</strong> Kept on your device (cached with recent weather so it can be shown offline)</li>
+        <li><strong>Sharing:</strong> Coordinates are sent to the weather providers listed under Third-Party Services to fetch forecasts. They are not sold or used for advertising or tracking</li>
         <li><strong>Linked to You:</strong> No - location data is not linked to your identity</li>
     </ul>
     
@@ -52,7 +52,7 @@
     <p>We retrieve weather information from the Open-Meteo API (<a href="https://open-meteo.com" target="_blank">https://open-meteo.com</a>) based on your location coordinates.</p>
     <ul>
         <li><strong>API Provider:</strong> Open-Meteo (open-source, free weather API)</li>
-        <li><strong>Data Sent:</strong> Only geographic coordinates (latitude/longitude)</li>
+        <li><strong>Data Sent:</strong> Geographic coordinates (latitude/longitude) of the locations you view; no name, email or account</li>
         <li><strong>No Account Required:</strong> The weather API does not require registration or tracking</li>
     </ul>
     
@@ -75,21 +75,21 @@
         <li>Display weather on widgets and Live Activities</li>
         <li>Send weather notifications (if you enable them)</li>
     </ol>
-    <p>All data processing happens locally on your device.</p>
+    <p>Your favorites, settings and cache are stored on your device. Forecasts are produced by the third-party providers below, which receive the coordinates you request; they do not receive your identity.</p>
     
     <h2>Third-Party Services</h2>
     <h3>Open-Meteo Weather API</h3>
     <ul>
         <li><strong>Website:</strong> <a href="https://open-meteo.com" target="_blank">https://open-meteo.com</a></li>
         <li><strong>Privacy:</strong> Open-source, no tracking, no API key required</li>
-        <li><strong>Data Sent:</strong> Only coordinates (no personal information)</li>
+        <li><strong>Data Sent:</strong> Coordinates (no personal information)</li>
         <li><strong>Data Received:</strong> Public weather information</li>
     </ul>
 
     <h3>National Weather Service (api.weather.gov)</h3>
     <ul>
         <li><strong>Purpose:</strong> Severe weather alerts (US locations only)</li>
-        <li><strong>Data Sent:</strong> Only coordinates (no personal information)</li>
+        <li><strong>Data Sent:</strong> Coordinates (no personal information)</li>
     </ul>
 
     <h3>RainViewer (api.rainviewer.com)</h3>
@@ -98,10 +98,10 @@
         <li><strong>Data Sent:</strong> Map tile requests for the area you view (no personal information)</li>
     </ul>
 
-    <h3>Tomorrow.io (optional)</h3>
+    <h3>Tomorrow.io (pollen data)</h3>
     <ul>
-        <li><strong>Purpose:</strong> Pollen and additional forecast data, only if you enter your own API key in Settings</li>
-        <li><strong>Data Sent:</strong> Coordinates and your API key</li>
+        <li><strong>Purpose:</strong> Pollen forecasts. For locations in Europe, the app requests this automatically when you view the pollen card, using an API key built into the app (you can supply your own key in Settings)</li>
+        <li><strong>Data Sent:</strong> Coordinates of the location you are viewing and the API key (no personal information)</li>
     </ul>
     
     <h2>Your Rights</h2>

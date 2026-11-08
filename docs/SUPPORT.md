@@ -19,10 +19,10 @@ A: Yes, completely free with no ads, in-app purchases, or subscriptions.
 A: iOS 17.0 or later. The app is designed for iOS 26 with Liquid Glass effects.
 
 **Q: Does it work offline?**
-A: Weather data is cached for up to 1 hour, so you can view recent forecasts offline. New data requires an internet connection.
+A: Recently loaded forecasts are cached on your device, so you can often view them offline. New data requires an internet connection.
 
 **Q: Where does the weather data come from?**
-A: We use Open-Meteo, a free, open-source weather API with accurate global forecasts.
+A: Forecasts come from Open-Meteo, a free, open-source weather API. US severe-weather alerts come from the National Weather Service, radar tiles from RainViewer, and pollen data (Europe) from Tomorrow.io.
 
 ### Location & Privacy
 
@@ -30,7 +30,7 @@ A: We use Open-Meteo, a free, open-source weather API with accurate global forec
 A: To provide accurate weather forecasts for your current area. Location is only used for weather data.
 
 **Q: Is my location tracked or shared?**
-A: No. Location is used only to fetch weather from the Open-Meteo API. We don't track, store, or share your location.
+A: We don't track you or sell your location. To get a forecast, the app sends the coordinates of the place you are viewing to its weather providers (Open-Meteo, plus the National Weather Service for US alerts, RainViewer for radar and Tomorrow.io for pollen in Europe). The app also caches coordinates with recent weather on your device so it can show them offline. See the [Privacy Policy](PRIVACY_POLICY.md) for details.
 
 **Q: Can I use the app without location services?**
 A: Yes! Search for any city manually or save favorite locations.
@@ -134,7 +134,7 @@ A: This is a bug! Please report via TestFlight with steps to reproduce.
 A: Yes, if you use the same Apple ID. Favorites and settings persist.
 
 **Q: Can I install both TestFlight and App Store versions?**
-A: No, they share the same bundle ID. Uninstall beta before installing from App Store.
+A: No, they share the same bundle ID, so only one can be installed at a time. Install the App Store version over the beta without deleting the app first, so your favorites and settings are kept.
 
 ### Known Issues
 
@@ -182,9 +182,9 @@ See our [Privacy Policy](PRIVACY_POLICY.md) for complete details.
 
 **TLDR:**
 
-- Location used only for weather (not tracked/shared)
+- Location used only for weather; coordinates are sent to weather providers, not tracked or sold
 - No advertising or analytics
-- Data stored locally on your device
+- Favorites, settings and cached weather are stored on your device
 - No account required
 
 ## Credits

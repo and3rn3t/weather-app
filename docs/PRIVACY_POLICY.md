@@ -13,8 +13,8 @@ The app collects your device's precise location to provide accurate weather fore
 - **Type:** Precise Location (latitude/longitude)
 - **Purpose:** Fetch weather data for your area
 - **Collection:** Only when app is in use (foreground and background)
-- **Storage:** Stored locally on your device only
-- **Sharing:** Not shared with third parties
+- **Storage:** Kept on your device (cached with recent weather so it can be shown offline)
+- **Sharing:** Coordinates are sent to the weather providers listed under Third-Party Services to fetch forecasts. They are not sold or used for advertising or tracking
 - **Linked to You:** No - location data is not linked to your identity
 
 ### Weather Data
@@ -22,7 +22,7 @@ The app collects your device's precise location to provide accurate weather fore
 We retrieve weather information from the Open-Meteo API (<https://open-meteo.com>) based on your location coordinates.
 
 - **API Provider:** Open-Meteo (open-source, free weather API)
-- **Data Sent:** Only geographic coordinates (latitude/longitude)
+- **Data Sent:** Geographic coordinates (latitude/longitude) of the locations you view; no name, email or account
 - **No Account Required:** The weather API does not require registration or tracking
 
 ### Saved Locations (Favorites)
@@ -60,7 +60,7 @@ Your location is used solely to:
 3. Display weather on widgets and Live Activities
 4. Send weather notifications (if you enable them)
 
-All data processing happens locally on your device.
+Your favorites, settings and cache are stored on your device. Forecasts are produced by the third-party providers below, which receive the coordinates you request; they do not receive your identity.
 
 ## Third-Party Services
 
@@ -70,8 +70,23 @@ We use Open-Meteo's free weather API to retrieve forecast data.
 
 - **Website:** <https://open-meteo.com>
 - **Privacy:** Open-source, no tracking, no API key required
-- **Data Sent:** Only coordinates (no personal information)
+- **Data Sent:** Coordinates (no personal information)
 - **Data Received:** Public weather information
+
+### National Weather Service (api.weather.gov)
+
+- **Purpose:** Severe weather alerts (US locations only)
+- **Data Sent:** Coordinates (no personal information)
+
+### RainViewer (api.rainviewer.com)
+
+- **Purpose:** Animated radar map tiles
+- **Data Sent:** Map tile requests for the area you view (no personal information)
+
+### Tomorrow.io (pollen data)
+
+- **Purpose:** Pollen forecasts. For locations in Europe, the app requests this automatically when you view the pollen card, using an API key built into the app (you can supply your own key in Settings)
+- **Data Sent:** Coordinates of the location you are viewing and the API key (no personal information)
 
 ### Apple Services
 
@@ -96,10 +111,10 @@ If you enable "Always Allow" location access, the app can:
 
 ## Data Retention
 
-- **Location Data:** Not stored permanently; used only to fetch weather
+- **Location Data:** Your current location is not kept as a history; coordinates are cached on your device together with recent weather
 - **Favorites:** Stored until you delete them
 - **Settings:** Stored until you delete the app
-- **Weather Cache:** Automatically cleared after 1 hour
+- **Weather Cache:** Stored on your device so recent forecasts can be shown offline. Expired entries are removed during periodic cleanup, and widget data is kept until it is replaced or you delete the app
 
 ## Your Rights
 
