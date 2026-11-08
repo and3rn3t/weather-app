@@ -1,8 +1,8 @@
 # Weather App 🌤️
 
-A beautiful, feature-rich weather application built with SwiftUI for iOS 17+. Features real-time weather data, interactive charts, location services, favorites management, and widgets.
+A beautiful, feature-rich weather application built with SwiftUI for iOS 26+. Features real-time weather data, interactive charts, location services, favorites management, and widgets.
 
-![iOS](https://img.shields.io/badge/iOS-17.0%2B-blue)
+![iOS](https://img.shields.io/badge/iOS-26.0%2B-blue)
 ![Swift](https://img.shields.io/badge/Swift-5.9%2B-orange)
 ![SwiftUI](https://img.shields.io/badge/SwiftUI-5.0-green)
 ![License](https://img.shields.io/badge/License-MIT-yellow)
@@ -27,9 +27,9 @@ A beautiful, feature-rich weather application built with SwiftUI for iOS 17+. Fe
 
 ### Requirements
 
-- **macOS**: Ventura 14.0+
-- **Xcode**: 15.0+
-- **iOS**: 17.0+
+- **macOS**: 15.6+ (Tahoe 26 recommended)
+- **Xcode**: 26.0+
+- **iOS**: 26.0+
 - **Swift**: 5.9+
 
 ### Installation

@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-**Weather App** - A feature-rich iOS weather application built with SwiftUI for iOS 17+. Uses Open-Meteo API for weather data (no API key required).
+**Weather App** - A feature-rich iOS weather application built with SwiftUI for iOS 26+. Uses Open-Meteo API for weather data (no API key required).
 
 ## Quick Reference
 
@@ -10,7 +10,7 @@
 |--------|---------|
 | Language | Swift 5.9+ |
 | UI Framework | SwiftUI 5.0 |
-| iOS Target | 17.0+ |
+| iOS Target | 26.0+ |
 | Architecture | MVVM + Observable |
 | Data Storage | SwiftData |
 | Charts | Swift Charts |
@@ -42,7 +42,6 @@ weather/
 │   └── Utilities/
 │       ├── GlassEffects.swift         # Visual effects
 │       └── WeatherParticleEffects.swift # Animations
-├── Documentation/                      # Feature docs
 └── Assets.xcassets/                   # Resources
 ```
 
@@ -134,10 +133,10 @@ final class WeatherService {
 - **Severity Levels**: Extreme, Severe, Moderate, Minor
 - **Integration**: Alerts automatically fetched with weather data
 
-### Weather Radar Map (ENHANCED)
+### Weather Radar Map (Android)
 
-- **View**: `RadarMapView.swift`
-- **Service**: `RainViewerService.swift`
+- **iOS**: no RainViewer integration; `WeatherMapView.swift` is the map view
+- **Android**: `RainViewerApiService.kt`
 - **Integration**: RainViewer API for animated radar tiles
 - **Features**: Interactive map with precipitation overlay, animation controls
 
@@ -155,7 +154,7 @@ final class WeatherService {
 2. Add models to `Sources/Models/` if needed
 3. Create views in `Sources/Views/`
 4. Update navigation in `ContentView.swift`
-5. Document in `Documentation/CHANGELOG.md`
+5. Document the change in the PR description (release notes are drafted by release-drafter)
 
 ### Modifying Existing Features
 
@@ -230,12 +229,6 @@ The project includes comprehensive CI/CD automation:
 - **Stale Management** (`stale.yml`) - Auto-close inactive issues
 - **Changelog** (`changelog.yml`) - Automatic changelog generation
 
-#### Fastlane
-
-- **iOS**: `fastlane ios beta` - TestFlight deployment
-- **Android**: `fastlane android beta` - Play Store beta deployment
-- **Configuration**: `fastlane/Fastfile`, `fastlane/Appfile`
-
 #### Runner Cost Optimizations
 
 - Reduced iOS test matrix from 3 devices to 2 (33% savings)
@@ -249,7 +242,7 @@ This is a **cross-platform project** with both iOS and Android implementations:
 
 **iOS** (main directory):
 
-- Swift 5.9+, SwiftUI, iOS 17.0+
+- Swift 5.9+, SwiftUI, iOS 26.0+
 - MVVM + Observable pattern
 - SwiftData, URLSession, CoreLocation
 
@@ -377,13 +370,12 @@ The codebase follows these performance patterns:
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Documentation index |
-| `QUICK_START.md` | Getting started, build commands |
-| `FEATURES.md` | App features and functionality |
-| `BUILD_CONFIGURATION.md` | Xcode settings, schemes, diagnostics |
-| `AI_DEVELOPMENT_GUIDE.md` | AI assistant instructions |
-| `APP_STORE_GUIDE.md` | App Store metadata |
-| `CHANGELOG.md` | Version history |
+| `README.md` | Overview, setup, build commands |
+| `CONTRIBUTING.md` | Contribution workflow |
+| `SECURITY.md` | Vulnerability reporting |
+| `docs/SUPPORT.md` | User-facing FAQ |
+| `docs/PRIVACY_POLICY.md` | Privacy policy |
+| `.github/CI_CD_GUIDE.md` | CI/CD pipeline guide |
 
 ## Restrictions
 

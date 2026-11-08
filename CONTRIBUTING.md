@@ -19,9 +19,9 @@ Thank you for your interest in contributing to the Weather App! This document pr
 
 ### Prerequisites
 
-- **macOS**: Ventura 14.0 or later
-- **Xcode**: 15.0 or later
-- **iOS Device/Simulator**: iOS 17.0 or later
+- **macOS**: 15.6 or later (Tahoe 26 recommended)
+- **Xcode**: 26.0 or later
+- **iOS Device/Simulator**: iOS 26.0 or later
 - **Git**: Latest version
 
 ### Setup
@@ -353,7 +353,7 @@ test(service): add WeatherService unit tests
 - [ ] Tests pass on simulator
 - [ ] Documentation updated (if needed)
 - [ ] No new compiler warnings
-- [ ] Tested on iOS 17 simulator
+- [ ] Tested on iOS 26 simulator
 
 ### PR Template
 

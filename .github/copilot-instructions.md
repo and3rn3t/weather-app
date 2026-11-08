@@ -2,13 +2,13 @@
 
 ## Project Overview
 
-This is a SwiftUI weather application for iOS 17+ featuring real-time weather data, interactive charts, location services, favorites management, and widgets. The app uses modern Swift patterns including `@Observable`, async/await, and SwiftData.
+This is a SwiftUI weather application for iOS 26+ featuring real-time weather data, interactive charts, location services, favorites management, and widgets. The app uses modern Swift patterns including `@Observable`, async/await, and SwiftData.
 
 ## Technology Stack
 
 - **Language**: Swift 5.9+
 - **UI Framework**: SwiftUI 5.0
-- **Minimum iOS**: 17.0
+- **Minimum iOS**: 26.0
 - **Data Persistence**: SwiftData
 - **Charts**: Swift Charts
 - **Location**: CoreLocation, MapKit
@@ -359,7 +359,7 @@ The project includes comprehensive CI/CD automation:
 This is a **cross-platform project** with both iOS and Android implementations:
 
 ### iOS (This Codebase)
-- Swift 5.9+, SwiftUI, iOS 17.0+
+- Swift 5.9+, SwiftUI, iOS 26.0+
 - Architecture: MVVM + Observable
 - Data: SwiftData, URLSession
 - Location: CoreLocation
