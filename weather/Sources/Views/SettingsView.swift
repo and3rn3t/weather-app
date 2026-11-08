@@ -133,10 +133,8 @@ struct SettingsView: View {
                         Toggle(isOn: $settings.dailyForecastEnabled) {
                             Label("Daily Forecast", systemImage: "calendar")
                         }
-                        .onChange(of: settings.dailyForecastEnabled) { _, enabled in
-                            if !enabled {
-                                notifications.cancelDailyForecast()
-                            }
+                        .onChange(of: settings.dailyForecastEnabled) { _, _ in
+                            Task { await notifications.preferencesChanged(NotificationPreferences(settings: settings)) }
                         }
                         
                         if settings.dailyForecastEnabled {
@@ -146,6 +144,9 @@ struct SettingsView: View {
                                 displayedComponents: .hourAndMinute
                             )
                             .labelsHidden()
+                            .onChange(of: settings.notificationTime) { _, _ in
+                                Task { await notifications.preferencesChanged(NotificationPreferences(settings: settings)) }
+                            }
                         }
                         
                         Toggle(isOn: $settings.severeWeatherAlertsEnabled) {

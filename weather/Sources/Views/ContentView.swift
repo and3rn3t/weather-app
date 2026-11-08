@@ -32,7 +32,7 @@ struct ContentView: View {
     @State private var lastLocationFetchTime: Date?
 
     @Environment(SettingsManager.self) private var settings
-    @State private var notificationManager: NotificationManager?
+    @Environment(NotificationManager.self) private var notificationManager
     @State private var liveActivityManager: LiveActivityManager?
     @State private var hasLoggedFirstData = false
     @Environment(ThemeManager.self) private var themeManager
@@ -230,7 +230,7 @@ struct ContentView: View {
                 }
             }
             .sheet(isPresented: $showingSettings) {
-                SettingsView(settings: settings, notifications: ensureNotificationManager())
+                SettingsView(settings: settings, notifications: notificationManager)
             }
             .sheet(isPresented: $showingFavorites) {
                 if let favManager = favoritesManager {
@@ -423,17 +423,6 @@ struct ContentView: View {
     }
     
     // MARK: - Lazy Manager Helpers
-    
-    /// Lazily create NotificationManager only when settings sheet opens
-    private func ensureNotificationManager() -> NotificationManager {
-        if let existing = notificationManager {
-            return existing
-        }
-        let manager = NotificationManager()
-        manager.checkAuthorizationStatus()
-        notificationManager = manager
-        return manager
-    }
     
     /// Lazily create LiveActivityManager only when Live Activities are needed
     @discardableResult
