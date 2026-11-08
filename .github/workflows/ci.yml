@@ -130,17 +130,17 @@ jobs:
 
       - name: Run Tests
         run: |
-          set -o pipefail  # without it a failing xcodebuild is masked by xcbeautify's exit status
+          # The script watches for the test host failing to start (it intermittently never
+          # connects on hosted runners, costing minutes or hanging) and retries after resetting
+          # the simulator. It sets the test plan, destination and result bundle itself.
+          #
           # Skipped: tests that depend on live network. Four of them cache mock data in
           # SharedDataManager and assert on it, but WeatherService() also fires a real Open-Meteo
           # refresh that overwrites the cache (63.1 / 63.4 observed vs the expected 65.0); two
           # others call Open-Meteo / Tomorrow.io directly and time out intermittently on CI.
           # They need a URLSession seam in WeatherService; until then they stay out of PR CI.
-          xcodebuild test-without-building \
-            -project ${{ env.PROJECT_NAME }}.xcodeproj \
-            -scheme ${{ env.SCHEME }} \
-            -testPlan UnitTests \
-            -destination 'platform=iOS Simulator,name=${{ matrix.device }}' \
+          PROJECT=${{ env.PROJECT_NAME }}.xcodeproj SCHEME=${{ env.SCHEME }} \
+          .github/scripts/run-ios-unit-tests.sh '${{ matrix.device }}' \
             -only-test-configuration 'Default Configuration' \
             -skip-testing:'weatherTests/EndToEndWorkflowTests/coldStartWorkflow()' \
             -skip-testing:'weatherTests/EndToEndWorkflowTests/warmStartWithCache()' \
@@ -153,9 +153,7 @@ jobs:
             -parallel-testing-enabled NO \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 60 \
-            -maximum-test-execution-time-allowance 120 \
-            -resultBundlePath TestResults.xcresult \
-            | xcbeautify --renderer github-actions
+            -maximum-test-execution-time-allowance 120
 
       - name: Collect simulator log
         # Diagnostic: the test host takes minutes to launch on CI but seconds locally.
