@@ -77,7 +77,6 @@ Labels are automatically added based on changed files:
 | iOS Build & Test | ~15 min | macOS-15 | $1.20 |
 | Android Build & Test | ~10 min | ubuntu | $0.08 |
 | Code Coverage | ~20 min | mixed | $1.30 |
-| Nightly Build | ~45 min | mixed | $4.00 |
 
 ## 🔍 Debugging Failed Workflows
 
