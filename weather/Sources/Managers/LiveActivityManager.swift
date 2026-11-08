@@ -5,10 +5,10 @@
 //  Created by Matt on 2/5/26.
 //
 
-import Foundation
 import ActivityKit
-import SwiftUI
+import Foundation
 import OSLog
+import SwiftUI
 
 // MARK: - Weather Activity Attributes (shared with widget extension)
 

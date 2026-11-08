@@ -199,7 +199,7 @@ struct UnifiedPollenData {
     let weedLevels: [Double]
     
     /// Convert Tomorrow.io data to unified format
-    static func from(tomorrowIO data: TomorrowIOPollenData) -> UnifiedPollenData? {
+    static func from(tomorrowIO data: TomorrowIOPollenData) -> Self? {
         guard let timeline = data.data.timelines.first else { return nil }
         
         var dates: [String] = []
@@ -215,7 +215,7 @@ struct UnifiedPollenData {
             weedLevels.append((interval.values.weedIndex ?? 0) * 25)
         }
         
-        return UnifiedPollenData(
+        return Self(
             dates: dates,
             grassLevels: grassLevels,
             treeLevels: treeLevels,
@@ -224,10 +224,10 @@ struct UnifiedPollenData {
     }
     
     /// Convert Open-Meteo data to unified format
-    static func from(openMeteo data: PollenData) -> UnifiedPollenData? {
+    static func from(openMeteo data: PollenData) -> Self? {
         guard let hourly = data.hourly else { return nil }
         
-        return UnifiedPollenData(
+        return Self(
             dates: hourly.time,
             grassLevels: hourly.grassPollen ?? [],
             treeLevels: hourly.birchPollen ?? [], // Use birch as tree representative

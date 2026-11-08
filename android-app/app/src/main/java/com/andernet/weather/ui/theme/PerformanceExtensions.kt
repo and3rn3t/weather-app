@@ -12,6 +12,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import com.andernet.weather.utils.PerformanceMonitor
+import com.andernet.weather.utils.measurePerformance
 import dagger.hilt.android.EntryPointAccessors
 
 /**

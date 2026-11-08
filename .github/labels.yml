@@ -5,99 +5,107 @@
 # ---- Types ----
 
 - name: bug
-  color: "d73a4a"
+  color: 'd73a4a'
   description: Something isn't working
 
+- name: breaking
+  color: 'b60205'
+  description: Breaking change (major version bump)
+
 - name: feature
-  color: "0e8a16"
+  color: '0e8a16'
   description: New feature request
 
 - name: enhancement
-  color: "a2eeef"
+  color: 'a2eeef'
   description: Improvement to existing functionality
 
 - name: documentation
-  color: "0075ca"
+  color: '0075ca'
   description: Documentation additions or updates
 
 - name: question
-  color: "d876e3"
+  color: 'd876e3'
   description: Further information is requested
 
 - name: refactor
-  color: "c5def5"
+  color: 'c5def5'
   description: Code restructuring with no behavior change
 
+- name: chore
+  color: 'fef2c0'
+  description: Maintenance, CI, build or tooling
+
 - name: security
-  color: "e11d48"
+  color: 'e11d48'
   description: Security-related issue or improvement
 
 - name: performance
-  color: "f9d0c4"
+  color: 'f9d0c4'
   description: Performance improvement or issue
 
 - name: dependencies
-  color: "0366d6"
+  color: '0366d6'
   description: Dependency updates
 
 # ---- Status ----
 
 - name: needs-triage
-  color: "fbca04"
+  color: 'fbca04'
   description: Awaiting initial review and categorization
 
 - name: in-progress
-  color: "1d76db"
+  color: '1d76db'
   description: Actively being worked on
 
 - name: blocked
-  color: "b60205"
+  color: 'b60205'
   description: Blocked by another issue or external factor
 
 - name: wontfix
-  color: "e4e669"
+  color: 'e4e669'
   description: This will not be worked on
 
 - name: duplicate
-  color: "cfd3d7"
+  color: 'cfd3d7'
   description: This issue or PR already exists
 
 # ---- Priority ----
 
-- name: "priority: critical"
-  color: "b60205"
+- name: 'priority: critical'
+  color: 'b60205'
   description: Must be fixed immediately
 
-- name: "priority: high"
-  color: "d93f0b"
+- name: 'priority: high'
+  color: 'd93f0b'
   description: Should be addressed soon
 
-- name: "priority: medium"
-  color: "fbca04"
+- name: 'priority: medium'
+  color: 'fbca04'
   description: Normal priority
 
-- name: "priority: low"
-  color: "0e8a16"
+- name: 'priority: low'
+  color: '0e8a16'
   description: Nice to have, no rush
 
 # ---- Size (estimated effort) ----
 
-- name: "size: xs"
-  color: "ededed"
-  description: "Trivial change (< 30 min)"
+- name: 'size: xs'
+  color: 'ededed'
+  description: 'Trivial change (< 30 min)'
 
-- name: "size: s"
-  color: "d4c5f9"
-  description: "Small change (a few hours)"
+- name: 'size: s'
+  color: 'd4c5f9'
+  description: 'Small change (a few hours)'
 
-- name: "size: m"
-  color: "bfd4f2"
-  description: "Medium change (a day or two)"
+- name: 'size: m'
+  color: 'bfd4f2'
+  description: 'Medium change (a day or two)'
 
-- name: "size: l"
-  color: "c2e0c6"
-  description: "Large change (several days)"
+- name: 'size: l'
+  color: 'c2e0c6'
+  description: 'Large change (several days)'
 
-- name: "size: xl"
-  color: "f9d0c4"
-  description: "Very large change (a week+)"
+- name: 'size: xl'
+  color: 'f9d0c4'
+  description: 'Very large change (a week+)'

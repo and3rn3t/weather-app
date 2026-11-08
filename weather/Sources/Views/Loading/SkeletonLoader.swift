@@ -5,8 +5,8 @@
 //  Progressive loading states with animated skeleton placeholders
 //
 
-import SwiftUI
 import Combine
+import SwiftUI
 
 // MARK: - Skeleton Loading Views
 

@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Stable
 import com.andernet.weather.data.model.WeatherData
 import com.squareup.moshi.Moshi
+import com.squareup.moshi.Types
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -69,6 +70,14 @@ class WeatherCacheManager @Inject constructor(
             get() = isStale // Simplified - could add network type detection
     }
     
+    // Must be declared before `init`: loadMetadata() uses it during construction, and Kotlin
+    // initializes properties and init blocks in declaration order.
+    private val metadataType = Types.newParameterizedType(
+        Map::class.java,
+        String::class.java,
+        CacheMetadata::class.java
+    )
+
     init {
         cacheDir.mkdirs()
         loadMetadata()
@@ -219,7 +228,7 @@ class WeatherCacheManager @Inject constructor(
             memoryItems = memoryCache.size,
             diskItems = cacheMetadata.size,
             memorySize = totalMemorySize / (1024 * 1024), // MB
-            diskSize = totalDiskSize / (1024 * 1024) // MB
+            diskSize = (totalDiskSize / (1024 * 1024)).toInt() // MB
         )
     }
     
@@ -313,11 +322,7 @@ class WeatherCacheManager @Inject constructor(
         if (metadataFile.exists()) {
             try {
                 val json = metadataFile.readText()
-                val adapter = moshi.adapter<Map<String, CacheMetadata>>(
-                    Map::class.java, 
-                    String::class.java, 
-                    CacheMetadata::class.java
-                )
+                val adapter = moshi.adapter<Map<String, CacheMetadata>>(metadataType)
                 val loaded = adapter.fromJson(json)
                 if (loaded != null) {
                     cacheMetadata.putAll(loaded)
@@ -331,11 +336,7 @@ class WeatherCacheManager @Inject constructor(
     
     private fun saveMetadata() {
         try {
-            val adapter = moshi.adapter<Map<String, CacheMetadata>>(
-                Map::class.java,
-                String::class.java,
-                CacheMetadata::class.java
-            )
+            val adapter = moshi.adapter<Map<String, CacheMetadata>>(metadataType)
             val json = adapter.toJson(cacheMetadata.toMap())
             metadataFile.writeText(json ?: "{}")
         } catch (e: Exception) {

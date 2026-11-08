@@ -1,13 +1,6 @@
-# Allow users to create blank issues without a template.
+# Blank issues stay enabled for quick notes; security reports never go in a public issue.
 blank_issues_enabled: true
-
-# TODO: Add links to community resources (discussions, Discord, forums, etc.)
-# Example:
-# contact_links:
-#   - name: GitHub Discussions
-#     url: https://github.com/YOUR_ORG/YOUR_REPO/discussions
-#     about: Ask questions and share ideas
-#   - name: Discord
-#     url: https://discord.gg/YOUR_INVITE
-#     about: Chat with the community in real time
-contact_links: []
+contact_links:
+  - name: Report a vulnerability
+    url: https://github.com/and3rn3t/.github/blob/main/SECURITY.md
+    about: Report security issues privately (GitHub Security Advisories or email) — see the policy.

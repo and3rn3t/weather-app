@@ -57,8 +57,10 @@ class MainViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(WeatherUiState())
     val uiState: StateFlow<WeatherUiState> = _uiState.asStateFlow()
     
-    // Derived state for computed properties to optimize recomposition
-    val hourlyForecast by derivedStateOf {
+    // Computed from uiState on each read: derivedStateOf would never invalidate here,
+    // because uiState is a StateFlow rather than Compose snapshot state.
+    val hourlyForecast: List<HourlyForecastItem>
+        get() = run {
         val hourly = _uiState.value.weatherData?.hourly
         if (hourly == null || hourly.time.isEmpty()) {
             emptyList()
@@ -75,7 +77,8 @@ class MainViewModel @Inject constructor(
         }
     }
     
-    val dailyForecast by derivedStateOf {
+    val dailyForecast: List<DailyForecastItem>
+        get() = run {
         val daily = _uiState.value.weatherData?.daily
         if (daily == null || daily.time.isEmpty()) {
             emptyList()
@@ -95,7 +98,8 @@ class MainViewModel @Inject constructor(
     }
     
     // Derived state for temperature trend
-    val temperatureTrend by derivedStateOf {
+    val temperatureTrend: String
+        get() = run {
         val temps = _uiState.value.weatherData?.hourly?.temperature
         if (temps == null || temps.size < 6) {
             "steady"

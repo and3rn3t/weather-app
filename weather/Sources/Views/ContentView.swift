@@ -5,11 +5,11 @@
 //  Created by Matt on 2/4/26.
 //
 
-import SwiftUI
 import CoreLocation
-import SwiftData
-import OSLog
 import os.signpost
+import OSLog
+import SwiftData
+import SwiftUI
 
 struct ContentView: View {
     /// Passed in from App so we never block the main thread on SQLite init.
@@ -136,13 +136,13 @@ struct ContentView: View {
                 // Initialize favorites manager (SwiftData fetch)
                 if favoritesManager == nil, let container = modelContainer {
                     #if DEBUG
-                    let t = CFAbsoluteTimeGetCurrent()
+                    let startTime = CFAbsoluteTimeGetCurrent()
                     #endif
                     performanceTracker.startTrace("favorites_manager_init")
                     favoritesManager = FavoritesManager(modelContext: container.mainContext)
                     performanceTracker.stopTrace("favorites_manager_init")
                     #if DEBUG
-                    startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - t) * 1_000))ms")
+                    startupLog("FavoritesManager.init: \(String(format: "%.0f", (CFAbsoluteTimeGetCurrent() - startTime) * 1_000))ms")
                     #endif
                 }
 
@@ -455,7 +455,6 @@ struct ContentView: View {
             }
         }
     }
-
 }
 
 struct LoadingView: View {
@@ -511,7 +510,14 @@ struct LoadingView: View {
 // Simple sparkle effect for loading view
 struct FloatingSparkles: View {
     let count: Int
-    @State private var particles: [(id: UUID, x: CGFloat, y: CGFloat, delay: Double)] = []
+    private struct Sparkle {
+        let id: UUID
+        var x: CGFloat
+        var y: CGFloat
+        let delay: Double
+    }
+
+    @State private var particles: [Sparkle] = []
     
     var body: some View {
         GeometryReader { geometry in
@@ -526,7 +532,7 @@ struct FloatingSparkles: View {
             }
             .onAppear {
                 particles = (0..<count).map { _ in
-                    (
+                    Sparkle(
                         id: UUID(),
                         x: CGFloat.random(in: 0...geometry.size.width),
                         y: CGFloat.random(in: 0...geometry.size.height),
@@ -762,5 +768,3 @@ struct WelcomeView: View {
 #Preview {
     ContentView(modelContainer: .constant(nil))
 }
-
-

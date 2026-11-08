@@ -7,9 +7,9 @@
 //  Main weather detail screen. Card components are in Views/Cards/.
 //
 
-import SwiftUI
 import Charts
 import CoreLocation
+import SwiftUI
 
 struct WeatherDetailView: View {
     let weatherData: WeatherData

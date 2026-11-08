@@ -7,8 +7,8 @@
 //  Fetches severe weather alerts from NWS (US) and MeteoAlarm (Europe)
 //
 
-import Foundation
 import CoreLocation
+import Foundation
 import OSLog
 
 // MARK: - Weather Alert Service
@@ -91,7 +91,6 @@ class WeatherAlertService {
             
             // Get the forecast zone for alerts
             return await fetchNWSAlertsByZone(zoneURL: pointsResponse.properties.forecastZone)
-            
         } catch {
             Self.logger.error("Failed to fetch NWS grid point: \(error.localizedDescription)")
             // Fallback to active alerts by point
@@ -125,7 +124,6 @@ class WeatherAlertService {
             
             let alertsResponse = try JSONDecoder().decode(NWSAlertsResponse.self, from: data)
             return alertsResponse.features.map { $0.toWeatherAlert() }
-            
         } catch {
             Self.logger.error("Failed to fetch NWS alerts: \(error.localizedDescription)")
             return []
@@ -147,7 +145,6 @@ class WeatherAlertService {
             let data = try await fetchNWSData(from: alertsURL)
             let alertsResponse = try Self.decoder.decode(NWSAlertsResponse.self, from: data)
             return alertsResponse.features.map { $0.toWeatherAlert() }
-            
         } catch {
             Self.logger.error("Failed to fetch NWS zone alerts: \(error.localizedDescription)")
             return []

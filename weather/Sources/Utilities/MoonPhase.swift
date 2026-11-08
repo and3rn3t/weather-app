@@ -14,13 +14,13 @@ struct MoonPhase {
     let emoji: String
     
     /// Calculate current moon phase based on current date
-    static func current() -> MoonPhase {
+    static func current() -> Self {
         let date = Date()
         return calculate(for: date)
     }
     
     /// Calculate moon phase for a specific date
-    static func calculate(for date: Date) -> MoonPhase {
+    static func calculate(for date: Date) -> Self {
         // Known new moon: January 1, 2000 at 18:14 UTC
         let knownNewMoon = Date(timeIntervalSince1970: 946744440) // Jan 1, 2000, 18:14 UTC
         let lunarCycle = 29.53059 // Days in a lunar cycle
@@ -79,6 +79,6 @@ struct MoonPhase {
             illumination = 0.0
         }
         
-        return MoonPhase(name: name, illumination: max(0, min(1, illumination)), emoji: emoji)
+        return Self(name: name, illumination: max(0, min(1, illumination)), emoji: emoji)
     }
 }

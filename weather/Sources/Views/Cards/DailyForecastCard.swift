@@ -12,7 +12,7 @@ import SwiftUI
 struct DailyForecastCard: View, Equatable {
     let daily: DailyWeather
     @State private var showExtendedForecast = false
-    @State private var expandedDay: Int? = nil
+    @State private var expandedDay: Int?
     
     var displayedDays: Int {
         showExtendedForecast ? min(daily.time.count, 14) : 7
@@ -75,7 +75,7 @@ struct DailyForecastCard: View, Equatable {
     }
     
     // MARK: - Equatable
-    static func == (lhs: DailyForecastCard, rhs: DailyForecastCard) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.daily == rhs.daily && lhs.showExtendedForecast == rhs.showExtendedForecast && lhs.expandedDay == rhs.expandedDay
     }
 }
@@ -197,7 +197,7 @@ struct DailyWeatherRow: View, Equatable {
     }
     
     // MARK: - Equatable
-    static func == (lhs: DailyWeatherRow, rhs: DailyWeatherRow) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.date == rhs.date &&
         lhs.weatherCode == rhs.weatherCode &&
         lhs.high == rhs.high &&
