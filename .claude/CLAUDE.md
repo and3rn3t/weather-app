@@ -175,66 +175,19 @@ final class WeatherService {
 
 ### Makefile Commands
 
-Always use the Makefile for consistent builds:
+Always use the Makefile (`make help` lists everything); never call `xcodebuild` directly.
 
 ```bash
-# Building
-make build              # Debug build
-make build-release      # Release build (optimized)
-make build-sanitizers   # Build with Address & Thread Sanitizers
-make clean              # Clean DerivedData and build artifacts
-
-# Testing
-make test               # Run all tests
-make test-coverage      # Tests with code coverage
-make test-plan          # Use test plan (parallel, sanitizers)
-make test-performance   # Performance tests only
-
-# Code Quality
-make lint               # Run SwiftLint
-make format             # Format with swift-format
-make analyze            # Static analysis
-make accessibility      # Accessibility audit
-
-# Memory & Diagnostics
-make memory-diagnostics # All memory checks
-make memory-leaks       # Leak detection with Instruments
-
-# Release
-make archive            # Create release archive
-make export-ipa         # Export IPA for App Store
-make quality-gate       # All pre-release checks
-
-# Analysis
-make analyze-build-times  # Identify slow-compiling files
-make analyze-size         # Analyze app bundle size
-make profile              # Build for Instruments profiling
-
-# Setup
-make setup-tools        # Install xcbeautify, swiftlint
-make install-hooks      # Install git pre-commit hooks
+make build / build-release / build-sanitizers / clean
+make test / test-coverage / test-plan / test-performance
+make lint / format / analyze / accessibility
+make quality-gate       # all pre-release checks
+make setup-tools        # xcbeautify, swiftlint
 ```
 
 ### CI/CD Integration
 
-The project includes comprehensive CI/CD automation:
-
-#### GitHub Actions Workflows
-
-- **iOS CI** (`ci.yml`) - Build, test, security scan (2-device matrix)
-- **Android CI** (`android.yml`) - Build, lint, test for companion Android app
-- **TestFlight Deployment** (`deploy-testflight.yml`) - Automated iOS releases
-- **Play Store Deployment** (`deploy-playstore.yml`) - Automated Android releases
-- **PR Auto-Labeling** (`pr-labeler.yml`) - Automatic PR categorization
-- **Stale Management** (`stale.yml`) - Auto-close inactive issues
-- **Changelog** (`changelog.yml`) - Automatic changelog generation
-
-#### Runner Cost Optimizations
-
-- Reduced iOS test matrix from 3 devices to 2 (33% savings)
-- SwiftLint runs on Linux runner instead of macOS (10x cheaper)
-- Path filtering prevents unnecessary workflow runs
-- **Total savings: ~23% on CI/CD runner costs**
+Workflows, secrets and the release process are documented in [`.github/CI_CD_GUIDE.md`](../.github/CI_CD_GUIDE.md). iOS CI is `ci.yml`, Android is `android.yml`; deploys (`deploy-testflight.yml`, `deploy-playstore.yml`) are manual.
 
 ### Multi-Platform Project
 
@@ -334,24 +287,6 @@ The codebase follows these performance patterns:
 6. Animation
 7. Accessibility
 
-## Common Issues & Solutions
-
-### Build Errors (`@ObservableObject`, `@Published` - use `@Observable`)
-
-❌ Do not break existing tests
-❌ Do not create formatters inside loops or computed properties
-❌ Do not skip the Makefile for builds
-❌ Do not use bare `Error` protocol (use `any Error` for Swift 6 compatibility)
-
-✅ Do use Apple frameworks only
-✅ Do follow existing patterns
-✅ Do maintain dark mode support
-✅ Do add documentation for new features
-✅ Do write tests for new code
-✅ Do use cached formatters and sessions
-✅ Do use `make build` instead of `xcodebuild` directly
-✅ Do consider both iOS and Android implementations for shared features
-
 ## Testing Guidance
 
 ### Unit Tests
@@ -385,12 +320,13 @@ The codebase follows these performance patterns:
 ❌ Do not use deprecated APIs
 ❌ Do not break existing tests
 ❌ Do not create formatters inside loops or computed properties
+❌ Do not use `@ObservableObject` / `@Published` (use `@Observable`)
+❌ Do not use bare `Error` (use `any Error`)
 ❌ Do not skip the Makefile for builds
 
 ✅ Do use Apple frameworks only
 ✅ Do follow existing patterns
 ✅ Do maintain dark mode support
-✅ Do add documentation for new features
-✅ Do write tests for new code
+✅ Do write tests and docs for new features
 ✅ Do use cached formatters and sessions
-✅ Do use `make build` instead of `xcodebuild` directly
+✅ Do consider both iOS and Android for shared features
