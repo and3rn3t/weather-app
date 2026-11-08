@@ -45,6 +45,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      - name: Disable Spotlight indexing
+        # mds otherwise indexes the fresh DerivedData and simulator volume on a 3-core VM,
+        # competing with the build and the simulator launch.
+        run: sudo mdutil -a -i off || true
+
       - name: Setup Xcode
         uses: maxim-lobanov/setup-xcode@v1
         with:
@@ -83,18 +88,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-deriveddata-
 
-      - name: Cache Homebrew
-        uses: actions/cache@v5
-        with:
-          path: |
-            ~/Library/Caches/Homebrew
-            /opt/homebrew/Cellar/xcbeautify
-          key: ${{ runner.os }}-homebrew-xcbeautify
-          restore-keys: |
-            ${{ runner.os }}-homebrew-
-
       - name: Install xcbeautify
-        run: brew install xcbeautify
+        # Preinstalled on the runner image; `brew install` otherwise spends ~2 minutes on an
+        # automatic `brew update` just to report "already installed".
+        run: command -v xcbeautify >/dev/null || HOMEBREW_NO_AUTO_UPDATE=1 brew install xcbeautify
 
       - name: Build for Testing
         # Uses the UnitTests plan so the weatherUITests target is not compiled
