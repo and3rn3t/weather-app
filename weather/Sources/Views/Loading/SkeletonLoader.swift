@@ -371,15 +371,14 @@ struct WeatherLoadingView: View {
     }
     
     private func startLoadingAnimation() {
-        Timer.scheduledTimer(withTimeInterval: 1.2, repeats: true) { timer in
-            withAnimation(.easeInOut(duration: 0.3)) {
-                currentStep = (currentStep + 1) % loadingSteps.count
-            }
-            
-            // Stop after a reasonable time to avoid infinite loading
-            if currentStep == 0 {
-                timer.invalidate()
-            }
+        Task { @MainActor in
+            // Stop once the steps wrap around to avoid infinite loading
+            repeat {
+                try? await Task.sleep(for: .seconds(1.2))
+                withAnimation(.easeInOut(duration: 0.3)) {
+                    currentStep = (currentStep + 1) % loadingSteps.count
+                }
+            } while currentStep != 0
         }
     }
 }
@@ -397,7 +396,7 @@ class ProgressiveLoadingCoordinator: ObservableObject {
         case loadingWeather
         case loadingDetails
         case complete
-        case failed(Error)
+        case failed(any Error)
     }
     
     enum DataType {
