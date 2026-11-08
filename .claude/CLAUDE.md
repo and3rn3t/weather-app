@@ -226,10 +226,7 @@ The project includes comprehensive CI/CD automation:
 - **Android CI** (`android.yml`) - Build, lint, test for companion Android app
 - **TestFlight Deployment** (`deploy-testflight.yml`) - Automated iOS releases
 - **Play Store Deployment** (`deploy-playstore.yml`) - Automated Android releases
-- **Code Coverage** (`coverage.yml`) - LLVM (iOS) + JaCoCo (Android)
 - **PR Auto-Labeling** (`pr-labeler.yml`) - Automatic PR categorization
-- **Build Performance** (`build-performance.yml`) - Build time tracking
-- **Nightly Builds** (`nightly.yml`) - Scheduled full builds
 - **Stale Management** (`stale.yml`) - Auto-close inactive issues
 - **Changelog** (`changelog.yml`) - Automatic changelog generation
 
