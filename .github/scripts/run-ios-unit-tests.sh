@@ -8,7 +8,7 @@
 # START_TIMEOUT seconds, kill xcodebuild and try again. Phase timings are printed.
 #
 # Usage: run-ios-unit-tests.sh "<device name>" [extra xcodebuild arguments...]
-# Env:   START_TIMEOUT (default 90)  MAX_ATTEMPTS (default 4)  RESET_MODE (light|full)  PRIME (1|0)
+# Env:   START_TIMEOUT (default 90)  MAX_ATTEMPTS (default 4)  RESET_MODE (light|full)  PRIME (0|1, default 0)
 #        PROJECT (default weather.xcodeproj)  SCHEME (default weather)
 #        TEST_PLAN (default UnitTests)  RESULT_BUNDLE (default TestResults.xcresult)
 set -uo pipefail
@@ -20,7 +20,7 @@ EXTRA_ARGS=("$@")
 START_TIMEOUT="${START_TIMEOUT:-90}"
 MAX_ATTEMPTS="${MAX_ATTEMPTS:-4}"
 RESET_MODE="${RESET_MODE:-light}"
-PRIME="${PRIME:-1}"
+PRIME="${PRIME:-0}"
 PROJECT="${PROJECT:-weather.xcodeproj}"
 SCHEME="${SCHEME:-weather}"
 TEST_PLAN="${TEST_PLAN:-UnitTests}"
@@ -91,9 +91,9 @@ if [ "$state" != "Booted" ]; then
 fi
 phase "Simulator ready after $(( $(now) - t_boot ))s"
 
-# The first test-host launch after a simulator boot is the one that hangs; launching the app
-# once beforehand makes the real launch connect within seconds. Best-effort: if the built app
-# cannot be found the retry loop below still covers a hang.
+# Optional (PRIME=1): launch the app once before the first attempt. On a developer Mac this made
+# the real launch connect in ~4 s (4/4 cold trials), but on a hosted runner the install + first
+# launch alone took 437 s, so it only moved the cost and is off by default.
 HOST_APP="${HOST_APP:-$(find "$HOME/Library/Developer/Xcode/DerivedData" -maxdepth 6 -type d \
   -path '*Build/Products/Debug-iphonesimulator/weather.app' -print0 2>/dev/null | xargs -0 ls -dt 2>/dev/null | head -1)}"
 HOST_ID=""
