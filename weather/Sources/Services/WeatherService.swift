@@ -66,7 +66,21 @@ class WeatherService {
     
     // MARK: - Instant Startup
 
-    init() {
+    /// Sessions used for the forecast request. Injectable so tests can stub the network.
+    private let session: URLSession
+    private let forceRefreshSession: URLSession
+    /// When false, air quality and alerts are not fetched alongside the forecast (tests).
+    private let fetchesSecondaryData: Bool
+
+    init(
+        session: URLSession = OpenMeteoConfig.cachedSession,
+        forceRefreshSession: URLSession = OpenMeteoConfig.forceRefreshSession,
+        fetchesSecondaryData: Bool = true
+    ) {
+        self.session = session
+        self.forceRefreshSession = forceRefreshSession
+        self.fetchesSecondaryData = fetchesSecondaryData
+
         // Synchronous cache load + decode in init().
         //
         // WeatherService.init() runs at ~1ms — the main thread is idle here,
@@ -126,7 +140,15 @@ class WeatherService {
     
     /// Last successful fetch timestamp for debouncing
     private var lastFetchTime: Date?
+    /// Coordinates of the last successful fetch; the debounce only applies to the same place.
+    private var lastFetchCoordinate: (latitude: Double, longitude: Double)?
     private let minimumFetchInterval: TimeInterval = 60 // 1 minute minimum between fetches
+    /// Even an explicit refresh (pull-to-refresh) is ignored this soon after a successful fetch.
+    private let minimumForceRefreshInterval: TimeInterval = 10
+
+    /// Incremented by every fetch that starts. A fetch publishes its results only while it is
+    /// still the latest, so a slow response for an earlier location can't overwrite a newer one.
+    private var fetchGeneration: UInt = 0
     
     /// Coordinates of the currently in-flight fetch (prevents redundant concurrent requests)
     private var activeFetchCoordinate: (latitude: Double, longitude: Double)?
@@ -146,64 +168,52 @@ class WeatherService {
             "has_cached_data": String(weatherData != nil)
         ])
         
-        self.currentLocationName = locationName
-        
-        // Debounce: Skip fetch if we recently fetched (unless force refresh)
-        if !forceRefresh, let lastFetch = lastFetchTime,
-           Date().timeIntervalSince(lastFetch) < minimumFetchInterval,
-           weatherData != nil {
-            performanceTracker.recordEvent("weather_fetch_skipped", parameters: [
-                "reason": "debounce",
-                "time_since_last": String(Date().timeIntervalSince(lastFetch))
-            ])
+        if let reason = skipReason(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh) {
+            performanceTracker.recordEvent("weather_fetch_skipped", parameters: ["reason": reason])
             performanceTracker.stopTrace(traceKey)
             return
         }
         
-        // Skip if another fetch is already in flight for a nearby location.
-        if let active = activeFetchCoordinate,
-           abs(active.latitude - latitude) < Self.inFlightDeduplicationTolerance,
-           abs(active.longitude - longitude) < Self.inFlightDeduplicationTolerance,
-           !forceRefresh {
-            performanceTracker.recordEvent("weather_fetch_skipped", parameters: [
-                "reason": "duplicate_in_flight",
-                "distance": String(abs(active.latitude - latitude) + abs(active.longitude - longitude))
-            ])
-            performanceTracker.stopTrace(traceKey)
-            return
-        }
-        
+        fetchGeneration &+= 1
+        let generation = fetchGeneration
         activeFetchCoordinate = (latitude, longitude)
-        defer { 
-            activeFetchCoordinate = nil 
+        defer {
+            // A newer fetch owns the in-flight marker now; only clear our own.
+            if generation == fetchGeneration {
+                activeFetchCoordinate = nil
+            }
             performanceTracker.stopTrace(traceKey)
         }
         
-        await MainActor.run {
-            // Only show loading spinner when there's NO data to display yet.
-            // If we already have weather data visible, refresh silently in the background.
-            if weatherData == nil {
-                isLoading = true
-            }
-            errorMessage = nil
-            lastError = nil
+        // Only show loading spinner when there's NO data to display yet.
+        // If we already have weather data visible, refresh silently in the background.
+        if weatherData == nil {
+            isLoading = true
         }
+        errorMessage = nil
+        lastError = nil
         
         do {
-            // Use direct fetch to capture response details while debugging
-            async let airQualityTask: Void = fetchAirQualityCoalesced(latitude: latitude, longitude: longitude)
-            async let alertsTask: Void = fetchWeatherAlertsCoalesced(latitude: latitude, longitude: longitude)
+            // Air quality and alerts run in parallel with the forecast.
+            async let airQualityTask: Void = fetchAirQualityCoalesced(latitude: latitude, longitude: longitude, generation: generation)
+            async let alertsTask: Void = fetchWeatherAlertsCoalesced(latitude: latitude, longitude: longitude, generation: generation)
             let weather = try await performWeatherFetchWithRetry(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh)
             
-            // Update last fetch time on success
-            lastFetchTime = Date()
-            
-            await MainActor.run {
-                self.weatherData = weather
-                self.isLoading = false
+            // A newer fetch started while we waited: this response is for a place the user left.
+            guard generation == fetchGeneration else {
+                await airQualityTask
+                await alertsTask
+                return
             }
             
-            // Record successful fetch
+            lastFetchTime = Date()
+            lastFetchCoordinate = (latitude, longitude)
+            
+            // Name and data are published together so they always describe the same place.
+            currentLocationName = locationName
+            weatherData = weather
+            isLoading = false
+            
             performanceTracker.recordEvent("weather_fetch_success", parameters: [
                 "force_refresh": String(forceRefresh),
                 "has_location_name": String(locationName != nil)
@@ -213,52 +223,79 @@ class WeatherService {
             cacheManager.cacheWeather(weather, latitude: latitude, longitude: longitude)
             
             // Also save to shared storage for widgets (backward compatibility)
-            SharedDataManager.shared.saveWeatherData(weather, locationName: currentLocationName)
+            SharedDataManager.shared.saveWeatherData(weather, locationName: locationName)
             
-            // Await air quality and alerts completion (already running in parallel)
             await airQualityTask
             await alertsTask
+        } catch is CancellationError {
+            finishCancelledFetch(generation: generation)
+        } catch let urlError as URLError where urlError.code == .cancelled {
+            finishCancelledFetch(generation: generation)
         } catch let error as WeatherError {
-            // Record error event
+            guard generation == fetchGeneration else { return }
             performanceTracker.recordEvent("weather_fetch_error", parameters: [
                 "error_type": "WeatherError",
                 "error_code": String(describing: error),
                 "has_cached_fallback": String(cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) != nil)
             ])
             
-            // Try enhanced cache fallback first, then SharedDataManager
-            let cachedFromEnhanced = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude)
-            let cachedFromShared = SharedDataManager.shared.loadWeatherData()
-            
-            if cachedFromEnhanced != nil || cachedFromShared != nil {
-                await MainActor.run {
-                    // Use enhanced cache if available, otherwise shared cache
-                    if let enhanced = cachedFromEnhanced {
-                        self.weatherData = enhanced
-                    }
-                    self.isLoading = false
-                    self.errorMessage = "Showing cached data. " + (error.recoverySuggestion ?? "")
-                }
+            // Fall back only to the cache for THIS location. Anything else would show another
+            // place's forecast under this place's name.
+            if let cached = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) {
+                showCachedFallback(cached, locationName: locationName, message: "Showing cached data. " + (error.recoverySuggestion ?? ""))
             } else {
                 await handleError(error)
             }
         } catch let urlError as URLError {
-            let cachedFromEnhanced = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude)
-            let cachedFromShared = SharedDataManager.shared.loadWeatherData()
-            
-            if cachedFromEnhanced != nil || cachedFromShared != nil {
-                await MainActor.run {
-                    if let enhanced = cachedFromEnhanced {
-                        self.weatherData = enhanced
-                    }
-                    self.isLoading = false
-                    self.errorMessage = "Showing cached data. Check your connection."
-                }
+            guard generation == fetchGeneration else { return }
+            if let cached = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) {
+                showCachedFallback(cached, locationName: locationName, message: "Showing cached data. Check your connection.")
             } else {
                 await handleError(.from(urlError))
             }
         } catch {
+            guard generation == fetchGeneration else { return }
             await handleError(.unknown(error.localizedDescription))
+        }
+    }
+    
+    /// Why a fetch for this place should be skipped, or nil if it should go ahead.
+    /// A different place is never skipped by the debounce.
+    private func skipReason(latitude: Double, longitude: Double, forceRefresh: Bool) -> String? {
+        if let lastFetch = lastFetchTime,
+           let lastCoordinate = lastFetchCoordinate,
+           weatherData != nil,
+           Self.isNearby(lastCoordinate, latitude: latitude, longitude: longitude) {
+            let interval = forceRefresh ? minimumForceRefreshInterval : minimumFetchInterval
+            if Date().timeIntervalSince(lastFetch) < interval {
+                return "debounce"
+            }
+        }
+        if !forceRefresh,
+           let active = activeFetchCoordinate,
+           Self.isNearby(active, latitude: latitude, longitude: longitude) {
+            return "duplicate_in_flight"
+        }
+        return nil
+    }
+    
+    /// Whether two coordinates are close enough to share the same weather.
+    private static func isNearby(_ coordinate: (latitude: Double, longitude: Double), latitude: Double, longitude: Double) -> Bool {
+        abs(coordinate.latitude - latitude) < inFlightDeduplicationTolerance
+            && abs(coordinate.longitude - longitude) < inFlightDeduplicationTolerance
+    }
+    
+    private func showCachedFallback(_ cached: WeatherData, locationName: String?, message: String) {
+        currentLocationName = locationName
+        weatherData = cached
+        isLoading = false
+        errorMessage = message
+    }
+    
+    /// A cancelled request (the user moved on, or the task was cancelled) is not an error.
+    private func finishCancelledFetch(generation: UInt) {
+        if generation == fetchGeneration {
+            isLoading = false
         }
     }
     
@@ -321,7 +358,7 @@ class WeatherService {
         }
         
         // Use force-refresh session to bypass HTTP cache when user explicitly refreshes
-        let session = forceRefresh ? OpenMeteoConfig.forceRefreshSession : OpenMeteoConfig.cachedSession
+        let session = forceRefresh ? forceRefreshSession : session
         let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -445,7 +482,8 @@ class WeatherService {
     }
     
     /// Coalesced air quality fetch
-    private func fetchAirQualityCoalesced(latitude: Double, longitude: Double) async {
+    private func fetchAirQualityCoalesced(latitude: Double, longitude: Double, generation: UInt) async {
+        guard fetchesSecondaryData else { return }
         await withCheckedContinuation { continuation in
             Task {
                 await requestCoalescer.coalesceAirQualityRequest(
@@ -455,6 +493,7 @@ class WeatherService {
                     Task { @MainActor in
                         switch result {
                         case .success(let airQuality):
+                            guard generation == self.fetchGeneration else { break }
                             self.airQualityData = airQuality
                         case .failure:
                             // Air quality failure is non-critical, just log it
@@ -468,7 +507,8 @@ class WeatherService {
     }
     
     /// Coalesced weather alerts fetch
-    private func fetchWeatherAlertsCoalesced(latitude: Double, longitude: Double) async {
+    private func fetchWeatherAlertsCoalesced(latitude: Double, longitude: Double, generation: UInt) async {
+        guard fetchesSecondaryData else { return }
         await withCheckedContinuation { continuation in
             Task {
                 await requestCoalescer.coalesceAlertsRequest(
@@ -478,7 +518,8 @@ class WeatherService {
                     Task { @MainActor in
                         switch result {
                         case .success(let alerts):
-                            self.weatherAlerts = alerts
+                            guard generation == self.fetchGeneration else { break }
+                            self.weatherAlerts = alerts.filter { !$0.isExpired }
                         case .failure:
                             // Alerts failure is non-critical, just log it
                             break
