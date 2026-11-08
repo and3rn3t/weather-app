@@ -7,8 +7,6 @@ CONFIGURATION_DEBUG = Debug
 CONFIGURATION_RELEASE = Release
 DESTINATION = platform=iOS Simulator,name=iPhone 17 Pro
 
-SKIP_NETWORK_TESTS = -skip-testing:'weatherTests/EndToEndWorkflowTests/coldStartWorkflow()' -skip-testing:'weatherTests/EndToEndWorkflowTests/warmStartWithCache()' -skip-testing:'weatherTests/IntegrationTestScenarios/fullDataFlowIntegration()' -skip-testing:'weatherTests/IntegrationTestScenarios/persistenceAcrossAppLifecycle()' -skip-testing:'weatherTests/IntegrationTestScenarios/weatherServiceAndCacheIntegration()' -skip-testing:'weatherTests/WeatherServiceIntegrationTests/serviceInitializationWithCache()' -skip-testing:'weatherTests/TomorrowIOApiTests/invalidURLThrowsError()' -skip-testing:'weatherTests/WeatherServiceEnhancedTests/refreshWeather()'
-
 .PHONY: clean build test test-all archive lint format
 
 # Clean build artifacts
@@ -52,14 +50,13 @@ build-release:
 	fi
 
 # Run tests
-# Unit tests only (the UnitTests plan, same as CI), skipping the live-network tests (keep in sync with ci.yml).
+# Unit tests only (the UnitTests plan, same as CI). Tests use a stubbed network, never live APIs.
 # Run `make test-all` for the full scheme including UI tests.
 test:
 	xcodebuild test \
 		-project $(PROJECT) \
 		-scheme $(SCHEME) \
 		-testPlan UnitTests \
-		$(SKIP_NETWORK_TESTS) \
 		-destination "$(DESTINATION)" \
 		-parallel-testing-enabled YES \
 		| xcbeautify

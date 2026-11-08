@@ -135,22 +135,10 @@ jobs:
           # connects on hosted runners, costing minutes or hanging) and retries after resetting
           # the simulator. It sets the test plan, destination and result bundle itself.
           #
-          # Skipped (keep in sync with SKIP_NETWORK_TESTS in the Makefile): tests that depend on live network. Four of them cache mock data in
-          # SharedDataManager and assert on it, but WeatherService() also fires a real Open-Meteo
-          # refresh that overwrites the cache (63.1 / 63.4 observed vs the expected 65.0); two
-          # others call Open-Meteo / Tomorrow.io directly and time out intermittently on CI.
-          # They need a URLSession seam in WeatherService; until then they stay out of PR CI.
+          # Tests never reach live APIs: they use StubURLProtocol (see StubbedWeather in the tests).
           PROJECT=${{ env.PROJECT_NAME }}.xcodeproj SCHEME=${{ env.SCHEME }} \
           .github/scripts/run-ios-unit-tests.sh '${{ matrix.device }}' \
             -only-test-configuration 'Default Configuration' \
-            -skip-testing:'weatherTests/EndToEndWorkflowTests/coldStartWorkflow()' \
-            -skip-testing:'weatherTests/EndToEndWorkflowTests/warmStartWithCache()' \
-            -skip-testing:'weatherTests/IntegrationTestScenarios/fullDataFlowIntegration()' \
-            -skip-testing:'weatherTests/IntegrationTestScenarios/persistenceAcrossAppLifecycle()' \
-            -skip-testing:'weatherTests/IntegrationTestScenarios/weatherServiceAndCacheIntegration()' \
-            -skip-testing:'weatherTests/WeatherServiceIntegrationTests/serviceInitializationWithCache()' \
-            -skip-testing:'weatherTests/TomorrowIOApiTests/invalidURLThrowsError()' \
-            -skip-testing:'weatherTests/WeatherServiceEnhancedTests/refreshWeather()' \
             -parallel-testing-enabled NO \
             -test-timeouts-enabled YES \
             -default-test-execution-time-allowance 60 \

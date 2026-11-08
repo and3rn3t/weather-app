@@ -43,50 +43,17 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
         return URLSession(configuration: configuration)
     }
 
-    /// A forecast whose `latitude` identifies which stub produced it.
+    /// The shared sample forecast (65.0 degrees, what the cache tests expect) with `latitude` replaced,
+    /// so a response identifies which request produced it and concurrent tests agree on the data.
     static func forecastJSON(latitude: Double) -> Data {
-        Data("""
-        {
-            "latitude": \(latitude),
-            "longitude": 0.0,
-            "timezone": "UTC",
-            "current": {
-                "time": "2026-02-14T12:00",
-                "temperature_2m": 50.0,
-                "apparent_temperature": 50.0,
-                "weather_code": 0,
-                "is_day": 1,
-                "precipitation": 0.0,
-                "wind_speed_10m": 0.0,
-                "wind_direction_10m": 0,
-                "wind_gusts_10m": 0.0,
-                "relative_humidity_2m": 0,
-                "dew_point_2m": 0.0,
-                "surface_pressure": 1000.0,
-                "visibility": 10000,
-                "uv_index": 0.0,
-                "cloud_cover": 0
-            },
-            "hourly": {
-                "time": ["2026-02-14T12:00"],
-                "temperature_2m": [50.0],
-                "weather_code": [0],
-                "precipitation_probability": [0]
-            },
-            "daily": {
-                "time": ["2026-02-14"],
-                "weather_code": [0],
-                "temperature_2m_max": [50.0],
-                "temperature_2m_min": [40.0],
-                "sunrise": ["2026-02-14T07:00"],
-                "sunset": ["2026-02-14T17:00"],
-                "precipitation_probability_max": [0],
-                "uv_index_max": [0.0],
-                "wind_speed_10m_max": [0.0],
-                "wind_gusts_10m_max": [0.0]
-            }
+        guard var object = (try? JSONSerialization.jsonObject(with: Data(MockWeatherData.sampleJSON.utf8))) as? [String: Any],
+              let data = {
+                  object["latitude"] = latitude
+                  return try? JSONSerialization.data(withJSONObject: object)
+              }() else {
+            return Data()
         }
-        """.utf8)
+        return data
     }
 
     private var pending: DispatchWorkItem?
@@ -95,11 +62,22 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
     override class func canonicalRequest(for request: URLRequest) -> URLRequest { request }
 
     override func startLoading() {
-        guard let url = request.url,
-              let latitude = URLComponents(url: url, resolvingAgainstBaseURL: false)?
-                  .queryItems?.first(where: { $0.name == "latitude" })?.value else {
+        guard let url = request.url else {
             client?.urlProtocol(self, didFailWithError: URLError(.badURL))
             return
+        }
+        let items = URLComponents(url: url, resolvingAgainstBaseURL: false)?.queryItems
+        let latitude = items?.first(where: { $0.name == "latitude" })?.value
+            ?? items?.first(where: { $0.name == "location" })?.value?.split(separator: ",").first.map(String.init)
+            ?? "0"
+        // Like the real APIs: Tomorrow.io rejects our test keys, Open-Meteo rejects impossible coordinates.
+        let status: Int
+        if url.host?.contains("tomorrow.io") == true {
+            status = 401
+        } else if let lat = Double(latitude), abs(lat) > 90 {
+            status = 400
+        } else {
+            status = 200
         }
         let stub = Self.lock.withLock { () -> Stub in
             Self.requests.append(latitude)
@@ -111,9 +89,9 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
                 self.client?.urlProtocol(self, didFailWithError: URLError(failure))
                 return
             }
-            let response = HTTPURLResponse(url: url, statusCode: 200, httpVersion: nil, headerFields: nil)!
+            let response = HTTPURLResponse(url: url, statusCode: status, httpVersion: nil, headerFields: nil)!
             self.client?.urlProtocol(self, didReceive: response, cacheStoragePolicy: .notAllowed)
-            self.client?.urlProtocol(self, didLoad: Self.forecastJSON(latitude: Double(latitude) ?? 0))
+            self.client?.urlProtocol(self, didLoad: status == 200 ? Self.forecastJSON(latitude: Double(latitude) ?? 0) : Data("{}".utf8))
             self.client?.urlProtocolDidFinishLoading(self)
         }
         pending = work
@@ -129,7 +107,7 @@ nonisolated final class StubURLProtocol: URLProtocol, @unchecked Sendable {
 
 /// Serialized: the stub registry is shared. Each test uses its own latitudes so cached results
 /// from one test can't satisfy another.
-@Suite(.serialized)
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct FetchPipelineTests {
 
@@ -244,6 +222,13 @@ struct FetchPipelineTests {
 
     // #99: previews/comparison/widgets use a stateless fetch that leaves the service untouched.
     @Test func statelessForecastFetchDoesNotChangeServiceState() async throws {
+        // Start with nothing persisted, so a new service has no forecast to begin with.
+        for key in ["lastWeatherLatitude", "lastWeatherLongitude", "lastWeatherLocationName"] {
+            UserDefaults.standard.removeObject(forKey: key)
+        }
+        if let file = SharedDataManager.cachedWeatherFilePrimaryURL {
+            try? FileManager.default.removeItem(at: file)
+        }
         let service = makeService()
         StubURLProtocol.stub(latitude: 13.5)
 
@@ -275,4 +260,16 @@ private nonisolated final class ResultsBox: @unchecked Sendable {
     private var stored: [Bool] = []
     func append(_ value: Bool) { lock.withLock { stored.append(value) } }
     var values: [Bool] { lock.withLock { stored } }
+}
+
+// MARK: - Offline service for tests
+
+/// A WeatherService wired to the stub network, so tests never reach the live APIs. Use this
+/// instead of `WeatherService()` in any test that fetches.
+@MainActor
+enum StubbedWeather {
+    static func service() -> WeatherService {
+        let session = StubURLProtocol.makeSession()
+        return WeatherService(session: session, forceRefreshSession: session, fetchesSecondaryData: false)
+    }
 }

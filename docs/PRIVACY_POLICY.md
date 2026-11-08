@@ -85,7 +85,7 @@ We use Open-Meteo's free weather API to retrieve forecast data.
 
 ### Tomorrow.io (pollen data)
 
-- **Purpose:** Pollen forecasts. For locations in Europe, the app requests this automatically when you view the pollen card, using an API key built into the app (you can supply your own key in Settings)
+- **Purpose:** Pollen forecasts. For locations in Europe, the app requests this automatically when you view the pollen card, using an API key built into the app
 - **Data Sent:** Coordinates of the location you are viewing and the API key (no personal information)
 
 ### Apple Services

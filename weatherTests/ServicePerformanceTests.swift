@@ -79,7 +79,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
     @MainActor func testWeatherServiceInitializationPerformance() async throws {
         // Test how long it takes to initialize WeatherService
         measure {
-            _ = WeatherService()
+            _ = StubbedWeather.service()
         }
     }
     
@@ -237,7 +237,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
             
             // Create and release multiple instances
             for _ in 0..<50 {
-                let service = WeatherService()
+                let service = StubbedWeather.service()
                 services.append(service)
             }
             
@@ -309,7 +309,7 @@ nonisolated final class ServicePerformanceTests: XCTestCase {
         let settings = SettingsManager()
         measure(metrics: [XCTClockMetric(), XCTMemoryMetric()]) {
             // 1. Service initialization
-            let service = WeatherService()
+            let service = StubbedWeather.service()
             
             // 2. Cache loading (already happens in init, but measure the impact)
             let startTime = Date()

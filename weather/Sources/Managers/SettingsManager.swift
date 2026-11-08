@@ -130,16 +130,23 @@ class SettingsManager {
     }
     
     // API Keys
+    /// A user-supplied Tomorrow.io key lives in the Keychain, never in UserDefaults. The built-in
+    /// default is not persisted.
     var tomorrowIOAPIKey: String {
         didSet {
-            UserDefaults.standard.set(tomorrowIOAPIKey, forKey: "tomorrowIOAPIKey")
+            let isDefault = tomorrowIOAPIKey.isEmpty || tomorrowIOAPIKey == APIConfig.defaultTomorrowIOKey
+            secrets.set(isDefault ? nil : tomorrowIOAPIKey, forKey: Self.tomorrowIOKeychainKey)
         }
     }
+    
+    private static let tomorrowIOKeychainKey = "tomorrowIOAPIKey"
+    @ObservationIgnored private let secrets: any SecretStore
     
     // Shared decoder for init - avoids creating 3 separate decoders
     private static let settingsDecoder = JSONDecoder()
     
-    init() {
+    init(secrets: any SecretStore = KeychainSecretStore()) {
+        self.secrets = secrets
         // MARK: - Performance: Individual key lookups
         // Each UserDefaults read is O(1); avoids serializing entire defaults database
         os_signpost(.begin, log: StartupSignpost.log, name: "SettingsManager.init")
@@ -209,7 +216,15 @@ class SettingsManager {
         self.autoRefreshInterval = ud.object(forKey: "autoRefreshInterval") as? Int ?? 30
         
         // Load API keys (use default if not set by user)
-        let savedKey = ud.string(forKey: "tomorrowIOAPIKey") ?? ""
+        var savedKey = secrets.string(forKey: Self.tomorrowIOKeychainKey) ?? ""
+        if savedKey.isEmpty, let legacy = ud.string(forKey: "tomorrowIOAPIKey"), !legacy.isEmpty {
+            // Migrate a key stored in plain UserDefaults by an earlier version.
+            if legacy != APIConfig.defaultTomorrowIOKey {
+                secrets.set(legacy, forKey: Self.tomorrowIOKeychainKey)
+                savedKey = legacy
+            }
+        }
+        ud.removeObject(forKey: "tomorrowIOAPIKey")
         self.tomorrowIOAPIKey = savedKey.isEmpty ? APIConfig.defaultTomorrowIOKey : savedKey
 
         // didSet does not run for assignments inside init: share the stored unit with widgets too.

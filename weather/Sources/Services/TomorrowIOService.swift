@@ -19,7 +19,8 @@ enum TomorrowIOService {
     static func fetchPollenForecast(
         latitude: Double,
         longitude: Double,
-        apiKey: String
+        apiKey: String,
+        session: URLSession = TomorrowIOConfig.session
     ) async throws -> TomorrowIOPollenData {
         // Build request URL
         var components = URLComponents(string: TomorrowIOConfig.timelineURL)
@@ -41,7 +42,7 @@ enum TomorrowIOService {
         #endif
         
         // Make request
-        let (data, response) = try await TomorrowIOConfig.session.data(from: url)
+        let (data, response) = try await session.data(from: url)
         
         // Validate response
         guard let httpResponse = response as? HTTPURLResponse else {

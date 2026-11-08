@@ -8,6 +8,7 @@
 import Foundation
 import CoreLocation
 import SwiftData
+import Testing
 @testable import weather
 
 // MARK: - Mock Data Factory
@@ -240,4 +241,62 @@ enum DateTestHelper {
             to: Date()
         ) ?? Date()
     }
+}
+
+// MARK: - Serialize tests that share process-wide state
+
+/// FIFO async mutex.
+private actor AsyncMutex {
+    private var isLocked = false
+    private var waiters: [CheckedContinuation<Void, Never>] = []
+
+    func lock() async {
+        guard isLocked else {
+            isLocked = true
+            return
+        }
+        await withCheckedContinuation { waiters.append($0) }
+    }
+
+    func unlock() {
+        if waiters.isEmpty {
+            isLocked = false
+        } else {
+            waiters.removeFirst().resume()
+        }
+    }
+}
+
+private nonisolated let sharedStateMutex = AsyncMutex()
+
+/// Suites that read or write `SharedDataManager`, the shared weather cache or UserDefaults (which
+/// is process-wide) must not interleave: one test's `clearState()` would wipe another's data.
+/// Apply with `@Suite(.serialized, .sharedGlobalState)`: tests in the suite run one at a time, and
+/// suites that use the trait run one after another.
+nonisolated struct SharedGlobalStateTrait: SuiteTrait, TestScoping, Sendable {
+    nonisolated var isRecursive: Bool { false }
+
+    @concurrent func provideScope(
+        for test: Test,
+        testCase: Test.Case?,
+        performing function: @concurrent @Sendable () async throws -> Void
+    ) async throws {
+        // Scope the whole suite (not each test): suites that use the trait run one after another.
+        guard testCase == nil, test.isSuite else {
+            try await function()
+            return
+        }
+        await sharedStateMutex.lock()
+        do {
+            try await function()
+        } catch {
+            await sharedStateMutex.unlock()
+            throw error
+        }
+        await sharedStateMutex.unlock()
+    }
+}
+
+extension Trait where Self == SharedGlobalStateTrait {
+    nonisolated static var sharedGlobalState: Self { Self() }
 }

@@ -13,11 +13,12 @@ import SwiftData
 
 // MARK: - Weather Fetch Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherFetchIntegrationTests {
     
     @Test func completeWeatherFetchWorkflow() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         let settings = SettingsManager()
         
         // Configure settings
@@ -37,7 +38,7 @@ struct WeatherFetchIntegrationTests {
     }
     
     @Test func weatherDataAndSettingsIntegration() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         let settings = SettingsManager()
         
         // Fetch weather
@@ -56,7 +57,7 @@ struct WeatherFetchIntegrationTests {
     }
     
     @Test func errorHandlingAcrossServices() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Attempt fetch with invalid data
         await service.fetchWeatherData(
@@ -78,12 +79,13 @@ struct WeatherFetchIntegrationTests {
 
 // MARK: - Location and Weather Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct LocationWeatherIntegrationTests {
     
     @Test func locationManagerWeatherServiceFlow() async {
         let locationManager = LocationManager()
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         
         // Simulate location update
         if let location = locationManager.location {
@@ -117,6 +119,7 @@ struct LocationWeatherIntegrationTests {
 
 // MARK: - Favorites and Weather Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct FavoritesWeatherIntegrationTests {
     
@@ -126,7 +129,7 @@ struct FavoritesWeatherIntegrationTests {
         let context = ModelContext(container)
         
         let favoritesManager = FavoritesManager(modelContext: context)
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         
         // Add favorite location
         let coord = CLLocationCoordinate2D(latitude: 37.7749, longitude: -122.4194)
@@ -179,6 +182,7 @@ struct FavoritesWeatherIntegrationTests {
 
 // MARK: - Settings and Data Formatting Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct SettingsFormattingIntegrationTests {
     
@@ -231,6 +235,7 @@ struct SettingsFormattingIntegrationTests {
 
 // MARK: - Alert Service Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct AlertServiceIntegrationTests {
     
@@ -268,11 +273,12 @@ struct AlertServiceIntegrationTests {
 
 // MARK: - Widget Data Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WidgetDataIntegrationTests {
     
     @Test func sharedWeatherDataCreation() throws {
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         
         // Create mock weather data
         guard let weatherData = MockWeatherData.createSampleWeatherData() else {
@@ -311,6 +317,7 @@ struct WidgetDataIntegrationTests {
 
 // MARK: - Performance Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct PerformanceIntegrationTests {
     
@@ -360,6 +367,7 @@ struct PerformanceIntegrationTests {
 
 // MARK: - Data Flow Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct DataFlowIntegrationTests {
     
@@ -370,7 +378,7 @@ struct DataFlowIntegrationTests {
         let context = ModelContext(container)
         
         let locationManager = LocationManager()
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         let favoritesManager = FavoritesManager(modelContext: context)
         let settings = SettingsManager()
         

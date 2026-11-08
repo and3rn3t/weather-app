@@ -14,6 +14,7 @@ import Testing
 
 // MARK: - End-to-End Workflow Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct EndToEndWorkflowTests {
 
@@ -44,7 +45,7 @@ struct EndToEndWorkflowTests {
         clearAllState()
 
         // 1. User opens app for first time (no cache)
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         #expect(weatherService.weatherData == nil)
         #expect(weatherService.currentLocationName == nil)
 
@@ -73,7 +74,7 @@ struct EndToEndWorkflowTests {
         SharedDataManager.shared.cacheFullWeatherData(mockData, locationName: "New York")
 
         // 2. User opens app - should load from cache instantly
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         #expect(weatherService.weatherData != nil)
         #expect(weatherService.currentLocationName == "New York")
         #expect(weatherService.weatherData?.current.temperature2m == 65.0)
@@ -107,7 +108,7 @@ struct EndToEndWorkflowTests {
         #expect(favoritesManager.isFavorite(coordinate: searchCoordinate))
 
         // 5. User fetches weather for that location
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         await weatherService.fetchWeatherData(
             latitude: searchCoordinate.latitude,
             longitude: searchCoordinate.longitude,
@@ -129,7 +130,7 @@ struct EndToEndWorkflowTests {
         let container = try ModelContainer(for: SavedLocation.self, configurations: config)
         let context = ModelContext(container)
         let favoritesManager = FavoritesManager(modelContext: context)
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
 
         // 1. User adds multiple favorite locations
         let locations = [
@@ -257,7 +258,7 @@ struct EndToEndWorkflowTests {
     @Test func errorRecoveryWorkflow() async {
         clearAllState()
 
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
 
         // 1. User enters invalid location coordinates
         await weatherService.fetchWeatherData(
@@ -288,7 +289,7 @@ struct EndToEndWorkflowTests {
         clearAllState()
 
         // 1. User fetches weather, gets cached
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         await weatherService.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
@@ -333,6 +334,7 @@ struct EndToEndWorkflowTests {
 
 // MARK: - Integration Test Scenarios
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct IntegrationTestScenarios {
 
@@ -352,7 +354,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. WeatherService fetches data
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         await service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
@@ -374,7 +376,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. Create coordinated system
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         let settingsManager = SettingsManager()
         let themeManager = ThemeManager()
 
@@ -406,7 +408,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. Weather and Alert services work together
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         let alertService = WeatherAlertService()
 
         // 2. Fetch weather for location
@@ -432,7 +434,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. User location → Service → Cache → UI state
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
 
         // 2. Fetch from API
         await weatherService.fetchWeatherData(
@@ -458,7 +460,7 @@ struct IntegrationTestScenarios {
     @Test func concurrentRequestsHandling() async {
         clearState()
 
-        let service = WeatherService()
+        let service = StubbedWeather.service()
 
         // 1. Simulate rapid location changes (user scrolling favorites)
         async let request1: Bool = service.fetchWeatherData(
@@ -494,7 +496,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. First app session
-        let weatherService1 = WeatherService()
+        let weatherService1 = StubbedWeather.service()
         await weatherService1.fetchWeatherData(
             latitude: 48.8566,
             longitude: 2.3522,
@@ -508,7 +510,7 @@ struct IntegrationTestScenarios {
         try await Task.sleep(nanoseconds: 100_000_000)
 
         // 4. Simulate app termination and relaunch
-        let weatherService2 = WeatherService()
+        let weatherService2 = StubbedWeather.service()
 
         // 5. Should load from cache if first fetch succeeded
         if weatherService1.weatherData != nil {
@@ -553,7 +555,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. Attempt request that will likely fail
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         await service.fetchWeatherData(
             latitude: 0,
             longitude: 0,
@@ -581,7 +583,7 @@ struct IntegrationTestScenarios {
         clearState()
 
         // 1. Fresh app with no data
-        let weatherService = WeatherService()
+        let weatherService = StubbedWeather.service()
         let config = ModelConfiguration(isStoredInMemoryOnly: true)
         let container = try ModelContainer(for: SavedLocation.self, configurations: config)
         let context = ModelContext(container)
@@ -625,6 +627,7 @@ struct IntegrationTestScenarios {
 
 // MARK: - Real World Scenario Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct RealWorldScenarioTests {
 
@@ -650,7 +653,7 @@ struct RealWorldScenarioTests {
         let mockData = MockWeatherData.createSampleWeatherData()!
         SharedDataManager.shared.cacheFullWeatherData(mockData, locationName: "Home")
 
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         #expect(service.weatherData != nil)
 
         // 2. User pulls to refresh
@@ -683,7 +686,7 @@ struct RealWorldScenarioTests {
         let container = try ModelContainer(for: SavedLocation.self, configurations: config)
         let context = ModelContext(container)
         let favorites = FavoritesManager(modelContext: context)
-        let service = WeatherService()
+        let service = StubbedWeather.service()
 
         // 1. Save future destinations
         let destinations = [
@@ -715,7 +718,7 @@ struct RealWorldScenarioTests {
         clearAll()
 
         // Severe weather approaching
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         let alertService = WeatherAlertService()
 
         // 1. User checks current weather
@@ -742,7 +745,7 @@ struct RealWorldScenarioTests {
         let cachedWeather = MockWeatherData.createSampleWeatherData()!
         SharedDataManager.shared.cacheFullWeatherData(cachedWeather, locationName: "Cached")
 
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         #expect(service.weatherData != nil)
         #expect(service.currentLocationName == "Cached")
 

@@ -11,6 +11,7 @@ import Foundation
 
 // MARK: - Weather Alert Service Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherAlertServiceTests {
     
@@ -39,6 +40,7 @@ struct WeatherAlertServiceTests {
 
 // MARK: - Weather Alert Model Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherAlertModelTests {
     
@@ -100,6 +102,7 @@ struct WeatherAlertModelTests {
 
 // MARK: - Tomorrow.io Service Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct TomorrowIOServiceTests {
     
@@ -112,6 +115,7 @@ struct TomorrowIOServiceTests {
 
 // MARK: - OpenMeteo Config Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct OpenMeteoConfigTests {
     
@@ -129,11 +133,12 @@ struct OpenMeteoConfigTests {
 
 // MARK: - Weather Service Enhancement Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherServiceEnhancedTests {
     
     @Test func concurrentFetchHandling() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Test multiple concurrent fetches don't cause issues
         async let fetch1: Bool = service.fetchWeatherData(
@@ -154,7 +159,7 @@ struct WeatherServiceEnhancedTests {
     }
     
     @Test func errorRecovery() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Fetch with invalid coordinates
         await service.fetchWeatherData(latitude: 999, longitude: 999, locationName: "Invalid")
@@ -170,7 +175,7 @@ struct WeatherServiceEnhancedTests {
     }
     
     @Test func refreshWeather() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Initial fetch
         await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
@@ -187,7 +192,7 @@ struct WeatherServiceEnhancedTests {
     }
     
     @Test func backgroundRefresh() async {
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Test background refresh mechanism
         await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "SF")
@@ -202,6 +207,7 @@ struct WeatherServiceEnhancedTests {
 
 // MARK: - Retry Mechanism Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct RetryMechanismTests {
     
