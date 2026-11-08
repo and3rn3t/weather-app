@@ -18,7 +18,7 @@ struct WeatherApp: App {
     // SwiftUI render pass, instead of blocking ContentView's body evaluation.
     @State private var themeManager = ThemeManager()
     @State private var locationManager = LocationManager()
-    @State private var weatherService = WeatherService()
+    @State private var weatherService = WeatherService.shared
     @State private var settings = SettingsManager()
 
     /// ModelContainer is loaded asynchronously so SQLite setup never blocks

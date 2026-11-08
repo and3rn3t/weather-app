@@ -404,13 +404,15 @@ struct ContentView: View {
             await weatherService.fetchWeatherData(
                 latitude: coordinate.latitude,
                 longitude: coordinate.longitude,
-                locationName: selectedLocationName
+                locationName: selectedLocationName,
+                forceRefresh: true
             )
         } else if let location = locationManager.location {
             await weatherService.fetchWeatherData(
                 latitude: location.coordinate.latitude,
                 longitude: location.coordinate.longitude,
-                locationName: locationManager.locationName
+                locationName: locationManager.locationName,
+                forceRefresh: true
             )
         }
         
