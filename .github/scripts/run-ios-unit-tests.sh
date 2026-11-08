@@ -30,8 +30,14 @@ LAUNCH_FAILURE="Failed to launch app|failed to launch|preflight checks|never beg
 # A started test run prints one of these (XCTest suite header, or Swift Testing's run header).
 START_MARKER="Test Suite 'Selected tests' started|Test run started|Test Case '.*' started"
 
-UDID=$(xcrun simctl list devices available -j |
-  jq -r --arg n "$DEVICE" '[.devices[][] | select(.name==$n)][0].udid // empty')
+# Several devices can share a name (one per installed iOS runtime): use the newest runtime,
+# the one the app was built against.
+UDID=$(xcrun simctl list devices available -j | jq -r --arg n "$DEVICE" '
+  [.devices | to_entries[]
+   | select(.key | test("SimRuntime\\.iOS-"))
+   | {v: (.key | capture("iOS-(?<v>[0-9-]+)").v | split("-") | map(tonumber)), d: .value}
+   | .d[] as $dev | select($dev.name == $n) | {v: .v, udid: $dev.udid}]
+  | sort_by(.v) | last | .udid // empty')
 if [ -z "$UDID" ]; then
   echo "::error::No available simulator named '$DEVICE'"
   exit 1
@@ -100,6 +106,9 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
       reset_simulator
       continue
     fi
+    echo "::group::Raw xcodebuild output (tail)"
+    tail -n 60 "$LOG"
+    echo "::endgroup::"
     exit "$code"
   fi
 
