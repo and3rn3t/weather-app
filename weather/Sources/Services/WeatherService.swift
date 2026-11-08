@@ -164,7 +164,10 @@ class WeatherService {
     
     // MARK: - Public Methods
     
-    func fetchWeatherData(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async {
+    /// Fetches and publishes the forecast. Returns true when the data is fresh (fetched now, or skipped
+    /// because it was just fetched), false when it failed, was cancelled, or was superseded.
+    @discardableResult
+    func fetchWeatherData(latitude: Double, longitude: Double, locationName: String? = nil, forceRefresh: Bool = false) async -> Bool {
         let traceKey = forceRefresh ? "weather_fetch_force" : "weather_fetch_normal"
         performanceTracker.startTrace(traceKey, attributes: [
             "force_refresh": String(forceRefresh),
@@ -175,7 +178,7 @@ class WeatherService {
         if let reason = skipReason(latitude: latitude, longitude: longitude, forceRefresh: forceRefresh) {
             performanceTracker.recordEvent("weather_fetch_skipped", parameters: ["reason": reason])
             performanceTracker.stopTrace(traceKey)
-            return
+            return true
         }
         
         fetchGeneration &+= 1
@@ -207,7 +210,7 @@ class WeatherService {
             guard generation == fetchGeneration else {
                 await airQualityTask
                 await alertsTask
-                return
+                return false
             }
             
             lastFetchTime = Date()
@@ -235,12 +238,13 @@ class WeatherService {
             if generation == fetchGeneration {
                 await onFetchSucceeded?(weather, weatherAlerts, locationName)
             }
+            return true
         } catch is CancellationError {
             finishCancelledFetch(generation: generation)
         } catch let urlError as URLError where urlError.code == .cancelled {
             finishCancelledFetch(generation: generation)
         } catch let error as WeatherError {
-            guard generation == fetchGeneration else { return }
+            guard generation == fetchGeneration else { return false }
             performanceTracker.recordEvent("weather_fetch_error", parameters: [
                 "error_type": "WeatherError",
                 "error_code": String(describing: error),
@@ -255,16 +259,17 @@ class WeatherService {
                 await handleError(error)
             }
         } catch let urlError as URLError {
-            guard generation == fetchGeneration else { return }
+            guard generation == fetchGeneration else { return false }
             if let cached = cacheManager.getCachedWeather(latitude: latitude, longitude: longitude) {
                 showCachedFallback(cached, locationName: locationName, message: "Showing cached data. Check your connection.")
             } else {
                 await handleError(.from(urlError))
             }
         } catch {
-            guard generation == fetchGeneration else { return }
+            guard generation == fetchGeneration else { return false }
             await handleError(.unknown(error.localizedDescription))
         }
+        return false
     }
     
     /// Why a fetch for this place should be skipped, or nil if it should go ahead.
@@ -347,6 +352,22 @@ class WeatherService {
             startupLog("Network fetch: \(String(format: "%.0f", fetchMs))ms")
             #endif
         }
+        // Force-refresh bypasses the HTTP cache when the user explicitly refreshes.
+        return try await Self.fetchForecast(
+            latitude: latitude,
+            longitude: longitude,
+            session: forceRefresh ? forceRefreshSession : session
+        )
+    }
+    
+    /// Stateless forecast request: no published state, no cache and no shared-storage writes.
+    /// Use it for previews, comparisons and widgets so they can't disturb what the app (or the
+    /// home-screen widget) shows for the primary location.
+    static func fetchForecast(
+        latitude: Double,
+        longitude: Double,
+        session: URLSession = OpenMeteoConfig.cachedSession
+    ) async throws -> WeatherData {
         var components = URLComponents(string: OpenMeteoConfig.forecastURL)
         components?.queryItems = [
             URLQueryItem(name: "latitude", value: String(latitude)),
@@ -365,8 +386,6 @@ class WeatherService {
             throw WeatherError.invalidURL
         }
         
-        // Use force-refresh session to bypass HTTP cache when user explicitly refreshes
-        let session = forceRefresh ? forceRefreshSession : session
         let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse else {

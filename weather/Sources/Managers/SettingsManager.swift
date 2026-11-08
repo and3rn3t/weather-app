@@ -9,6 +9,7 @@ import Foundation
 import os.signpost
 import OSLog
 import SwiftUI
+import WidgetKit
 
 // MARK: - Settings Manager
 
@@ -18,6 +19,20 @@ class SettingsManager {
     var temperatureUnit: TemperatureUnit {
         didSet {
             UserDefaults.standard.set(try? JSONEncoder().encode(temperatureUnit), forKey: "temperatureUnit")
+            Self.publishTemperatureUnit(temperatureUnit, reloadWidgets: true)
+        }
+    }
+    
+    /// Widgets and Control Center controls run in another process: share the unit through the App
+    /// Group so they format temperatures the way the app does, and reload them when it changes.
+    static let sharedTemperatureUnitKey = "temperatureUnit"
+    
+    private static func publishTemperatureUnit(_ unit: TemperatureUnit, reloadWidgets: Bool) {
+        AppGroup.sharedDefaults?.set(unit == .celsius ? "celsius" : "fahrenheit", forKey: sharedTemperatureUnitKey)
+        guard reloadWidgets else { return }
+        WidgetCenter.shared.reloadAllTimelines()
+        if #available(iOS 18.0, *) {
+            ControlCenter.shared.reloadAllControls()
         }
     }
     
@@ -141,7 +156,6 @@ class SettingsManager {
         } else {
             self.temperatureUnit = .fahrenheit
         }
-        
         // Load wind speed unit
         if let data = ud.data(forKey: "windSpeedUnit"),
            let unit = try? decoder.decode(WindSpeedUnit.self, from: data) {
@@ -198,6 +212,8 @@ class SettingsManager {
         let savedKey = ud.string(forKey: "tomorrowIOAPIKey") ?? ""
         self.tomorrowIOAPIKey = savedKey.isEmpty ? APIConfig.defaultTomorrowIOKey : savedKey
 
+        // didSet does not run for assignments inside init: share the stored unit with widgets too.
+        Self.publishTemperatureUnit(temperatureUnit, reloadWidgets: false)
         os_signpost(.end, log: StartupSignpost.log, name: "SettingsManager.init")
         #if DEBUG
         let elapsed = (CFAbsoluteTimeGetCurrent() - initStart) * 1_000

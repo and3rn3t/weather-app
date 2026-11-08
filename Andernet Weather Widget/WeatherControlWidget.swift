@@ -52,6 +52,16 @@ private func loadControlData() -> ControlWeatherData? {
     }
 }
 
+// MARK: - Temperature Formatting
+
+/// Formats a temperature (stored in °F) using the unit the user chose in the app, shared through the App Group.
+private func controlTemperatureText(_ fahrenheit: Double, includeUnit: Bool) -> String {
+    let isCelsius = ControlAppGroup.sharedDefaults?.string(forKey: "temperatureUnit") == "celsius"
+    let value = isCelsius ? (fahrenheit - 32) * 5 / 9 : fahrenheit
+    let symbol = includeUnit ? (isCelsius ? "°C" : "°F") : "°"
+    return "\(Int(value.rounded()))\(symbol)"
+}
+
 // MARK: - Weather Symbol Helper
 
 private func weatherSymbol(for code: Int) -> String {
@@ -107,7 +117,7 @@ struct WeatherControlWidget: ControlWidget {
                 let data = loadControlData()
                 
                 Label {
-                    Text(data.map { "\(Int($0.temperature))°" } ?? "--°")
+                    Text(data.map { controlTemperatureText($0.temperature, includeUnit: false) } ?? "--°")
                 } icon: {
                     Image(systemName: data.map { weatherSymbol(for: $0.weatherCode) } ?? "cloud.fill")
                 }
@@ -132,7 +142,7 @@ struct TemperatureControlWidget: ControlWidget {
                 
                 Label {
                     if let weatherData = data {
-                        Text("\(Int(weatherData.temperature))°F")
+                        Text(controlTemperatureText(weatherData.temperature, includeUnit: true))
                     } else {
                         Text("--°")
                     }

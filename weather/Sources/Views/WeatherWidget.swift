@@ -82,9 +82,7 @@ struct WeatherTimelineProvider: AppIntentTimelineProvider {
         // Fetch weather data
         var weatherData: WeatherData?
         if let location = configuration.location {
-            let service = WeatherService()
-            await service.fetchWeatherData(latitude: location.latitude, longitude: location.longitude)
-            weatherData = service.weatherData
+            weatherData = try? await WeatherService.fetchForecast(latitude: location.latitude, longitude: location.longitude)
         }
         
         let entry = WeatherEntry(
