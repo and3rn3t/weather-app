@@ -160,8 +160,8 @@ struct WeatherDetailsCard: View {
 struct WeatherDetailItem: View {
     let title: String
     let value: String
-    var unit: String? = nil
-    var subtitle: String? = nil
+    var unit: String?
+    var subtitle: String?
     let icon: String
     var color: Color = .primary
     

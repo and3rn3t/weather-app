@@ -6,8 +6,8 @@
 //
 
 import ActivityKit
-import WidgetKit
 import SwiftUI
+import WidgetKit
 
 // MARK: - Weather Activity Attributes
 
@@ -223,4 +223,3 @@ extension WeatherActivityAttributes.ContentState {
     WeatherActivityAttributes.ContentState.sunny
     WeatherActivityAttributes.ContentState.rainy
 }
-

@@ -5,12 +5,12 @@
 //  Created by Matt on 2/4/26.
 //
 
-import Foundation
-import CoreLocation
 import Contacts
+import CoreLocation
+import Foundation
 @preconcurrency import MapKit
-import OSLog
 import os.signpost
+import OSLog
 
 @Observable
 class LocationManager: NSObject, CLLocationManagerDelegate {

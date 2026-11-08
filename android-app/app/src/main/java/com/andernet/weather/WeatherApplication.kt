@@ -23,11 +23,12 @@ class WeatherApplication : Application() {
     private var appStartTime = System.currentTimeMillis()
     
     override fun onCreate() {
+        // Hilt injects performanceMonitor inside super.onCreate(), so it must run first
+        super.onCreate()
+
         // Start app cold start tracking
         performanceMonitor.startTrace("app_cold_start")
-        
-        super.onCreate()
-        
+
         // Initialize notification channels
         NotificationChannels.createChannels(this)
         

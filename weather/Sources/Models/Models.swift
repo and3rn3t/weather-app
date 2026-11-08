@@ -5,10 +5,10 @@
 //  Created by Matt on 2/5/26.
 //
 
-import Foundation
-import SwiftUI
-import SwiftData
 import CoreLocation
+import Foundation
+import SwiftData
+import SwiftUI
 
 // MARK: - Saved Location Model (SwiftData)
 

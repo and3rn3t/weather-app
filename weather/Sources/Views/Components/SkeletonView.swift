@@ -5,8 +5,8 @@
 //  Skeleton loading states for progressive weather data loading
 //
 
-import SwiftUI
 import CoreLocation
+import SwiftUI
 
 // MARK: - Skeleton Loading Views
 

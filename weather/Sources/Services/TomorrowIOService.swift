@@ -10,7 +10,6 @@ import Foundation
 // MARK: - Tomorrow.io Service
 
 enum TomorrowIOService {
-    
     /// Fetch pollen forecast data from Tomorrow.io API
     /// - Parameters:
     ///   - latitude: Location latitude

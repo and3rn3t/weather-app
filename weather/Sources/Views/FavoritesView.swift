@@ -5,9 +5,9 @@
 //  Created by Matt on 2/5/26.
 //
 
-import SwiftUI
-import SwiftData
 import CoreLocation
+import SwiftData
+import SwiftUI
 
 struct FavoritesView: View {
     @Environment(FavoritesManager.self) private var favoritesManager
@@ -198,7 +198,6 @@ struct FavoritesButton: View {
 
 #Preview {
     FavoritesView { _ in }
-        .environment(FavoritesManager(modelContext: ModelContext(
-            try! ModelContainer(for: SavedLocation.self)
-        )))
+        // swiftlint:disable:next force_try
+        .environment(FavoritesManager(modelContext: ModelContext(try! ModelContainer(for: SavedLocation.self))))
 }

@@ -5,8 +5,8 @@
 //  Created by GitHub Copilot on 2/6/26.
 //
 
-import SwiftUI
 import SwiftData
+import SwiftUI
 
 struct WeatherComparisonView: View {
     @Environment(\.dismiss) private var dismiss

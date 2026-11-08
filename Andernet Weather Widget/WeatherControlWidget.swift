@@ -5,9 +5,9 @@
 //  Created by Matt on 2/5/26.
 //
 
-import WidgetKit
-import SwiftUI
 import AppIntents
+import SwiftUI
+import WidgetKit
 
 // MARK: - App Group Identifier (shared with main app)
 

@@ -20,7 +20,6 @@ import OSLog
 /// Data is delivered daily by the system and can be uploaded to a backend
 @MainActor
 final class TelemetryManager: NSObject, MXMetricManagerSubscriber, @unchecked Sendable {
-    
     // MARK: - Singleton
     
     static let shared = TelemetryManager()

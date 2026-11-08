@@ -5,8 +5,8 @@
 //  Created by Matt on 2/5/26.
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 
 // MARK: - Hourly Chart View
 
@@ -229,7 +229,6 @@ struct HourlyChartView: View {
                 .lineStyle(StrokeStyle(lineWidth: 1, dash: [5, 3]))
                 .interpolationMethod(.catmullRom)
             }
-            
         }
         .chartXAxis {
             AxisMarks(values: .stride(by: .hour, count: 6)) { value in
@@ -317,7 +316,7 @@ struct HourlyChartView: View {
     // MARK: - Chart Overlay for Selection
     
     private func chartOverlay(proxy: ChartProxy) -> some View {
-        GeometryReader { geometry in
+        GeometryReader { _ in
             Rectangle()
                 .fill(.clear)
                 .contentShape(Rectangle())
@@ -510,10 +509,10 @@ struct ChartTypeButton: View {
     let action: () -> Void
     
     var body: some View {
-        Button(action: {
+        Button {
             HapticFeedback.impact()
             action()
-        }) {
+        } label: {
             HStack(spacing: 6) {
                 Image(systemName: type.icon)
                 Text(type.rawValue)
@@ -677,6 +676,8 @@ private extension WeatherData {
             }
         }
         """
+        // Debug-only sample data: a decode failure here is a programmer error.
+        // swiftlint:disable:next force_try
         return try! JSONDecoder().decode(WeatherData.self, from: json.data(using: .utf8)!)
     }
 }

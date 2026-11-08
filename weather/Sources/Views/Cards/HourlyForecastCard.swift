@@ -5,8 +5,8 @@
 //  Extracted from WeatherDetailView.swift for modularity.
 //
 
-import SwiftUI
 import Charts
+import SwiftUI
 
 // MARK: - Hourly Forecast Card
 
@@ -145,7 +145,7 @@ struct HourlyForecastCard: View, Equatable {
     }
     
     // MARK: - Equatable
-    static func == (lhs: HourlyForecastCard, rhs: HourlyForecastCard) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.hourly == rhs.hourly && lhs.timezone == rhs.timezone && lhs.selectedHour == rhs.selectedHour && lhs.showUVIndex == rhs.showUVIndex
     }
 }
@@ -160,7 +160,7 @@ struct HourlyWeatherItem: View, Equatable {
     var isSelected: Bool = false
     @Environment(SettingsManager.self) var settings
 
-    static func == (lhs: HourlyWeatherItem, rhs: HourlyWeatherItem) -> Bool {
+    static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.time == rhs.time &&
         lhs.temperature == rhs.temperature &&
         lhs.weatherCode == rhs.weatherCode &&
@@ -293,14 +293,14 @@ struct UVIndexChart: View {
             }
         }
         .chartYAxis {
-            AxisMarks(position: .leading) { value in
+            AxisMarks(position: .leading) { _ in
                 AxisValueLabel()
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
         }
         .chartXAxis {
-            AxisMarks(values: .stride(by: 3)) { value in
+            AxisMarks(values: .stride(by: 3)) { _ in
                 AxisValueLabel()
                     .font(.caption)
                     .foregroundStyle(.secondary)

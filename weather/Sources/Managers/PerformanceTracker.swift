@@ -7,8 +7,8 @@
 //
 
 import Foundation
-import SwiftUI
 import OSLog
+import SwiftUI
 
 /// Real-time performance tracking for custom app metrics
 /// 
@@ -21,7 +21,6 @@ import OSLog
 @MainActor
 @Observable
 final class PerformanceTracker {
-    
     // MARK: - Singleton
     
     static let shared = PerformanceTracker()

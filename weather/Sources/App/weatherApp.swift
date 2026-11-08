@@ -5,12 +5,12 @@
 //  Created by Matt on 2/4/26.
 //
 
-import SwiftUI
-import SwiftData
-import CoreLocation
 import AppIntents
-import OSLog
+import CoreLocation
 import os.signpost
+import OSLog
+import SwiftData
+import SwiftUI
 
 @main
 struct WeatherApp: App {

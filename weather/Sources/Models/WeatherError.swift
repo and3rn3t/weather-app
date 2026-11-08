@@ -130,7 +130,7 @@ enum WeatherError: LocalizedError, Equatable {
     }
     
     /// Convert from URLError
-    static func from(_ urlError: URLError) -> WeatherError {
+    static func from(_ urlError: URLError) -> Self {
         switch urlError.code {
         case .notConnectedToInternet, .networkConnectionLost:
             return .noInternet
@@ -148,7 +148,7 @@ enum WeatherError: LocalizedError, Equatable {
     }
     
     /// Convert from HTTP status code
-    static func from(statusCode: Int) -> WeatherError? {
+    static func from(statusCode: Int) -> Self? {
         switch statusCode {
         case 200...299:
             return nil // Success
@@ -174,7 +174,7 @@ struct RetryConfiguration: Sendable {
     let maxDelay: TimeInterval
     let multiplier: Double
     
-    nonisolated static let `default` = RetryConfiguration(
+    nonisolated static let `default` = Self(
         maxAttempts: 3,
         initialDelay: 1.0,
         maxDelay: 10.0,

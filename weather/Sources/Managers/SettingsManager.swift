@@ -6,9 +6,9 @@
 //
 
 import Foundation
-import SwiftUI
-import OSLog
 import os.signpost
+import OSLog
+import SwiftUI
 
 // MARK: - Settings Manager
 
