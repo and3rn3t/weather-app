@@ -145,9 +145,7 @@ struct WeatherComparisonView: View {
                 let id = favorite.id.uuidString
                 
                 group.addTask {
-                    let service = await MainActor.run { WeatherService() }
-                    await service.fetchWeatherData(latitude: lat, longitude: lon)
-                    let data = await MainActor.run { service.weatherData }
+                    let data = try? await WeatherService.fetchForecast(latitude: lat, longitude: lon)
                     return (id, data)
                 }
             }

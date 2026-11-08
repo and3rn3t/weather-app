@@ -228,4 +228,51 @@ struct FetchPipelineTests {
         #expect(service.lastError == nil)
         #expect(service.isLoading == false)
     }
+
+    // #103: background refresh needs to know whether the fetch worked.
+    @Test func fetchReportsSuccessAndFailure() async {
+        let service = makeService()
+        StubURLProtocol.stub(latitude: 12.5)
+        StubURLProtocol.stub(latitude: -12.5, .init(failure: .notConnectedToInternet))
+
+        let ok = await service.fetchWeatherData(latitude: 12.5, longitude: 0, locationName: "A")
+        let failed = await service.fetchWeatherData(latitude: -12.5, longitude: 0, locationName: "B")
+
+        #expect(ok == true)
+        #expect(failed == false)
+    }
+
+    // #99: previews/comparison/widgets use a stateless fetch that leaves the service untouched.
+    @Test func statelessForecastFetchDoesNotChangeServiceState() async throws {
+        let service = makeService()
+        StubURLProtocol.stub(latitude: 13.5)
+
+        let forecast = try await WeatherService.fetchForecast(latitude: 13.5, longitude: 0, session: StubURLProtocol.makeSession())
+
+        #expect(forecast.latitude == 13.5)
+        #expect(service.weatherData == nil)
+        #expect(service.currentLocationName == nil)
+    }
+}
+
+// MARK: - Background task completion
+
+struct BackgroundTaskCompletionTests {
+    // #103: expiry and the finishing work can race; the task must be completed exactly once.
+    @Test func completesOnlyOnce() {
+        let results = ResultsBox()
+        let completion = BackgroundTaskCompletion { results.append($0) }
+
+        completion.complete(success: false) // expiration handler
+        completion.complete(success: true) // work finishing afterwards
+
+        #expect(results.values == [false])
+    }
+}
+
+private nonisolated final class ResultsBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: [Bool] = []
+    func append(_ value: Bool) { lock.withLock { stored.append(value) } }
+    var values: [Bool] { lock.withLock { stored } }
 }

@@ -15,6 +15,7 @@ struct PollenForecastCard: View {
     let latitude: Double
     let longitude: Double
     
+    @Environment(SettingsManager.self) private var settings
     @State private var pollenData: PollenData?
     @State private var isLoading = false
     @State private var error: String?
@@ -326,7 +327,7 @@ struct PollenForecastCard: View {
             let data = try await TomorrowIOService.fetchPollenForecast(
                 latitude: latitude,
                 longitude: longitude,
-                apiKey: APIConfig.defaultTomorrowIOKey
+                apiKey: settings.tomorrowIOAPIKey
             )
 
             guard let unified = UnifiedPollenData.from(tomorrowIO: data) else {

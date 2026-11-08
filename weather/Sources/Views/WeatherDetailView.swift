@@ -243,6 +243,7 @@ struct MoreDetailsSection: View {
                         latitude: weatherData.latitude,
                         longitude: weatherData.longitude
                     )
+                        .environment(settings)
                     
                     // Additional Details
                     WeatherDetailsCard(current: weatherData.current)

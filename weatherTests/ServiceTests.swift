@@ -136,12 +136,12 @@ struct WeatherServiceEnhancedTests {
         let service = WeatherService()
         
         // Test multiple concurrent fetches don't cause issues
-        async let fetch1: () = service.fetchWeatherData(
+        async let fetch1: Bool = service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
         )
-        async let fetch2: () = service.fetchWeatherData(
+        async let fetch2: Bool = service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "NYC"

@@ -461,19 +461,19 @@ struct IntegrationTestScenarios {
         let service = WeatherService()
 
         // 1. Simulate rapid location changes (user scrolling favorites)
-        async let request1: () = service.fetchWeatherData(
+        async let request1: Bool = service.fetchWeatherData(
             latitude: 37.7749,
             longitude: -122.4194,
             locationName: "SF"
         )
 
-        async let request2: () = service.fetchWeatherData(
+        async let request2: Bool = service.fetchWeatherData(
             latitude: 40.7128,
             longitude: -74.0060,
             locationName: "NYC"
         )
 
-        async let request3: () = service.fetchWeatherData(
+        async let request3: Bool = service.fetchWeatherData(
             latitude: 51.5074,
             longitude: -0.1278,
             locationName: "London"

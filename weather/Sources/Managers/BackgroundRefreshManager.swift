@@ -294,43 +294,53 @@ class BackgroundRefreshManager: ObservableObject {
     private func handleBackgroundRefresh(_ task: BGAppRefreshTask) {
         logger.info("Background refresh task started")
         
-        // Set expiration handler
-        task.expirationHandler = {
-            self.logger.warning("Background refresh task expired")
-            task.setTaskCompleted(success: false)
+        // BGTask isn't Sendable but is documented as safe to complete from any queue; the one-shot
+        // guard below ensures only one caller ever does.
+        nonisolated(unsafe) let backgroundTask = task
+        let completion = BackgroundTaskCompletion { success in
+            backgroundTask.setTaskCompleted(success: success)
         }
         
-        // Perform refresh
-        Task {
-            await performBackgroundWeatherRefresh(task)
+        let work = Task { @MainActor in
+            let success = await performBackgroundWeatherRefresh()
+            completion.complete(success: success && !Task.isCancelled)
+        }
+        
+        // On expiry stop the in-flight fetch and report failure. The work task's own completion
+        // (which will then also try to report) is ignored: a task is completed exactly once.
+        task.expirationHandler = { [logger] in
+            logger.warning("Background refresh task expired")
+            work.cancel()
+            completion.complete(success: false)
         }
     }
     
-    private func performBackgroundWeatherRefresh(_ task: BGAppRefreshTask) async {
-        // Get last known location
+    /// Returns whether fresh data was fetched.
+    private func performBackgroundWeatherRefresh() async -> Bool {
         guard let locationMeta = SharedDataManager.lastKnownLocation() else {
             logger.warning("No known location for background refresh")
-            task.setTaskCompleted(success: false)
-            return
+            return false
         }
         
-        // Perform weather fetch
-        await weatherService.fetchWeatherData(
+        let success = await weatherService.fetchWeatherData(
             latitude: locationMeta.latitude, 
             longitude: locationMeta.longitude, 
             locationName: locationMeta.name,
             forceRefresh: true
         )
         
-        // Update last refresh time
-        lastBackgroundRefresh = Date()
-        userDefaults.set(lastBackgroundRefresh, forKey: "lastBackgroundRefresh")
-        
-        // Schedule next refresh
+        // Keep the chain going whether or not this attempt worked.
         scheduleNextOptimalRefresh()
         
+        guard success else {
+            logger.error("Background refresh failed")
+            return false
+        }
+        
+        lastBackgroundRefresh = Date()
+        userDefaults.set(lastBackgroundRefresh, forKey: "lastBackgroundRefresh")
         logger.info("Background refresh completed successfully")
-        task.setTaskCompleted(success: true)
+        return true
     }
     
     // MARK: - Settings Management
@@ -432,5 +442,27 @@ class BackgroundRefreshManager: ObservableObject {
 extension BackgroundRefreshManager.UserUsagePattern: Codable {
     enum CodingKeys: String, CodingKey {
         case hour, dayOfWeek, frequency, lastUsed
+    }
+}
+
+// MARK: - One-shot completion
+
+/// Reports a background task's outcome at most once. iOS calls the expiration handler on an arbitrary
+/// queue, possibly while the work finishes, and `setTaskCompleted` must not be called twice.
+final class BackgroundTaskCompletion: @unchecked Sendable {
+    private let lock = NSLock()
+    private var finished = false
+    private let report: @Sendable (Bool) -> Void
+    
+    init(report: @escaping @Sendable (Bool) -> Void) {
+        self.report = report
+    }
+    
+    func complete(success: Bool) {
+        let shouldReport = lock.withLock { () -> Bool in
+            defer { finished = true }
+            return !finished
+        }
+        if shouldReport { report(success) }
     }
 }
