@@ -67,7 +67,6 @@ SWIFT_CROSS_MODULE_OPTIMIZATION = YES
 // MARK: - Binary Metadata Reduction
 
 // Strip Swift reflection metadata — smaller binary, no runtime Mirror usage needed
-SWIFT_REFLECTION_METADATA_LEVEL = none
 
 // Don't serialize debug options into the binary
 SWIFT_SERIALIZE_DEBUGGING_OPTIONS = NO
