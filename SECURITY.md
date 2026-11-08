@@ -4,10 +4,10 @@
 
 We release patches for security vulnerabilities for the following versions:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 1.0.x   | :white_check_mark: |
-| < 1.0   | :x:                |
+| Version                    | Supported          |
+| -------------------------- | ------------------ |
+| Latest release / `main`    | :white_check_mark: |
+| Older releases             | :x:                |
 
 ## Reporting a Vulnerability
 
@@ -54,7 +54,7 @@ Please include the following information in your report:
 - Location data is processed locally on device
 - No user data is stored on remote servers
 - All network communication uses HTTPS
-- See our [Privacy Policy](PRIVACY_POLICY.md) for details
+- See our [Privacy Policy](docs/PRIVACY_POLICY.md) for details
 
 ### Security Scanning
 

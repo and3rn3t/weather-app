@@ -16,7 +16,7 @@ Welcome to Andernet Weather support! This document provides help for beta tester
 A: Yes, completely free with no ads, in-app purchases, or subscriptions.
 
 **Q: What iOS version is required?**
-A: iOS 17.0 or later. The app is designed for iOS 26 with Liquid Glass effects.
+A: iOS 26.0 or later (the app uses Liquid Glass).
 
 **Q: Does it work offline?**
 A: Recently loaded forecasts are cached on your device, so you can often view them offline. New data requires an internet connection.

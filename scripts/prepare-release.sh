@@ -243,7 +243,6 @@ echo -e "\n${YELLOW}7. Documentation${NC}"
 
 REQUIRED_DOCS=(
     "README.md"
-    "docs/CHANGELOG.md"
     "docs/PRIVACY_POLICY.md"
     "docs/SUPPORT.md"
 )
@@ -255,15 +254,6 @@ for doc in "${REQUIRED_DOCS[@]}"; do
         check_warning "$doc not found"
     fi
 done
-
-# Check if CHANGELOG.md is updated
-if [ -f "docs/CHANGELOG.md" ]; then
-    if grep -q "## \[$NEW_VERSION\]" docs/CHANGELOG.md 2>/dev/null; then
-        check_passed "CHANGELOG.md updated for version $NEW_VERSION"
-    else
-        check_warning "CHANGELOG.md not updated for version $NEW_VERSION"
-    fi
-fi
 
 # 8. App Store Readiness
 echo -e "\n${YELLOW}8. App Store Readiness${NC}"

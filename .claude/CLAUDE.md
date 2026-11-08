@@ -2,7 +2,7 @@
 
 ## Project Identity
 
-**Weather App** - A feature-rich iOS weather application built with SwiftUI for iOS 17+. Uses Open-Meteo API for weather data (no API key required).
+**Weather App** - A feature-rich iOS weather application built with SwiftUI for iOS 26+. Uses Open-Meteo API for weather data (no API key required).
 
 ## Quick Reference
 
@@ -10,7 +10,7 @@
 |--------|---------|
 | Language | Swift 5.9+ |
 | UI Framework | SwiftUI 5.0 |
-| iOS Target | 17.0+ |
+| iOS Target | 26.0+ |
 | Architecture | MVVM + Observable |
 | Data Storage | SwiftData |
 | Charts | Swift Charts |
@@ -42,7 +42,6 @@ weather/
 │   └── Utilities/
 │       ├── GlassEffects.swift         # Visual effects
 │       └── WeatherParticleEffects.swift # Animations
-├── Documentation/                      # Feature docs
 └── Assets.xcassets/                   # Resources
 ```
 
@@ -134,10 +133,10 @@ final class WeatherService {
 - **Severity Levels**: Extreme, Severe, Moderate, Minor
 - **Integration**: Alerts automatically fetched with weather data
 
-### Weather Radar Map (ENHANCED)
+### Weather Radar Map
 
-- **View**: `RadarMapView.swift`
-- **Service**: `RainViewerService.swift`
+- **iOS**: `WeatherMapView.swift` fetches radar frames from the RainViewer API and renders precipitation tile overlays
+- **Android**: `RainViewerApiService.kt`
 - **Integration**: RainViewer API for animated radar tiles
 - **Features**: Interactive map with precipitation overlay, animation controls
 
@@ -155,7 +154,7 @@ final class WeatherService {
 2. Add models to `Sources/Models/` if needed
 3. Create views in `Sources/Views/`
 4. Update navigation in `ContentView.swift`
-5. Document in `Documentation/CHANGELOG.md`
+5. Document the change in the PR description (release notes are drafted by release-drafter)
 
 ### Modifying Existing Features
 
@@ -176,72 +175,20 @@ final class WeatherService {
 
 ### Makefile Commands
 
-Always use the Makefile for consistent builds:
+Always use the Makefile (`make help` lists everything); never call `xcodebuild` directly.
 
 ```bash
-# Building
-make build              # Debug build
-make build-release      # Release build (optimized)
-make build-sanitizers   # Build with Address & Thread Sanitizers
-make clean              # Clean DerivedData and build artifacts
-
-# Testing
-make test               # Run all tests
-make test-coverage      # Tests with code coverage
-make test-plan          # Use test plan (parallel, sanitizers)
-make test-performance   # Performance tests only
-
-# Code Quality
-make lint               # Run SwiftLint
-make format             # Format with swift-format
-make analyze            # Static analysis
-make accessibility      # Accessibility audit
-
-# Memory & Diagnostics
-make memory-diagnostics # All memory checks
-make memory-leaks       # Leak detection with Instruments
-
-# Release
-make archive            # Create release archive
-make export-ipa         # Export IPA for App Store
-make quality-gate       # All pre-release checks
-
-# Analysis
-make analyze-build-times  # Identify slow-compiling files
-make analyze-size         # Analyze app bundle size
-make profile              # Build for Instruments profiling
-
-# Setup
-make setup-tools        # Install xcbeautify, swiftlint
-make install-hooks      # Install git pre-commit hooks
+make build              # debug build (also: build-release, build-sanitizers)
+make clean              # clean DerivedData and build artifacts
+make test               # all tests (also: test-coverage, test-plan, test-performance)
+make lint               # SwiftLint (also: format, analyze, accessibility)
+make quality-gate       # all pre-release checks
+make setup-tools        # xcbeautify, swiftlint
 ```
 
 ### CI/CD Integration
 
-The project includes comprehensive CI/CD automation:
-
-#### GitHub Actions Workflows
-
-- **iOS CI** (`ci.yml`) - Build, test, security scan (2-device matrix)
-- **Android CI** (`android.yml`) - Build, lint, test for companion Android app
-- **TestFlight Deployment** (`deploy-testflight.yml`) - Automated iOS releases
-- **Play Store Deployment** (`deploy-playstore.yml`) - Automated Android releases
-- **PR Auto-Labeling** (`pr-labeler.yml`) - Automatic PR categorization
-- **Stale Management** (`stale.yml`) - Auto-close inactive issues
-- **Changelog** (`changelog.yml`) - Automatic changelog generation
-
-#### Fastlane
-
-- **iOS**: `fastlane ios beta` - TestFlight deployment
-- **Android**: `fastlane android beta` - Play Store beta deployment
-- **Configuration**: `fastlane/Fastfile`, `fastlane/Appfile`
-
-#### Runner Cost Optimizations
-
-- Reduced iOS test matrix from 3 devices to 2 (33% savings)
-- SwiftLint runs on Linux runner instead of macOS (10x cheaper)
-- Path filtering prevents unnecessary workflow runs
-- **Total savings: ~23% on CI/CD runner costs**
+Workflows, secrets and the release process are documented in [`.github/CI_CD_GUIDE.md`](../.github/CI_CD_GUIDE.md). iOS CI is `ci.yml`, Android is `android.yml`; deploys (`deploy-testflight.yml`, `deploy-playstore.yml`) are manual.
 
 ### Multi-Platform Project
 
@@ -249,7 +196,7 @@ This is a **cross-platform project** with both iOS and Android implementations:
 
 **iOS** (main directory):
 
-- Swift 5.9+, SwiftUI, iOS 17.0+
+- Swift 5.9+, SwiftUI, iOS 26.0+
 - MVVM + Observable pattern
 - SwiftData, URLSession, CoreLocation
 
@@ -341,24 +288,6 @@ The codebase follows these performance patterns:
 6. Animation
 7. Accessibility
 
-## Common Issues & Solutions
-
-### Build Errors (`@ObservableObject`, `@Published` - use `@Observable`)
-
-❌ Do not break existing tests
-❌ Do not create formatters inside loops or computed properties
-❌ Do not skip the Makefile for builds
-❌ Do not use bare `Error` protocol (use `any Error` for Swift 6 compatibility)
-
-✅ Do use Apple frameworks only
-✅ Do follow existing patterns
-✅ Do maintain dark mode support
-✅ Do add documentation for new features
-✅ Do write tests for new code
-✅ Do use cached formatters and sessions
-✅ Do use `make build` instead of `xcodebuild` directly
-✅ Do consider both iOS and Android implementations for shared features
-
 ## Testing Guidance
 
 ### Unit Tests
@@ -377,13 +306,12 @@ The codebase follows these performance patterns:
 
 | File | Purpose |
 |------|---------|
-| `README.md` | Documentation index |
-| `QUICK_START.md` | Getting started, build commands |
-| `FEATURES.md` | App features and functionality |
-| `BUILD_CONFIGURATION.md` | Xcode settings, schemes, diagnostics |
-| `AI_DEVELOPMENT_GUIDE.md` | AI assistant instructions |
-| `APP_STORE_GUIDE.md` | App Store metadata |
-| `CHANGELOG.md` | Version history |
+| `README.md` | Overview, setup, build commands |
+| `CONTRIBUTING.md` | Contribution workflow |
+| `SECURITY.md` | Vulnerability reporting |
+| `docs/SUPPORT.md` | User-facing FAQ |
+| `docs/PRIVACY_POLICY.md` | Privacy policy |
+| `.github/CI_CD_GUIDE.md` | CI/CD pipeline guide |
 
 ## Restrictions
 
@@ -393,12 +321,13 @@ The codebase follows these performance patterns:
 ❌ Do not use deprecated APIs
 ❌ Do not break existing tests
 ❌ Do not create formatters inside loops or computed properties
+❌ Do not use `@ObservableObject` / `@Published` (use `@Observable`)
+❌ Do not use bare `Error` (use `any Error`)
 ❌ Do not skip the Makefile for builds
 
 ✅ Do use Apple frameworks only
 ✅ Do follow existing patterns
 ✅ Do maintain dark mode support
-✅ Do add documentation for new features
-✅ Do write tests for new code
+✅ Do write tests and docs for new features
 ✅ Do use cached formatters and sessions
-✅ Do use `make build` instead of `xcodebuild` directly
+✅ Do consider both iOS and Android for shared features

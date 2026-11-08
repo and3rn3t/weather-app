@@ -19,9 +19,9 @@ Thank you for your interest in contributing to the Weather App! This document pr
 
 ### Prerequisites
 
-- **macOS**: Ventura 14.0 or later
-- **Xcode**: 15.0 or later
-- **iOS Device/Simulator**: iOS 17.0 or later
+- **macOS**: 15.6 or later (Tahoe 26 recommended)
+- **Xcode**: 26.0 or later
+- **iOS Device/Simulator**: iOS 26.0 or later
 - **Git**: Latest version
 
 ### Setup
@@ -121,7 +121,6 @@ weather/
 │   ├── Services/     # API services
 │   ├── Managers/     # State managers
 │   └── Utilities/    # Helpers
-├── Documentation/    # Feature docs
 ├── Assets.xcassets/  # Resources
 └── Info.plist        # App configuration
 ```
@@ -353,60 +352,17 @@ test(service): add WeatherService unit tests
 - [ ] Tests pass on simulator
 - [ ] Documentation updated (if needed)
 - [ ] No new compiler warnings
-- [ ] Tested on iOS 17 simulator
+- [ ] Tested on iOS 26 simulator
 
 ### PR Template
 
-```markdown
-## Description
-Brief description of changes
-
-## Type of Change
-- [ ] Bug fix
-- [ ] New feature
-- [ ] Breaking change
-- [ ] Documentation update
-
-## Testing
-How to test these changes
-
-## Screenshots
-(if UI changes)
-
-## Checklist
-- [ ] Code follows style guidelines
-- [ ] Tests pass
-- [ ] Documentation updated
-```
+The template in [`.github/pull_request_template.md`](.github/pull_request_template.md) is applied automatically when you open a PR.
 
 ---
 
 ## AI Assistance
 
-This project includes AI agent instructions for development assistance:
-
-### GitHub Copilot
-
-Custom instructions are in `.github/copilot-instructions.md`. These help Copilot:
-
-- Understand project architecture
-- Follow our coding patterns
-- Generate consistent code
-
-### Claude AI
-
-Instructions are in `.claude/CLAUDE.md`. These provide:
-
-- Project context and structure
-- Coding patterns and examples
-- Common issues and solutions
-
-### Using AI Effectively
-
-1. **Be specific** in your prompts
-2. **Review suggestions** carefully
-3. **Test generated code** thoroughly
-4. **Maintain consistency** with existing patterns
+AI assistant context lives in [`.claude/CLAUDE.md`](.claude/CLAUDE.md) and [`.github/copilot-instructions.md`](.github/copilot-instructions.md). Review and test AI-generated code like any other contribution, and match existing patterns.
 
 ---
 
@@ -471,9 +427,11 @@ final class WeatherUITests: XCTestCase {
 | File | Update When |
 |------|-------------|
 | `README.md` | Major features, getting started changes |
-| `CHANGELOG.md` | Every release |
-| `QUICK_START.md` | Setup process changes |
-| Feature docs | Specific feature changes |
+| `docs/` (privacy, support) | Data handling or user-facing behavior changes |
+| `.github/CI_CD_GUIDE.md` | Workflow, secret or release process changes |
+| `.claude/CLAUDE.md` | Architecture or convention changes |
+
+Release notes are drafted automatically by Release Drafter from PR titles.
 
 ### Code Comments
 

@@ -109,7 +109,8 @@ app/src/main/java/com/andernet/weather/
 1. **Clone the repository**
 
    ```bash
-   cd weather2/android-app
+   git clone https://github.com/and3rn3t/weather-app.git
+   cd weather-app/android-app
    ```
 
 2. **Open in Android Studio**

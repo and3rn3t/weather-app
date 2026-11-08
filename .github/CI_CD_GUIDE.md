@@ -1,381 +1,77 @@
-# CI/CD Setup Guide
+# CI/CD Guide
 
-This guide explains the GitHub Actions workflows and how to configure secrets for automated builds and deployments.
+Single reference for this repo's GitHub Actions workflows, secrets and release process.
+Workflow files live in [`.github/workflows/`](workflows/); shared jobs come from `and3rn3t/.github`.
 
-## 📋 Overview
+## Workflows
 
-The project has comprehensive CI/CD pipelines for both iOS and Android:
+### Build, test, release
 
-### iOS Workflows
+| Workflow | File | Trigger | Purpose |
+| -------- | ---- | ------- | ------- |
+| Build & Test | `ci.yml` | push / PR, `weather/**` | iOS build and unit tests |
+| Enhanced CI | `enhanced-ci.yml` | push / PR | Release build size analysis (main only) |
+| iOS Build (Reusable) | `ios-build-reusable.yml` | `workflow_call` | Shared iOS build steps |
+| Android Build & Test | `android.yml` | push / PR | Gradle build, lint, tests |
+| Quick CI | `quick-ci.yml` | PR | Change detection, lint, security checks (no builds) |
+| Deploy to TestFlight | `deploy-testflight.yml` | manual | Archive, export, upload via `altool` |
+| Deploy to Play Store | `deploy-playstore.yml` | manual | Build AAB, upload via `fastlane supply` |
 
-- **Build & Test** ([`ci.yml`](.github/workflows/ci.yml)) - Runs on every PR/push
-- **Code Coverage** ([`coverage.yml`](.github/workflows/coverage.yml)) - Generates coverage reports
-- **TestFlight Deployment** ([`deploy-testflight.yml`](.github/workflows/deploy-testflight.yml)) - Manual deployment to TestFlight
+### Security and hygiene
 
-### Android Workflows
+| Workflow | File | Purpose |
+| -------- | ---- | ------- |
+| Gitleaks | `gitleaks.yml` | Secret scan on push/PR |
+| Dependency Review | `dependency-review.yml` | Flag vulnerable dependency changes in PRs |
+| Actionlint | `actionlint.yml` | Validate workflow YAML |
+| Consistency | `consistency.yml` | Warn when baseline files drift from `ai-template-repo` |
+| Stale Management | `stale.yml` | Close inactive issues/PRs (daily) |
+| Cache Maintenance | `cache-maintenance.yml` | Warm and prune caches (daily/weekly) |
 
-- **Android Build & Test** ([`android.yml`](.github/workflows/android.yml)) - Runs on every PR/push
-- **Play Store Deployment** ([`deploy-playstore.yml`](.github/workflows/deploy-playstore.yml)) - Manual deployment to Google Play
+### Labels and releases
 
-### Automation
+| Workflow | File | Purpose |
+| -------- | ---- | ------- |
+| PR Labeler / PR Auto-Labeler | `labeler.yml`, `pr-labeler.yml` | Label PRs from changed paths (config: `labeler.yml`) |
+| Label Sync | `label-sync.yml` | Sync repo labels to `labels.yml` on push to main |
+| Release Drafter | `release-drafter.yml` | Draft release notes from merged PRs (config: `release-drafter.yml`) |
+| Changelog | `changelog.yml` | On publish, generate notes only if the release body is empty |
+| Lighthouse | `lighthouse.yml` | Disabled placeholder (manual only) |
 
-- **Dependabot** ([`dependabot.yml`](.github/dependabot.yml)) - Automated dependency updates
-
-## 🔑 Required Secrets
-
-To enable full CI/CD functionality, configure these secrets in GitHub:
-
-**Settings → Secrets and variables → Actions → New repository secret**
-
-### iOS Secrets
-
-#### App Store Connect API (Recommended)
-
-```
-ASC_API_KEY_ID=XXXXXXXXXX
-ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-ASC_API_KEY_CONTENT=<contents of AuthKey_XXXXXXXXXX.p8>
-```
-
-Generate at: [App Store Connect → Users and Access → Keys](https://appstoreconnect.apple.com/access/api)
-
-#### Code Signing
-
-```
-APPLE_CERTIFICATE_P12=<base64 encoded .p12 certificate>
-APPLE_CERTIFICATE_PASSWORD=<certificate password>
-KEYCHAIN_PASSWORD=<temporary keychain password for CI>
-```
-
-**To encode certificate:**
+## Manual runs
 
 ```bash
-base64 -i certificate.p12 | pbcopy
+gh workflow run "Deploy to TestFlight" -f version=1.0.1 -f skip_tests=false
+gh workflow run "Deploy to Play Store" -f track=internal -f rollout_percentage=100 -f skip_tests=false
 ```
 
-### Android Secrets
+Play Store `track` is one of `internal`, `alpha`, `beta`, `production`.
 
-#### Signing Key
+## Required secrets
 
-```
-ANDROID_KEYSTORE_BASE64=<base64 encoded keystore file>
-ANDROID_KEY_ALIAS=<key alias>
-ANDROID_KEY_PASSWORD=<key password>
-ANDROID_STORE_PASSWORD=<keystore password>
-```
+| Used by | Secret |
+| ------- | ------ |
+| TestFlight | `ASC_API_KEY_ID`, `ASC_ISSUER_ID`, `ASC_API_KEY_CONTENT`, `APPLE_CERTIFICATE_P12`, `APPLE_CERTIFICATE_PASSWORD`, `KEYCHAIN_PASSWORD` |
+| Play Store | `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`, `ANDROID_STORE_PASSWORD`, `GOOGLE_PLAY_JSON_KEY` |
+| Android builds | `GOOGLE_MAPS_API_KEY` |
 
-**To encode keystore:**
+Set with `gh secret set <NAME>`. Never commit keys; `APIConfig.swift` (Tomorrow.io key) is gitignored.
 
-```bash
-base64 -i release.keystore | pbcopy
-```
+## Releasing
 
-#### Google Play Publishing
+1. `make prepare-release` (or `-minor` / `-major`) runs pre-release checks.
+2. Merge to `main`; Release Drafter keeps the draft release current.
+3. Run the deploy workflow(s) above, then publish the draft release. The Changelog workflow runs on publish; it keeps the Release Drafter notes and only generates notes if the release body is empty.
 
-```
-GOOGLE_PLAY_JSON_KEY=<contents of Google Play service account JSON>
-```
+PR titles use conventional commits (`feat:`, `fix:`, `docs:`, ...); Release Drafter derives the version bump and notes from them.
 
-Create at: [Google Play Console → Settings → API access](https://play.google.com/console/developers/api-access)
+## Dependencies
 
-#### Google Maps API
+Dependabot ([`dependabot.yml`](dependabot.yml)) runs weekly for GitHub Actions and Gradle (`/android-app`).
 
-```
-GOOGLE_MAPS_API_KEY=<your Google Maps API key>
-```
+## Troubleshooting
 
-### Optional Secrets
-
-#### Code Coverage (Codecov)
-
-```
-CODECOV_TOKEN=<your codecov token>
-```
-
-Get from: [codecov.io](https://codecov.io/)
-
-## 🚀 Workflows in Detail
-
-### 1. iOS Build & Test (`ci.yml`)
-
-**Triggers:** Every push/PR to `main` (iOS files only)
-
-**What it does:**
-
-- ✅ Builds on 3 simulators (iPhone 16 Pro, iPhone SE, iPad Pro)
-- ✅ Runs unit tests in parallel
-- ✅ SwiftLint code quality checks
-- ✅ Security scanning for hardcoded secrets
-- ✅ Build size analysis
-- ✅ Test result artifacts
-
-**Matrix testing:** Ensures compatibility across different device sizes and types.
-
-**Performance optimizations:**
-
-- Caches DerivedData and Homebrew
-- Only runs on iOS file changes
-- Parallel test execution
-
-### 2. Android Build & Test (`android.yml`)
-
-**Triggers:** Every push/PR to `main` (Android files only)
-
-**What it does:**
-
-- ✅ Lint checks
-- ✅ Unit tests
-- ✅ Builds debug APK
-- ✅ Builds release AAB (main branch only)
-- ✅ Instrumented tests on emulator (PRs only)
-- ✅ Test result artifacts
-
-**Jobs:**
-
-1. `lint` - Code quality
-2. `test` - Unit tests
-3. `build-debug` - Debug APK
-4. `build-release` - Signed release AAB
-5. `instrumented-tests` - UI tests on emulator
-
-**Performance optimizations:**
-
-- Gradle build cache
-- AVD cache for faster emulator startup
-- KVM acceleration for faster tests
-
-### 3. TestFlight Deployment (`deploy-testflight.yml`)
-
-**Trigger:** Manual (workflow_dispatch)
-
-**Inputs:**
-
-- `version` - Version number (optional, auto-increments if empty)
-- `skip_tests` - Skip tests before deployment (default: false)
-
-**What it does:**
-
-1. Runs tests (unless skipped)
-2. Sets up code signing certificates
-3. Increments build number
-4. Archives and exports IPA
-5. Uploads to TestFlight
-6. Creates git tag
-7. Uploads build artifacts
-
-**Requirements:**
-
-- All iOS secrets configured
-- Valid App Store Connect API key
-- Valid distribution certificate
-
-### 4. Play Store Deployment (`deploy-playstore.yml`)
-
-**Trigger:** Manual (workflow_dispatch)
-
-**Inputs:**
-
-- `track` - Release track (internal/alpha/beta/production)
-- `rollout_percentage` - For production (1-100%)
-- `skip_tests` - Skip tests before deployment
-
-**What it does:**
-
-1. Runs tests (unless skipped)
-2. Builds signed release AAB
-3. Uploads to specified track
-4. Creates git tag (for production)
-5. Uploads build artifacts
-
-**Tracks:**
-
-- `internal` - Instant, unlimited testers
-- `alpha` - Closed testing
-- `beta` - Beta testing
-- `production` - Public release
-
-### 5. Code Coverage (`coverage.yml`)
-
-**Triggers:** Every push/PR to `main`
-
-**What it does:**
-
-- ✅ Generates coverage reports for iOS and Android
-- ✅ Uploads to Codecov
-- ✅ Comments coverage on PRs (Android)
-- ✅ Reports as build artifacts
-
-**Coverage requirements:**
-
-- Overall: 40% minimum
-- Changed files: 60% minimum
-
-## 🔄 Dependabot Configuration
-
-**Update schedule:** Weekly on Mondays at 9 AM
-
-**Monitored dependencies:**
-
-- GitHub Actions
-- Swift Package Manager (iOS)
-- Gradle (Android)
-- Bundler (Fastlane)
-
-**Grouping:**
-
-- Minor/patch updates grouped together
-- Separate PRs for major version updates
-
-## 🎯 Best Practices
-
-### For Contributors
-
-1. **Always run tests locally** before pushing
-
-   ```bash
-   # iOS
-   cd weather && make build
-   
-   # Android
-   cd android-app && ./gradlew test
-   ```
-
-2. **Keep PRs focused** - Smaller PRs are easier to review and test
-
-3. **Update tests** - Add tests for new features and bug fixes
-
-4. **Check CI status** - Don't merge until all checks pass
-
-### For Maintainers
-
-1. **TestFlight releases:**
-
-   ```
-   Actions → Deploy to TestFlight → Run workflow → Select branch
-   ```
-
-2. **Play Store releases:**
-
-   ```
-   Actions → Deploy to Play Store → Run workflow → Select track
-   ```
-
-3. **Secret rotation:**
-   - Rotate signing keys annually
-   - Update API keys when compromised
-   - Use short-lived tokens when possible
-
-4. **Monitor Dependabot:**
-   - Review and merge security updates ASAP
-   - Test dependency updates before merging
-
-## 🐛 Troubleshooting
-
-### iOS Build Failures
-
-**Error:** Code signing failed
-
-- **Fix:** Check certificates are valid and not expired
-- **Check:** Settings → Secrets → `APPLE_CERTIFICATE_P12`
-
-**Error:** Tests failed
-
-- **Fix:** Run tests locally on same simulator
-- **Check:** Test logs in artifacts
-
-### Android Build Failures
-
-**Error:** Signing failed
-
-- **Fix:** Verify keystore and passwords are correct
-- **Check:** Settings → Secrets → `ANDROID_*` secrets
-
-**Error:** Emulator startup failed
-
-- **Fix:** Usually a transient issue, re-run workflow
-- **Alternative:** Skip instrumented tests on retry
-
-### Deployment Failures
-
-**TestFlight upload failed:**
-
-- Check App Store Connect API key is valid
-- Ensure app bundle ID matches
-- Verify provisioning profiles
-
-**Play Store upload failed:**
-
-- Check service account has proper permissions
-- Verify version code is incremented
-- Ensure AAB is signed correctly
-
-## 📊 Monitoring
-
-### Build Status
-
-Check workflow status in:
-
-- **README badges** (if configured)
-- **Actions tab** in GitHub
-- **Commit status checks** on PRs
-
-### Coverage Reports
-
-View coverage at:
-
-- **Codecov dashboard** (if configured)
-- **PR comments** (Android)
-- **Workflow artifacts**
-
-### Dependencies
-
-Monitor updates in:
-
-- **Dependabot alerts** tab
-- **Pull requests** from Dependabot
-- **Security** tab for vulnerabilities
-
-## 🔗 Resources
-
-- [GitHub Actions Documentation](https://docs.github.com/en/actions)
-- [Fastlane Documentation](https://docs.fastlane.tools/)
-- [Xcode Build Settings Reference](https://developer.apple.com/documentation/xcode)
-- [Android Gradle Plugin](https://developer.android.com/build)
-- [App Store Connect API](https://developer.apple.com/documentation/appstoreconnectapi)
-- [Google Play Developer API](https://developers.google.com/android-publisher)
-
-## 📝 Workflow Diagram
-
-```
-┌─────────────────────────────────────────────────────┐
-│  Code Push / Pull Request                           │
-└────────────────┬────────────────────────────────────┘
-                 │
-                 ├─────────────────┬──────────────────┐
-                 ▼                 ▼                  ▼
-         ┌───────────────┐ ┌──────────────┐ ┌────────────────┐
-         │  iOS CI       │ │ Android CI   │ │ Code Coverage  │
-         │  - Build      │ │ - Lint       │ │ - iOS          │
-         │  - Test       │ │ - Test       │ │ - Android      │
-         │  - Lint       │ │ - Build APK  │ │ - Upload       │
-         │  - Security   │ │ - Build AAB  │ │ - Report       │
-         └───────┬───────┘ └──────┬───────┘ └────────┬───────┘
-                 │                │                   │
-                 └────────┬───────┴───────────────────┘
-                          ▼
-                 ┌─────────────────┐
-                 │  All Checks     │
-                 │  Pass ✅        │
-                 └────────┬────────┘
-                          │
-                 ┌────────┴───────┐
-                 │   Merge PR     │
-                 └────────┬───────┘
-                          │
-              ┌───────────┴──────────┐
-              │  Manual Deployment   │
-              ├──────────────────────┤
-              │  - TestFlight (iOS)  │
-              │  - Play Store (And.) │
-              └──────────────────────┘
-```
+- **iOS build fails in CI only:** run `make build` and `make test` locally; check the Xcode version selected by `setup-xcode` matches yours.
+- **Android build fails:** `cd android-app && ./gradlew assembleDebug testDebugUnitTest lint`.
+- **Deploy fails on signing:** re-check the certificate / keystore secrets above.
+- **Artifacts:** `gh run download <run-id>`.

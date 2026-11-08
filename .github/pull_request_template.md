@@ -132,6 +132,6 @@ Related to #
 
 **By submitting this pull request, I confirm that:**
 
-- [ ] I have read and followed the [Contributing Guidelines](CONTRIBUTING.md)
+- [ ] I have read and followed the [Contributing Guidelines](../CONTRIBUTING.md)
 - [ ] My contribution is my own original work
 - [ ] I agree to the project's license terms
