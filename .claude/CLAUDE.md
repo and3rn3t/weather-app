@@ -133,9 +133,9 @@ final class WeatherService {
 - **Severity Levels**: Extreme, Severe, Moderate, Minor
 - **Integration**: Alerts automatically fetched with weather data
 
-### Weather Radar Map (Android)
+### Weather Radar Map
 
-- **iOS**: no RainViewer integration; `WeatherMapView.swift` is the map view
+- **iOS**: `WeatherMapView.swift` fetches radar frames from the RainViewer API and renders precipitation tile overlays
 - **Android**: `RainViewerApiService.kt`
 - **Integration**: RainViewer API for animated radar tiles
 - **Features**: Interactive map with precipitation overlay, animation controls
@@ -178,9 +178,10 @@ final class WeatherService {
 Always use the Makefile (`make help` lists everything); never call `xcodebuild` directly.
 
 ```bash
-make build / build-release / build-sanitizers / clean
-make test / test-coverage / test-plan / test-performance
-make lint / format / analyze / accessibility
+make build              # debug build (also: build-release, build-sanitizers)
+make clean              # clean DerivedData and build artifacts
+make test               # all tests (also: test-coverage, test-plan, test-performance)
+make lint               # SwiftLint (also: format, analyze, accessibility)
 make quality-gate       # all pre-release checks
 make setup-tools        # xcbeautify, swiftlint
 ```

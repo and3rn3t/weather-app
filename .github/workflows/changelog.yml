@@ -126,7 +126,13 @@ jobs:
         with:
           script: |
             const changelog = ${{ steps.changelog.outputs.result }};
-            
+
+            // Keep notes already drafted by Release Drafter; only fill in empty releases.
+            if (context.payload.release.body && context.payload.release.body.trim()) {
+              core.info('Release already has notes; leaving them unchanged.');
+              return;
+            }
+
             await github.rest.repos.updateRelease({
               owner: context.repo.owner,
               repo: context.repo.repo,

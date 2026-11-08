@@ -35,7 +35,7 @@ Workflow files live in [`.github/workflows/`](workflows/); shared jobs come from
 | PR Labeler / PR Auto-Labeler | `labeler.yml`, `pr-labeler.yml` | Label PRs from changed paths (config: `labeler.yml`) |
 | Label Sync | `label-sync.yml` | Sync repo labels to `labels.yml` on push to main |
 | Release Drafter | `release-drafter.yml` | Draft release notes from merged PRs (config: `release-drafter.yml`) |
-| Changelog | `changelog.yml` | Generate changelog entry when a release is published |
+| Changelog | `changelog.yml` | On publish, generate notes only if the release body is empty |
 | Lighthouse | `lighthouse.yml` | Disabled placeholder (manual only) |
 
 ## Manual runs
@@ -61,7 +61,7 @@ Set with `gh secret set <NAME>`. Never commit keys; `APIConfig.swift` (Tomorrow.
 
 1. `make prepare-release` (or `-minor` / `-major`) runs pre-release checks.
 2. Merge to `main`; Release Drafter keeps the draft release current.
-3. Run the deploy workflow(s) above, then publish the draft release (Changelog workflow runs on publish).
+3. Run the deploy workflow(s) above, then publish the draft release. The Changelog workflow runs on publish; it keeps the Release Drafter notes and only generates notes if the release body is empty.
 
 PR titles use conventional commits (`feat:`, `fix:`, `docs:`, ...); Release Drafter derives the version bump and notes from them.
 

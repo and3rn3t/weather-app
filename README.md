@@ -24,10 +24,11 @@ Requirements: macOS 15.6+ (Tahoe 26 recommended), Xcode 26+, iOS 26+ device or s
 git clone https://github.com/and3rn3t/weather-app.git
 cd weather-app
 make setup-tools                 # installs xcbeautify, swiftlint
+cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 open weather.xcodeproj           # Cmd+R to build and run
 ```
 
-Optional: for pollen data, copy `weather/Sources/Services/APIConfig.swift.template` to `APIConfig.swift` and add a free [Tomorrow.io](https://www.tomorrow.io/weather-api/) key. The file is gitignored.
+`APIConfig.swift` is gitignored and required to compile (the app references it). The template's placeholder key builds fine; to enable pollen data, replace it with a free [Tomorrow.io](https://www.tomorrow.io/weather-api/) key.
 
 ## 🛠️ Development
 
