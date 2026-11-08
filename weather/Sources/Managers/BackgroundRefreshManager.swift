@@ -200,18 +200,17 @@ class BackgroundRefreshManager: ObservableObject {
     }
     
     private func updatePredictionDescription(_ windows: [OptimalRefreshWindow]) {
-        if windows.isEmpty {
+        guard let topWindow = windows.first else {
             userPatternPrediction = "Learning your usage patterns..."
-        } else {
-            let topWindow = windows.first!
-            let formatter = DateFormatter()
-            formatter.timeStyle = .short
-            
-            let confidence = Int(topWindow.confidence * 100)
-            let timeStr = formatter.string(from: topWindow.estimatedUsage)
-            
-            userPatternPrediction = "You typically use the app around \(timeStr) (\(confidence)% confidence)"
+            return
         }
+        let formatter = DateFormatter()
+        formatter.timeStyle = .short
+        
+        let confidence = Int(topWindow.confidence * 100)
+        let timeStr = formatter.string(from: topWindow.estimatedUsage)
+        
+        userPatternPrediction = "You typically use the app around \(timeStr) (\(confidence)% confidence)"
     }
     
     // MARK: - Background Refresh Scheduling

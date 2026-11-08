@@ -77,8 +77,7 @@ class WeatherCacheManager: NSObject {
     
     private override init() {
         // Create disk cache directory
-        let cacheDirectory = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
-        diskCacheDirectory = cacheDirectory.appendingPathComponent("WeatherCache")
+        diskCacheDirectory = URL.cachesDirectory.appendingPathComponent("WeatherCache")
 
         super.init()
         

@@ -46,47 +46,11 @@ struct WeatherApp: App {
         startupLog("Pre-main elapsed: \(String(format: "%.0f", preMainMs))ms")
         #endif
 
-        // Kick off ModelContainer creation on a background thread immediately.
-        // By the time the user taps Favorites it will long be ready.
-        Task.detached(priority: .utility) { [self] in
-            await PerformanceTracker.shared.startTrace("model_container_background_init")
-            let container: ModelContainer
-            do {
-                container = try ModelContainer(for: SavedLocation.self)
-            } catch {
-                Logger.startup.error("ModelContainer failed: \(error)")
-                await PerformanceTracker.shared.recordEvent("model_container_init_failed", parameters: [
-                    "error": error.localizedDescription
-                ])
-                await PerformanceTracker.shared.stopTrace("model_container_background_init")
-                return
-            }
-            
-            await MainActor.run {
-                self.modelContainer = container
-            }
-            await PerformanceTracker.shared.stopTrace("model_container_background_init")
-            await PerformanceTracker.shared.recordEvent("model_container_init_success")
-        }
-
-        // If location is already authorized, request GPS fix immediately —
-        // don't wait for ContentView's .task (which won't fire for ~3-4s).
-        if locationManager.authorizationStatus == .authorizedWhenInUse ||
-           locationManager.authorizationStatus == .authorizedAlways {
-            locationManager.requestLocation()
-            #if DEBUG
-            startupLog("GPS request fired eagerly from App.init")
-            #endif
-        }
-
-        // Complete app initialization tracking
-        let locationAuthorized = locationManager.authorizationStatus == .authorizedWhenInUse ||
-            locationManager.authorizationStatus == .authorizedAlways
+        // Complete app initialization tracking. LocationManager.init already fires the
+        // GPS request when authorized, and @State must not be read from App.init.
         Task { @MainActor in
             PerformanceTracker.shared.stopTrace("app_initialization")
-            PerformanceTracker.shared.recordEvent("app_init_complete", parameters: [
-                "location_authorized": String(locationAuthorized)
-            ])
+            PerformanceTracker.shared.recordEvent("app_init_complete")
         }
 
         os_signpost(.end, log: StartupSignpost.log, name: "App.init")
@@ -112,8 +76,29 @@ struct WeatherApp: App {
 
     // MARK: - Deferred Initialization
 
+    /// Builds the container off the main thread so SQLite setup never blocks the UI.
+    private nonisolated static func makeModelContainer() async -> ModelContainer? {
+        await PerformanceTracker.shared.startTrace("model_container_background_init")
+        defer { Task { @MainActor in PerformanceTracker.shared.stopTrace("model_container_background_init") } }
+        do {
+            let container = try ModelContainer(for: SavedLocation.self)
+            await PerformanceTracker.shared.recordEvent("model_container_init_success")
+            return container
+        } catch {
+            Logger.startup.error("ModelContainer failed: \(error)")
+            await PerformanceTracker.shared.recordEvent("model_container_init_failed", parameters: [
+                "error": error.localizedDescription
+            ])
+            return nil
+        }
+    }
+
     @MainActor
     private func deferredInitialization() async {
+        // Publish the container from the view's task, where @State is installed,
+        // so ContentView is guaranteed to observe it (App.init writes were lost).
+        async let container = Self.makeModelContainer()
+
         notificationManager.checkAuthorizationStatus()
         weatherService.onFetchSucceeded = { [notificationManager, settings] weather, alerts, locationName in
             await notificationManager.handleWeatherUpdate(
@@ -125,5 +110,6 @@ struct WeatherApp: App {
         }
         try? await Task.sleep(for: .milliseconds(100))
         WeatherAppShortcuts.updateAppShortcutParameters()
+        modelContainer = await container
     }
 }
