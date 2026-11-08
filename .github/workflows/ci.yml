@@ -60,7 +60,6 @@ jobs:
         run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
       - name: Start simulator boot
-        if: github.event_name != 'pull_request'
         # The first boot of a simulator on a fresh runner takes minutes and was sitting,
         # unlogged, at the start of the test step. Wait for CoreSimulator to enumerate devices
         # (xcodebuild gives up with "Unable to find a device" if it asks too early), then boot in
@@ -76,6 +75,8 @@ jobs:
             echo "::warning::${{ matrix.device }} simulator is not listed"
             exit 0
           fi
+          # Pull requests only compile: the device just has to be listed, no boot needed.
+          if [ "${{ github.event_name }}" = "pull_request" ]; then exit 0; fi
           date +%s > "$RUNNER_TEMP/sim-boot-start"
           nohup bash -c "xcrun simctl boot '$UDID'; xcrun simctl bootstatus '$UDID' -b; date +%s > '$RUNNER_TEMP/sim-boot-end'" \
             > "$RUNNER_TEMP/sim-boot.log" 2>&1 &
