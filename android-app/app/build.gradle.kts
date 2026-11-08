@@ -141,7 +141,7 @@ dependencies {
 
     // Google Maps SDK
     implementation("com.google.android.gms:play-services-maps:20.1.0")
-    implementation("com.google.maps.android:maps-compose:4.3.3")
+    implementation("com.google.maps.android:maps-compose:9.0.1")
 
     // MPAndroidChart
     implementation("com.github.PhilJay:MPAndroidChart:v3.1.0")
