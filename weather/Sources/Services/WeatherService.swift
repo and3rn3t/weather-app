@@ -104,20 +104,15 @@ class WeatherService {
 
         let locationMeta = SharedDataManager.lastKnownLocation()
         
-        // Use enhanced cache manager for faster, smarter cache loading
-        if let locationMeta = locationMeta {
-            let cached = cacheManager.getCachedWeather(latitude: locationMeta.latitude, longitude: locationMeta.longitude)
-            if let cached {
-                self.weatherData = cached
-                self.currentLocationName = locationMeta.name
-            }
-        } else {
-            // Fallback: try to load any cached data from SharedDataManager for backward compatibility
-            let cached = SharedDataManager.shared.loadCachedFullWeatherData()
-            if let cached {
-                self.weatherData = cached
-                self.currentLocationName = SharedDataManager.lastKnownLocation()?.name
-            }
+        // Prefer the enhanced cache; fall back to the full-forecast file. The API reports grid-snapped
+        // coordinates, so the exact-coordinate lookup can miss a forecast that is still the right one.
+        if let locationMeta,
+           let cached = cacheManager.getCachedWeather(latitude: locationMeta.latitude, longitude: locationMeta.longitude) {
+            self.weatherData = cached
+            self.currentLocationName = locationMeta.name
+        } else if let cached = SharedDataManager.shared.loadCachedFullWeatherData() {
+            self.weatherData = cached
+            self.currentLocationName = locationMeta?.name
         }
         #if DEBUG
         let elapsed = (CFAbsoluteTimeGetCurrent() - StartupSignpost.processStart) * 1_000
@@ -231,6 +226,10 @@ class WeatherService {
             
             // Also save to shared storage for widgets (backward compatibility)
             SharedDataManager.shared.saveWeatherData(weather, locationName: locationName)
+            
+            // Remember the last location and the full forecast: instant startup from cache reads them,
+            // and background refresh needs the location. (This call was lost in an earlier refactor.)
+            SharedDataManager.shared.cacheFullWeatherData(weather, locationName: locationName)
             
             await airQualityTask
             await alertsTask

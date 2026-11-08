@@ -561,3 +561,44 @@ struct WeatherActivityAttributesTests {
         #expect(state1 == state2)
     }
 }
+
+// MARK: - Tomorrow.io key storage (#109)
+
+@Suite(.serialized, .sharedGlobalState)
+@MainActor
+struct TomorrowIOKeyStorageTests {
+    private func clearLegacy() { UserDefaults.standard.removeObject(forKey: "tomorrowIOAPIKey") }
+
+    @Test func userKeyGoesToSecretStoreNotUserDefaults() {
+        clearLegacy()
+        let secrets = InMemorySecretStore()
+        let settings = SettingsManager(secrets: secrets)
+
+        settings.tomorrowIOAPIKey = "user-key-123"
+
+        #expect(secrets.string(forKey: "tomorrowIOAPIKey") == "user-key-123")
+        #expect(UserDefaults.standard.string(forKey: "tomorrowIOAPIKey") == nil)
+        #expect(SettingsManager(secrets: secrets).tomorrowIOAPIKey == "user-key-123")
+    }
+
+    @Test func legacyUserDefaultsKeyIsMigratedAndRemoved() {
+        let secrets = InMemorySecretStore()
+        UserDefaults.standard.set("legacy-key", forKey: "tomorrowIOAPIKey")
+
+        let settings = SettingsManager(secrets: secrets)
+
+        #expect(settings.tomorrowIOAPIKey == "legacy-key")
+        #expect(secrets.string(forKey: "tomorrowIOAPIKey") == "legacy-key")
+        #expect(UserDefaults.standard.string(forKey: "tomorrowIOAPIKey") == nil)
+    }
+
+    @Test func builtInDefaultIsNeverPersisted() {
+        clearLegacy()
+        let secrets = InMemorySecretStore()
+        let settings = SettingsManager(secrets: secrets)
+
+        settings.tomorrowIOAPIKey = APIConfig.defaultTomorrowIOKey
+
+        #expect(secrets.string(forKey: "tomorrowIOAPIKey") == nil)
+    }
+}

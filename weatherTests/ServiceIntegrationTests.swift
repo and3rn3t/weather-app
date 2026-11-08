@@ -12,6 +12,7 @@ import CoreLocation
 
 // MARK: - Weather Service Integration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherServiceIntegrationTests {
     
@@ -31,7 +32,7 @@ struct WeatherServiceIntegrationTests {
     
     @Test func serviceInitializationWithoutCache() {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         #expect(service.weatherData == nil)
         #expect(service.currentLocationName == nil)
@@ -46,7 +47,7 @@ struct WeatherServiceIntegrationTests {
         SharedDataManager.shared.cacheFullWeatherData(weatherData, locationName: "San Francisco")
         
         // Create service - should load from cache
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         #expect(service.weatherData != nil)
         #expect(service.currentLocationName == "San Francisco")
@@ -57,7 +58,7 @@ struct WeatherServiceIntegrationTests {
     
     @Test func errorHandlingForInvalidCoordinates() async {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Invalid coordinates should trigger an error
         await service.fetchWeatherData(latitude: 999.0, longitude: 999.0, locationName: "Invalid")
@@ -70,7 +71,7 @@ struct WeatherServiceIntegrationTests {
     
     @Test func fetchWeatherUpdatesLocationName() async {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         await service.fetchWeatherData(latitude: 37.7749, longitude: -122.4194, locationName: "Test City")
         
@@ -86,7 +87,7 @@ struct WeatherServiceIntegrationTests {
         let weatherData = MockWeatherData.createSampleWeatherData()!
         SharedDataManager.shared.cacheFullWeatherData(weatherData, locationName: "Test")
         
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         #expect(service.weatherData != nil)
         
         // Force refresh should attempt new fetch
@@ -106,6 +107,7 @@ struct WeatherServiceIntegrationTests {
 
 // MARK: - Shared Data Manager Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct SharedDataManagerIntegrationTests {
     
@@ -184,6 +186,7 @@ struct SharedDataManagerIntegrationTests {
 
 // MARK: - Weather Alert Service Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherAlertServiceIntegrationTests {
     
@@ -258,6 +261,7 @@ struct WeatherAlertServiceIntegrationTests {
 
 // MARK: - Weather Alert Model Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherAlertDecodingTests {
     
@@ -356,6 +360,7 @@ struct WeatherAlertDecodingTests {
 
 // MARK: - Tomorrow.io Service Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct TomorrowIOApiTests {
     
@@ -365,7 +370,8 @@ struct TomorrowIOApiTests {
             _ = try await TomorrowIOService.fetchPollenForecast(
                 latitude: 999.0,
                 longitude: 999.0,
-                apiKey: ""
+                apiKey: "",
+                session: StubURLProtocol.makeSession()
             )
             Issue.record("Should have thrown an error")
         } catch {
@@ -410,6 +416,7 @@ struct TomorrowIOApiTests {
 
 // MARK: - Tomorrow.io Configuration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct TomorrowIOConfigurationTests {
     
@@ -440,6 +447,7 @@ struct TomorrowIOConfigurationTests {
 
 // MARK: - OpenMeteo Configuration Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct OpenMeteoConfigurationTests {
     
@@ -485,6 +493,7 @@ struct OpenMeteoConfigurationTests {
 
 // MARK: - Error Handling Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherErrorHandlingTests {
     

@@ -11,6 +11,7 @@ import Foundation
 
 // MARK: - Weather Service Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherServiceTests {
     
@@ -30,7 +31,7 @@ struct WeatherServiceTests {
     
     @Test func initialState() {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         #expect(service.weatherData == nil)
         #expect(service.airQualityData == nil)
@@ -42,7 +43,7 @@ struct WeatherServiceTests {
     
     @Test func fetchWeatherUpdatesLoadingState() async {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         
         // Start a fetch (will fail without network, but tests loading state)
         Task {
@@ -58,7 +59,7 @@ struct WeatherServiceTests {
     
     @Test func locationNameIsSaved() async {
         clearCache()
-        let service = WeatherService()
+        let service = StubbedWeather.service()
         let testName = "Test Location"
         
         // This will likely fail but should save the location name
@@ -71,8 +72,8 @@ struct WeatherServiceTests {
 // MARK: - Mock Weather Data for Testing
 
 struct MockWeatherData {
-    static func createSampleWeatherData() -> WeatherData? {
-        let json = """
+    /// The sample forecast as JSON text. Also served by the stubbed network (see StubURLProtocol).
+    nonisolated static let sampleJSON = """
         {
             "latitude": 37.7749,
             "longitude": -122.4194,
@@ -122,6 +123,9 @@ struct MockWeatherData {
             }
         }
         """
+
+    static func createSampleWeatherData() -> WeatherData? {
+        let json = sampleJSON
         
         let data = json.data(using: .utf8)!
         let decoder = JSONDecoder()
@@ -133,6 +137,7 @@ struct MockWeatherData {
 
 // MARK: - Weather Data Model Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct WeatherDataModelTests {
     
@@ -180,6 +185,7 @@ struct WeatherDataModelTests {
 
 // MARK: - Air Quality Data Tests
 
+@Suite(.serialized, .sharedGlobalState)
 @MainActor
 struct AirQualityDataTests {
     
