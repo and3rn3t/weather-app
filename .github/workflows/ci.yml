@@ -157,12 +157,25 @@ jobs:
             -resultBundlePath TestResults.xcresult \
             | xcbeautify --renderer github-actions
 
+      - name: Collect simulator log
+        # Diagnostic: the test host takes minutes to launch on CI but seconds locally.
+        # Keep the app / test-daemon log so the cause can be read from the timestamps.
+        if: always()
+        continue-on-error: true
+        run: |
+          xcrun simctl spawn booted log show --last 30m --style compact \
+            --predicate 'process == "weather" OR process == "testmanagerd" OR process == "xctest"' \
+            > sim-process.log 2>&1 || true
+          wc -l sim-process.log
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.device }}
-          path: TestResults.xcresult
+          path: |
+            TestResults.xcresult
+            sim-process.log
           retention-days: 7
 
   build-release:
