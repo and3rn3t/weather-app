@@ -37,9 +37,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Pull requests test iPhone only; iPad runs on pushes to main and manual runs.
-        # iPhone SE testing can be done in nightly builds.
-        device: ${{ fromJSON(github.event_name == 'pull_request' && '["iPhone 16 Pro"]' || '["iPhone 16 Pro","iPad Pro 13-inch (M4)"]') }}
+        # iPhone only. Pull requests just compile the app and tests (build-for-testing);
+        # the simulator and the tests run on pushes to main and manual runs.
+        device: ['iPhone 16 Pro']
 
     steps:
       - name: Checkout
@@ -60,6 +60,7 @@ jobs:
         run: cp weather/Sources/Services/APIConfig.swift.template weather/Sources/Services/APIConfig.swift
 
       - name: Start simulator boot
+        if: github.event_name != 'pull_request'
         # The first boot of a simulator on a fresh runner takes minutes and was sitting,
         # unlogged, at the start of the test step. Wait for CoreSimulator to enumerate devices
         # (xcodebuild gives up with "Unable to find a device" if it asks too early), then boot in
@@ -110,6 +111,7 @@ jobs:
             | xcbeautify --renderer github-actions
 
       - name: Wait for simulator boot
+        if: github.event_name != 'pull_request'
         run: |
           if [ ! -f "$RUNNER_TEMP/sim-boot-start" ]; then exit 0; fi
           for _ in $(seq 1 120); do
@@ -126,12 +128,13 @@ jobs:
           fi
 
       - name: Run Tests
+        if: github.event_name != 'pull_request'
         run: |
           # The script watches for the test host failing to start (it intermittently never
           # connects on hosted runners, costing minutes or hanging) and retries after resetting
           # the simulator. It sets the test plan, destination and result bundle itself.
           #
-          # Skipped: tests that depend on live network. Four of them cache mock data in
+          # Skipped (keep in sync with SKIP_NETWORK_TESTS in the Makefile): tests that depend on live network. Four of them cache mock data in
           # SharedDataManager and assert on it, but WeatherService() also fires a real Open-Meteo
           # refresh that overwrites the cache (63.1 / 63.4 observed vs the expected 65.0); two
           # others call Open-Meteo / Tomorrow.io directly and time out intermittently on CI.
@@ -155,7 +158,7 @@ jobs:
       - name: Collect simulator log
         # Diagnostic: the test host takes minutes to launch on CI but seconds locally.
         # Keep the app / test-daemon log so the cause can be read from the timestamps.
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         continue-on-error: true
         run: |
           xcrun simctl spawn booted log show --last 30m --style compact \
@@ -164,7 +167,7 @@ jobs:
           wc -l sim-process.log
 
       - name: Upload Test Results
-        if: always()
+        if: always() && github.event_name != 'pull_request'
         uses: actions/upload-artifact@v6
         with:
           name: test-results-${{ matrix.device }}
