@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Run the iOS unit tests with a start-up watchdog.
 #
-# On hosted macOS runners the test host app is slow to connect to testmanagerd: tests
-# normally begin 4-6 minutes after xcodebuild starts (the ~200 tests then take ~2 minutes),
-# and once nothing started for 19+ minutes. If no test has started within START_TIMEOUT
-# seconds (wall clock, deliberately longer than a normal slow start), kill xcodebuild,
-# reset the simulator and try again. Phase timings are printed so the cost stays visible.
+# On a freshly booted simulator the test host intermittently never connects to testmanagerd
+# ("The test runner hung before establishing connection"). When it does connect, tests start
+# within seconds; when it hangs, xcodebuild only recovers after several minutes (4-6 on a
+# hosted runner, and once 19+). So watch for the first test and, if none starts within
+# START_TIMEOUT seconds, kill xcodebuild and try again. Phase timings are printed.
 #
 # Usage: run-ios-unit-tests.sh "<device name>" [extra xcodebuild arguments...]
-# Env:   START_TIMEOUT (default 420)  MAX_ATTEMPTS (default 2)
+# Env:   START_TIMEOUT (default 90)  MAX_ATTEMPTS (default 4)  RESET_MODE (light|full)  PRIME (1|0)
 #        PROJECT (default weather.xcodeproj)  SCHEME (default weather)
 #        TEST_PLAN (default UnitTests)  RESULT_BUNDLE (default TestResults.xcresult)
 set -uo pipefail
@@ -17,8 +17,10 @@ DEVICE="${1:?device name required}"
 shift
 EXTRA_ARGS=("$@")
 
-START_TIMEOUT="${START_TIMEOUT:-420}"
-MAX_ATTEMPTS="${MAX_ATTEMPTS:-2}"
+START_TIMEOUT="${START_TIMEOUT:-90}"
+MAX_ATTEMPTS="${MAX_ATTEMPTS:-4}"
+RESET_MODE="${RESET_MODE:-light}"
+PRIME="${PRIME:-1}"
 PROJECT="${PROJECT:-weather.xcodeproj}"
 SCHEME="${SCHEME:-weather}"
 TEST_PLAN="${TEST_PLAN:-UnitTests}"
@@ -63,12 +65,50 @@ reset_simulator() {
   ensure_booted
 }
 
+# Between attempts: "light" only stops the stuck test host (a simulator reboot costs ~100 s on a
+# hosted runner); "full" reboots the simulator.
+recover() {
+  pkill -f "xcodebuild test-without-building" || true
+  if [ "$RESET_MODE" = "full" ]; then
+    reset_simulator
+  else
+    [ -n "$HOST_ID" ] && xcrun simctl terminate "$UDID" "$HOST_ID" >/dev/null 2>&1 || true
+    sleep 2
+  fi
+}
+
 # bootstatus -b waits until SpringBoard is ready; without it the test host can be refused
 # with "Busy (Application failed preflight checks)".
-phase "Waiting for simulator $UDID to be ready"
+device_state() {
+  xcrun simctl list devices -j | jq -r --arg u "$UDID" '[.devices[][] | select(.udid==$u)][0].state // "unknown"'
+}
+
+state=$(device_state)
+phase "Simulator $UDID state: $state"
 t_boot=$(now)
-ensure_booted
+if [ "$state" != "Booted" ]; then
+  ensure_booted
+fi
 phase "Simulator ready after $(( $(now) - t_boot ))s"
+
+# The first test-host launch after a simulator boot is the one that hangs; launching the app
+# once beforehand makes the real launch connect within seconds. Best-effort: if the built app
+# cannot be found the retry loop below still covers a hang.
+HOST_APP="${HOST_APP:-$(find "$HOME/Library/Developer/Xcode/DerivedData" -maxdepth 6 -type d \
+  -path '*Build/Products/Debug-iphonesimulator/weather.app' -print0 2>/dev/null | xargs -0 ls -dt 2>/dev/null | head -1)}"
+HOST_ID=""
+if [ -n "$HOST_APP" ] && [ -f "$HOST_APP/Info.plist" ]; then
+  HOST_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$HOST_APP/Info.plist" 2>/dev/null || true)
+fi
+
+if [ "$PRIME" = "1" ] && [ -n "$HOST_ID" ]; then
+  t_prime=$(now)
+  xcrun simctl install "$UDID" "$HOST_APP" >/dev/null 2>&1 || true
+  xcrun simctl launch "$UDID" "$HOST_ID" >/dev/null 2>&1 || true
+  sleep 3
+  xcrun simctl terminate "$UDID" "$HOST_ID" >/dev/null 2>&1 || true
+  phase "Primed test host $HOST_ID in $(( $(now) - t_prime ))s"
+fi
 
 LOG="$(mktemp)"
 trap 'rm -f "$LOG"' EXIT
@@ -111,9 +151,9 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     wait "$runner"
     code=$?
     if [ "$code" -ne 0 ] && grep -Eq "$LAUNCH_FAILURE" "$LOG" && [ "$attempt" -lt "$MAX_ATTEMPTS" ]; then
-      echo "::warning::Test host failed to launch (attempt ${attempt}/${MAX_ATTEMPTS}); resetting the simulator"
+      echo "::warning::Test host failed to launch (attempt ${attempt}/${MAX_ATTEMPTS}); retrying (${RESET_MODE} reset)"
       echo "- Attempt ${attempt}/${MAX_ATTEMPTS}: test host failed to launch, retried" >>"$summary"
-      reset_simulator
+      recover
       continue
     fi
     echo "::group::Raw xcodebuild output (tail)"
@@ -129,11 +169,10 @@ for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
     exit $?
   fi
 
-  echo "::warning::No test started within ${START_TIMEOUT}s (attempt ${attempt}/${MAX_ATTEMPTS}); resetting the simulator"
+  echo "::warning::No test started within ${START_TIMEOUT}s (attempt ${attempt}/${MAX_ATTEMPTS}); retrying (${RESET_MODE} reset)"
   echo "- Attempt ${attempt}/${MAX_ATTEMPTS}: no test started within ${START_TIMEOUT}s, retried" >>"$summary"
-  pkill -f "xcodebuild test-without-building" || true
+  recover
   wait "$runner" 2>/dev/null || true
-  reset_simulator
 done
 
 echo "::error::Test host never started after ${MAX_ATTEMPTS} attempts"
