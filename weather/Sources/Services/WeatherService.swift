@@ -52,6 +52,10 @@ class WeatherService {
     var lastError: WeatherError?
     var currentLocationName: String?
     
+    /// Called after every successful fetch, once alerts and air quality have settled
+    /// (foreground and background). The app uses it to send notifications.
+    var onFetchSucceeded: ((_ weather: WeatherData, _ alerts: [WeatherAlert], _ locationName: String?) async -> Void)?
+    
     // Alert service for severe weather warnings
     private let alertService = WeatherAlertService()
     
@@ -227,6 +231,10 @@ class WeatherService {
             
             await airQualityTask
             await alertsTask
+            
+            if generation == fetchGeneration {
+                await onFetchSucceeded?(weather, weatherAlerts, locationName)
+            }
         } catch is CancellationError {
             finishCancelledFetch(generation: generation)
         } catch let urlError as URLError where urlError.code == .cancelled {
@@ -419,49 +427,6 @@ class WeatherService {
         } catch {
             // Air quality is optional
             Logger.weatherService.warning("Failed to fetch air quality: \(error.localizedDescription)")
-        }
-    }
-    
-    func fetchWeatherAlerts(latitude: Double, longitude: Double) async {
-        let alerts = await alertService.fetchAlerts(latitude: latitude, longitude: longitude)
-        
-        await MainActor.run {
-            // Store previous active alerts to detect new ones
-            let previousAlertIds = Set(self.weatherAlerts.map { $0.id })
-            
-            // Update alerts
-            self.weatherAlerts = alerts.filter { !$0.isExpired }
-            
-            // Check for new severe alerts to notify about
-            let newAlerts = self.weatherAlerts.filter { alert in
-                !previousAlertIds.contains(alert.id) && alert.isActive
-            }
-            
-            // Send notifications for new severe/extreme alerts
-            if !newAlerts.isEmpty {
-                Task {
-                    await self.notifyNewAlerts(newAlerts)
-                }
-            }
-        }
-    }
-    
-    private func notifyNewAlerts(_ alerts: [WeatherAlert]) async {
-        // Only notify for severe and extreme alerts
-        let severeAlerts = alerts.filter { alert in
-            let severity = alert.severity.lowercased()
-            return severity == "severe" || severity == "extreme"
-        }
-        
-        guard !severeAlerts.isEmpty else { return }
-        
-        // Get notification manager from app and send notifications
-        // Note: This requires the NotificationManager to be accessible
-        // We'll send the most severe alert
-        if let mostSevere = severeAlerts.max(by: { $0.priority < $1.priority }) {
-            // Create a simple notification (NotificationManager.notifySevereWeather expects WeatherAlert)
-            // This will be handled by NotificationManager
-            Logger.weatherService.info("New severe weather alert: \(mostSevere.event)")
         }
     }
     

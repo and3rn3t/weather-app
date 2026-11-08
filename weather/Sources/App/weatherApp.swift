@@ -20,6 +20,7 @@ struct WeatherApp: App {
     @State private var locationManager = LocationManager()
     @State private var weatherService = WeatherService.shared
     @State private var settings = SettingsManager()
+    @State private var notificationManager = NotificationManager()
 
     /// ModelContainer is loaded asynchronously so SQLite setup never blocks
     /// the main thread. Nil until ready — SwiftData-dependent UI (Favorites)
@@ -102,6 +103,7 @@ struct WeatherApp: App {
                 .environment(locationManager)
                 .environment(weatherService)
                 .environment(settings)
+                .environment(notificationManager)
                 .task {
                     await deferredInitialization()
                 }
@@ -112,6 +114,15 @@ struct WeatherApp: App {
 
     @MainActor
     private func deferredInitialization() async {
+        notificationManager.checkAuthorizationStatus()
+        weatherService.onFetchSucceeded = { [notificationManager, settings] weather, alerts, locationName in
+            await notificationManager.handleWeatherUpdate(
+                weather: weather,
+                alerts: alerts,
+                locationName: locationName,
+                preferences: NotificationPreferences(settings: settings)
+            )
+        }
         try? await Task.sleep(for: .milliseconds(100))
         WeatherAppShortcuts.updateAppShortcutParameters()
     }
